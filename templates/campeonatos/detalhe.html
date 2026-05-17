@@ -62,7 +62,7 @@
         {% if session.role == 'ADMIN' and camp.status == 'INSCRICAO' %}
         <hr>
         <form method="post" action="{{ url_for('inscrever_time', camp_id=camp._id) }}">
-          <div class="d-flex gap-2">
+          <div class="d-grid gap-2 d-sm-flex">
             <select name="time_id" class="form-select form-select-sm" required>
               <option value="">Selecione...</option>
               {% set ids_inscritos = times_inscritos | map(attribute='_id') | list %}
@@ -95,13 +95,13 @@
             <span class="badge bg-secondary">{{ p.fase }}</span>
             <span class="small text-muted">{{ p.mapa }}</span>
           </div>
-          <div class="d-flex justify-content-between align-items-center">
+          <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
             <span class="small fw-bold">{{ p.time_a.nome }}</span>
             <span class="badge bg-info text-dark">{{ p.time_a.placar }} x {{ p.time_b.placar }}</span>
             <span class="small fw-bold">{{ p.time_b.nome }}</span>
           </div>
           {% if p.status != 'finalizada' and session.role == 'ADMIN' %}
-          <form method="post" action="{{ url_for('registrar_resultado', partida_id=p._id) }}" class="d-flex gap-1 mt-2">
+          <form method="post" action="{{ url_for('registrar_resultado', partida_id=p._id) }}" class="d-grid gap-1 mt-2 d-sm-flex">
             <input type="number" name="placar_a" class="form-control form-control-sm" min="0" required>
             <input type="number" name="placar_b" class="form-control form-control-sm" min="0" required>
             <button type="submit" class="btn btn-sm btn-success">Salvar</button>
@@ -125,7 +125,7 @@
               <input type="text" name="fase" class="form-control form-control-sm" required>
             </div>
             <div class="row g-2 mb-2">
-              <div class="col-6">
+              <div class="col-12 col-sm-6">
                 <label>Time A</label>
                 <select name="time_a_id" class="form-select form-select-sm" required>
                   <option value="">Selecione...</option>
@@ -134,7 +134,7 @@
                   {% endfor %}
                 </select>
               </div>
-              <div class="col-6">
+              <div class="col-12 col-sm-6">
                 <label>Time B</label>
                 <select name="time_b_id" class="form-select form-select-sm" required>
                   <option value="">Selecione...</option>

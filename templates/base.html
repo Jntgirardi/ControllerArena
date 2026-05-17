@@ -8,102 +8,153 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
   <style>
     :root {
-      --bg-main: #eef2f7;
-      --bg-sidebar: #0d2137;
-      --bg-card: #ffffff;
-      --bg-card-hd: #f1f5f9;
-      --border: #d0d7de;
-      --text-main: #1a1a2e;
-      --text-muted: #57606a;
-      --text-sidebar: #c9d8ea;
-      --accent: #1e64aa;
-      --accent-lt: #4ea8f5;
-      --nav-hover: rgba(255,255,255,.10);
-      --nav-active: rgba(255,255,255,.20);
-      --table-hover: #f6f8fa;
-      --badge-cs2: #e67e22;
-      --badge-val: #e74c3c;
+      color-scheme: dark;
+      --bg-main: #0b1018;
+      --bg-topbar: #101827;
+      --bg-card: #141d2b;
+      --bg-card-hd: #182338;
+      --bg-input: #0f1724;
+      --border: #28364d;
+      --text-main: #e6edf7;
+      --text-muted: #9aa8bc;
+      --text-nav: #c7d2e5;
+      --accent: #4ea8f5;
+      --accent-strong: #2f81d0;
+      --accent-soft: rgba(78,168,245,.16);
+      --nav-hover: rgba(78,168,245,.14);
+      --nav-active: rgba(78,168,245,.24);
+      --table-hover: #18253a;
+      --badge-cs2: #f39c35;
+      --badge-val: #ff5c6c;
     }
-    body { margin: 0; background: var(--bg-main); color: var(--text-main); font-family: "Segoe UI", system-ui, sans-serif; min-height: 100vh; }
-    .layout { display: flex; min-height: 100vh; }
-    .sidebar { width: 230px; min-width: 230px; background: var(--bg-sidebar); display: flex; flex-direction: column; }
-    .sidebar-brand { color: #fff; font-weight: 800; font-size: 1.2rem; padding: 20px; display: flex; align-items: center; gap: 10px; text-decoration: none; border-bottom: 1px solid rgba(255,255,255,.08); }
-    .sidebar .nav { padding: 8px 0; flex: 1; }
-    .sidebar .nav-link { color: var(--text-sidebar); border-radius: 8px; margin: 2px 10px; padding: 9px 14px; display: flex; align-items: center; gap: 10px; }
-    .sidebar .nav-link:hover { background: var(--nav-hover); color: #fff; }
-    .sidebar .nav-link.active { background: var(--nav-active); color: #fff; font-weight: 600; }
-    .sidebar-section { color: rgba(255,255,255,.32); font-size: .67rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; padding: 14px 22px 4px; }
-    .sidebar-footer { padding: 14px; border-top: 1px solid rgba(255,255,255,.08); }
-    .topbar { display: none; align-items: center; gap: 12px; background: var(--bg-sidebar); padding: 11px 16px; color: #fff; }
-    .hamburger { background: none; border: none; color: #fff; font-size: 1.55rem; }
-    .main-content { flex: 1; min-width: 0; }
+    html { overflow-x: hidden; }
+    body { margin: 0; background: var(--bg-main); color: var(--text-main); font-family: "Segoe UI", system-ui, sans-serif; min-height: 100vh; overflow-x: hidden; }
+    a { color: var(--accent); }
+    .layout { min-height: 100vh; }
+    .top-nav { position: sticky; top: 0; z-index: 1030; background: rgba(16,24,39,.96); border-bottom: 1px solid var(--border); box-shadow: 0 12px 28px rgba(0,0,0,.22); backdrop-filter: blur(10px); }
+    .navbar-brand { color: #fff; font-weight: 800; letter-spacing: .2px; display: flex; align-items: center; gap: 10px; }
+    .navbar-brand:hover { color: #fff; }
+    .navbar .nav-link { color: var(--text-nav); border-radius: 8px; padding: 8px 12px; display: flex; align-items: center; gap: 7px; }
+    .navbar .nav-link:hover { background: var(--nav-hover); color: #fff; }
+    .navbar .nav-link.active { background: var(--nav-active); color: #fff; font-weight: 600; }
+    .navbar-toggler { border-color: var(--border); color: var(--text-main); }
+    .navbar-toggler:focus { box-shadow: 0 0 0 3px var(--accent-soft); }
+    .navbar-toggler-icon { filter: invert(1) grayscale(1); }
+    .user-menu { position: relative; }
+    .user-trigger { border: 1px solid var(--border); border-radius: 999px; color: var(--text-main); background: var(--bg-card); padding: 6px 10px; display: flex; align-items: center; gap: 8px; text-decoration: none; }
+    .user-trigger:hover, .user-trigger.active { color: #fff; border-color: var(--accent); background: var(--accent-soft); }
+    .user-trigger .bi { color: var(--accent); font-size: 1.1rem; }
+    .user-dropdown { position: absolute; right: 0; top: calc(100% + 8px); min-width: 180px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 16px 36px rgba(0,0,0,.35); padding: 6px; opacity: 0; visibility: hidden; transform: translateY(-4px); transition: opacity .15s ease, transform .15s ease, visibility .15s ease; }
+    .user-menu:hover .user-dropdown, .user-menu:focus-within .user-dropdown { opacity: 1; visibility: visible; transform: translateY(0); }
+    .user-dropdown a { color: var(--text-main); display: flex; align-items: center; gap: 8px; text-decoration: none; border-radius: 6px; padding: 8px 10px; }
+    .user-dropdown a:hover, .user-dropdown a.active { background: var(--nav-hover); color: #fff; }
+    .main-content { min-width: 0; }
     .page-body { padding: 28px 32px; }
-    .card { background: var(--bg-card); border: 1px solid var(--border); }
-    .card-header { background: var(--bg-card-hd); border-bottom: 1px solid var(--border); color: var(--text-main); font-weight: 600; }
+    .page-title, h4, h5 { overflow-wrap: anywhere; }
+    .card { --bs-card-bg: var(--bg-card); --bs-card-color: var(--text-main); --bs-card-border-color: var(--border); background: var(--bg-card); border: 1px solid var(--border); color: var(--text-main); }
+    .card-body { color: var(--text-main); }
+    .card-body strong, .card-body label, .card-body .fw-bold { color: #fff; }
+    .card-header { --bs-card-cap-bg: var(--bg-card-hd); background: var(--bg-card-hd); border-bottom: 1px solid var(--border); color: #fff; font-weight: 600; gap: 10px; }
+    .card-footer { background: transparent; border-top: 1px solid var(--border); }
+    .card-body.p-0 { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .table { --bs-table-bg: transparent; --bs-table-color: var(--text-main); --bs-table-border-color: var(--border); color: var(--text-main); }
+    .card-body.p-0 > .table { min-width: 620px; }
     .table thead th { background: var(--bg-card-hd); color: var(--accent); font-size: .78rem; text-transform: uppercase; }
     .table tbody tr:hover td { background: var(--table-hover); }
-    .form-control:focus, .form-select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(30,100,170,.15); }
-    .btn-primary { background: var(--accent); border-color: var(--accent); }
+    .table th, .table td { vertical-align: middle; }
+    .form-control, .form-select { background-color: var(--bg-input); border-color: var(--border); color: var(--text-main); }
+    .form-control:focus, .form-select:focus { background-color: var(--bg-input); color: var(--text-main); border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+    .form-control::placeholder { color: #718096; }
+    .form-label { color: var(--text-muted); }
+    .btn-primary { background: var(--accent-strong); border-color: var(--accent-strong); }
+    .btn-outline-secondary { color: var(--text-nav); border-color: var(--border); }
+    .btn-outline-secondary:hover { background: var(--nav-hover); border-color: var(--accent); color: #fff; }
+    .btn-outline-primary { color: var(--accent); border-color: var(--accent); }
+    .nav-tabs { border-bottom-color: var(--border); }
+    .nav-tabs .nav-link { background: transparent; color: var(--text-main) !important; border-radius: 8px 8px 0 0; font-weight: 600; }
+    .nav-tabs .nav-link:hover { background: var(--nav-hover); border-color: var(--border); color: #fff !important; }
+    .nav-tabs .nav-link.active { background: var(--bg-card); border-color: var(--border) var(--border) var(--bg-card); color: #fff !important; }
     .badge-cs2 { background: var(--badge-cs2) !important; }
     .badge-valorant { background: var(--badge-val) !important; }
     .text-muted { color: var(--text-muted) !important; }
+    .btn { min-height: 34px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+    .btn-sm { min-height: 31px; }
     @media (max-width: 991px) {
-      .layout { display: block; }
-      .sidebar { width: 100%; min-width: 100%; }
-      .topbar { display: flex; }
+      .top-nav .container-fluid { align-items: flex-start; }
+      .navbar-brand { min-height: 38px; }
+      .navbar-collapse { width: 100%; padding-top: 8px; }
+      .navbar .nav-link { margin: 2px 0; }
+      .user-menu { margin-top: 10px; width: 100%; }
+      .user-trigger { width: 100%; justify-content: flex-start; border-radius: 8px; }
+      .user-dropdown { position: static; display: block; margin-top: 8px; opacity: 1; visibility: visible; transform: none; box-shadow: none; width: 100%; }
       .page-body { padding: 20px 16px; }
+    }
+    @media (max-width: 575px) {
+      .page-body { padding: 16px 12px 22px; }
+      .card { border-radius: 8px; }
+      .card-header { align-items: flex-start !important; flex-wrap: wrap; }
+      .card-body { padding: 14px; }
+      .card-body.p-0 { padding: 0; }
+      .card-body.p-0 > .table { min-width: 560px; }
+      .nav-tabs { flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; padding-bottom: 1px; }
+      .nav-tabs .nav-link { white-space: nowrap; }
+      .btn { width: 100%; }
+      .navbar .btn, .table .btn, .card-header .btn { width: auto; }
+      .d-flex.justify-content-between { align-items: flex-start !important; flex-wrap: wrap; gap: 10px; }
+      .d-flex.justify-content-between > .btn,
+      .d-flex.justify-content-between > a.btn { width: 100%; }
+      .fs-2 { font-size: 1.65rem !important; }
     }
   </style>
 </head>
 <body>
 {% if session.user_id %}
-<div class="topbar">
-  <button class="hamburger" type="button">
-    <i class="bi bi-controller"></i>
-  </button>
-  <strong>FPS Arena</strong>
-</div>
+<nav class="navbar navbar-expand-lg top-nav">
+  <div class="container-fluid px-3 px-lg-4">
+    <a class="navbar-brand" href="{{ url_for('dashboard') }}">
+      <i class="bi bi-controller"></i> FPS Arena
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar" aria-controls="mainNavbar" aria-expanded="false" aria-label="Alternar navegacao">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="mainNavbar">
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0 gap-lg-1">
+        {% if session.role in ('SUPER_ADMIN', 'ADMIN') %}
+        <li class="nav-item"><a class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
+        {% endif %}
+        {% if session.role == 'ADMIN' %}
+        <li class="nav-item"><a class="nav-link {% if request.endpoint in ('listar_jogadores','novo_jogador','ver_jogador','editar_jogador') %}active{% endif %}" href="{{ url_for('listar_jogadores') }}"><i class="bi bi-person-badge"></i> Jogadores</a></li>
+        <li class="nav-item"><a class="nav-link {% if request.endpoint in ('listar_times','novo_time','editar_time') %}active{% endif %}" href="{{ url_for('listar_times') }}"><i class="bi bi-people-fill"></i> Times</a></li>
+        {% endif %}
+        <li class="nav-item"><a class="nav-link {% if request.endpoint and 'campeonato' in request.endpoint %}active{% endif %}" href="{{ url_for('listar_campeonatos') }}"><i class="bi bi-trophy-fill"></i> Campeonatos</a></li>
+        <li class="nav-item"><a class="nav-link {% if request.endpoint == 'ranking' %}active{% endif %}" href="{{ url_for('ranking') }}"><i class="bi bi-bar-chart-fill"></i> Ranking</a></li>
+        {% if session.role == 'PLAYER' %}
+        <li class="nav-item"><a class="nav-link {% if request.endpoint in ('meu_perfil', 'meu_time') %}active{% endif %}" href="{{ url_for('meu_perfil') }}"><i class="bi bi-person-circle"></i> Meu Perfil</a></li>
+        {% endif %}
+      </ul>
+      <div class="user-menu">
+        <a class="user-trigger {% if session.role in ('SUPER_ADMIN', 'ADMIN') and (request.endpoint == 'relatorios' or (request.endpoint and 'usuario' in request.endpoint)) %}active{% endif %}" href="{{ url_for('dashboard') }}">
+          <i class="bi bi-person-circle"></i>
+          <span>{{ session.nome or session.login }}</span>
+          <span class="badge bg-secondary">{{ session.role }}</span>
+        </a>
+        <div class="user-dropdown">
+          <a class="{% if request.endpoint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}"><i class="bi bi-grid-1x2"></i> Dashboard</a>
+          {% if session.role == 'SUPER_ADMIN' %}
+          <a class="{% if request.endpoint and 'usuario' in request.endpoint %}active{% endif %}" href="{{ url_for('listar_usuarios') }}"><i class="bi bi-shield-lock"></i> Admins</a>
+          {% endif %}
+          {% if session.role in ('SUPER_ADMIN', 'ADMIN') %}
+          <a class="{% if request.endpoint == 'relatorios' %}active{% endif %}" href="{{ url_for('relatorios') }}"><i class="bi bi-file-earmark-bar-graph"></i> Relatorios</a>
+          {% endif %}
+          <a href="{{ url_for('logout') }}"><i class="bi bi-box-arrow-right"></i> Sair</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</nav>
 {% endif %}
 
 <div class="layout">
-  {% if session.user_id %}
-  <nav class="sidebar">
-    <a class="sidebar-brand" href="{{ url_for('dashboard') }}">
-      <i class="bi bi-controller"></i> FPS Arena
-    </a>
-    <ul class="nav flex-column">
-      {% if session.role in ('SUPER_ADMIN', 'ADMIN') %}
-      <li><a class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
-      {% endif %}
-      {% if session.role == 'ADMIN' %}
-      <li><a class="nav-link {% if request.endpoint in ('listar_jogadores','novo_jogador','ver_jogador','editar_jogador') %}active{% endif %}" href="{{ url_for('listar_jogadores') }}"><i class="bi bi-person-badge"></i> Jogadores</a></li>
-      <li><a class="nav-link {% if request.endpoint in ('listar_times','novo_time','editar_time') %}active{% endif %}" href="{{ url_for('listar_times') }}"><i class="bi bi-people-fill"></i> Times</a></li>
-      {% endif %}
-      <li><a class="nav-link {% if request.endpoint and 'campeonato' in request.endpoint %}active{% endif %}" href="{{ url_for('listar_campeonatos') }}"><i class="bi bi-trophy-fill"></i> Campeonatos</a></li>
-      <li><a class="nav-link {% if request.endpoint == 'ranking' %}active{% endif %}" href="{{ url_for('ranking') }}"><i class="bi bi-bar-chart-fill"></i> Ranking</a></li>
-      {% if session.role == 'PLAYER' %}
-      <li><div class="sidebar-section">Minha Conta</div></li>
-      <li><a class="nav-link {% if request.endpoint in ('meu_perfil', 'meu_time') %}active{% endif %}" href="{{ url_for('meu_perfil') }}"><i class="bi bi-person-circle"></i> Meu Perfil</a></li>
-      {% endif %}
-      {% if session.role in ('SUPER_ADMIN', 'ADMIN') %}
-      <li><div class="sidebar-section">Administracao</div></li>
-      {% if session.role == 'SUPER_ADMIN' %}
-      <li><a class="nav-link {% if request.endpoint and 'usuario' in request.endpoint %}active{% endif %}" href="{{ url_for('listar_usuarios') }}"><i class="bi bi-shield-lock"></i> Admins</a></li>
-      {% endif %}
-      <li><a class="nav-link {% if request.endpoint == 'relatorios' %}active{% endif %}" href="{{ url_for('relatorios') }}"><i class="bi bi-file-earmark-bar-graph"></i> Relatorios</a></li>
-      {% endif %}
-    </ul>
-    <div class="sidebar-footer">
-      <div class="d-flex align-items-center gap-2 flex-wrap">
-        <i class="bi bi-person-circle" style="color:var(--accent-lt)"></i>
-        <span class="small text-white">{{ session.nome or session.login }}</span>
-        <span class="badge bg-secondary">{{ session.role }}</span>
-        <a href="{{ url_for('logout') }}" class="btn btn-sm btn-outline-danger">Sair</a>
-      </div>
-    </div>
-  </nav>
-  {% endif %}
-
   <div class="main-content">
     <div class="page-body">
       {% with messages = get_flashed_messages(with_categories=true) %}

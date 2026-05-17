@@ -5,18 +5,18 @@
 <h4 class="mb-3 page-title">Relatório de Campeonatos</h4>
 
 <form class="row g-2 mb-4 align-items-end">
-  <div class="col-6 col-md-3">
+  <div class="col-12 col-sm-6 col-md-3">
     <label class="form-label small">Data Início</label>
     <input type="date" name="data_ini" class="form-control form-control-sm" value="{{ data_ini or '' }}">
   </div>
-  <div class="col-6 col-md-3">
+  <div class="col-12 col-sm-6 col-md-3">
     <label class="form-label small">Data Fim</label>
     <input type="date" name="data_fim" class="form-control form-control-sm" value="{{ data_fim or '' }}">
   </div>
-  <div class="col-6 col-md-2">
+  <div class="col-12 col-sm-6 col-md-2">
     <button type="submit" class="btn btn-secondary btn-sm w-100">Filtrar</button>
   </div>
-  <div class="col-6 col-md-2">
+  <div class="col-12 col-sm-6 col-md-2">
     <a href="{{ url_for('relatorios') }}" class="btn btn-outline-secondary btn-sm w-100">Limpar</a>
   </div>
 </form>
@@ -78,13 +78,13 @@
 
 <!-- Totalizadores -->
 <div class="row g-3">
-  <div class="col-4">
+  <div class="col-12 col-sm-4">
     <div class="card p-3 text-center">
       <div class="text-muted small mb-1">Total</div>
       <div class="fs-2 fw-bold" style="color:var(--accent)">{{ campeonatos|length }}</div>
     </div>
   </div>
-  <div class="col-4">
+  <div class="col-12 col-sm-4">
     <div class="card p-3 text-center">
       <div class="text-muted small mb-1">Abertos</div>
       <div class="fs-2 fw-bold text-success">
@@ -92,7 +92,7 @@
       </div>
     </div>
   </div>
-  <div class="col-4">
+  <div class="col-12 col-sm-4">
     <div class="card p-3 text-center">
       <div class="text-muted small mb-1">Finalizados</div>
       <div class="fs-2 fw-bold text-secondary">

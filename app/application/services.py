@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 from uuid import uuid4
 
@@ -17,6 +17,16 @@ STATUS_EM_ANDAMENTO = "EM_ANDAMENTO"
 STATUS_FINALIZADO = "FINALIZADO"
 VALID_STATUSES = (STATUS_INSCRICAO, STATUS_EM_ANDAMENTO, STATUS_FINALIZADO)
 RANKING_CACHE_PREFIX = "fps_arena:ranking"
+
+
+def utc_now_naive() -> datetime:
+    return datetime.now(UTC).replace(tzinfo=None)
+
+
+def normalize_utc_naive(value: datetime) -> datetime:
+    if value.tzinfo is None:
+        return value
+    return value.astimezone(UTC).replace(tzinfo=None)
 
 
 def get_scope_admin_id(current_user: dict[str, Any]) -> ObjectId | None:
@@ -48,7 +58,8 @@ class AuthService:
             user = self.user_repo.find_admin_by_access_code(identity)
             if not user:
                 return None
-            if user.get("access_code_expires_at") and user["access_code_expires_at"] < datetime.utcnow():
+            expires_at = user.get("access_code_expires_at")
+            if expires_at and normalize_utc_naive(expires_at) < utc_now_naive():
                 return None
         else:
             user = self.user_repo.find_by_login(identity)

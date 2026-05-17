@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Times – FPS Arena{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
   <h4 class="mb-0" style="color:var(--text-main)">Times</h4>
   {% if session.role == 'ADMIN' %}
   <a href="{{ url_for('novo_time') }}" class="btn btn-primary btn-sm">
@@ -13,7 +13,7 @@
 {% if times %}
 <div class="row g-3">
   {% for t in times %}
-  <div class="col-md-4">
+  <div class="col-12 col-md-6 col-xl-4">
     <div class="card h-100">
       <div class="card-header d-flex justify-content-between align-items-center">
         <div>
@@ -37,7 +37,7 @@
         </ul>
       </div>
       {% if session.role == 'ADMIN' %}
-      <div class="card-footer d-flex gap-2">
+      <div class="card-footer d-grid gap-2 d-sm-flex">
         <a href="{{ url_for('editar_time', time_id=t._id) }}"
            class="btn btn-sm btn-outline-warning flex-fill">
           <i class="bi bi-pencil-fill"></i> Editar

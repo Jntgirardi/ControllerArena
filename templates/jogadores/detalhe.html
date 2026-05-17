@@ -6,7 +6,7 @@
   <h4 class="mb-0">{{ jogador.nick }}</h4>
   <span class="badge {{ 'badge-cs2' if jogador.jogo_principal == 'CS2' else 'badge-valorant' }}">{{ jogador.jogo_principal }}</span>
   {% if session.role == 'ADMIN' %}
-  <div class="ms-auto d-flex gap-2">
+  <div class="ms-sm-auto d-grid gap-2 d-sm-flex">
     <a href="{{ url_for('editar_jogador', jogador_id=jogador._id) }}" class="btn btn-warning btn-sm">Editar</a>
     <form method="post" action="{{ url_for('remover_jogador', jogador_id=jogador._id) }}" onsubmit="return confirm('Remover {{ jogador.nick }}?')">
       <button type="submit" class="btn btn-danger btn-sm">Remover</button>

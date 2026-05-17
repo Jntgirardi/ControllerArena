@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ 'Editar' if acao == 'editar' else 'Novo' }} Time – FPS Arena{% endblock %}
 {% block content %}
-<div class="d-flex align-items-center mb-3">
+<div class="d-flex align-items-center mb-3 flex-wrap gap-2">
   <a href="{{ url_for('listar_times') }}" class="btn btn-outline-secondary btn-sm me-3">← Voltar</a>
   <h4 class="mb-0 page-title">{{ 'Editar Time' if acao == 'editar' else 'Criar Time' }}</h4>
   {% if acao == 'editar' and time %}
@@ -13,12 +13,12 @@
   <div class="card-body">
     <form method="post">
       <div class="row g-3 mb-3">
-        <div class="col-8">
+        <div class="col-12 col-sm-8">
           <label class="form-label">Nome do Time *</label>
           <input type="text" name="nome" class="form-control"
                  value="{{ dados.get('nome', '') }}" required>
         </div>
-        <div class="col-4">
+        <div class="col-12 col-sm-4">
           <label class="form-label">TAG *</label>
           <input type="text" name="tag" class="form-control" maxlength="5"
                  value="{{ dados.get('tag', '') }}" required placeholder="SHD"
@@ -58,7 +58,7 @@
                      class="form-control form-control-sm"
                      placeholder="Função (IGL, AWPer, Entry...)"
                      value="{{ funcoes_atuais[jid] if funcoes_atuais is defined and jid in funcoes_atuais else '' }}"
-                     style="max-width:220px">
+                     style="max-width:100%">
             </div>
           </div>
           {% else %}

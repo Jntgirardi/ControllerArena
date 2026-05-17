@@ -73,7 +73,27 @@ def register_routes(app, services):
         if session.get("role") == ROLE_PLAYER:
             return redirect(url_for("meu_perfil"))
         data = services["dashboard"].build_dashboard(current_user)
-        return render_template("dashboard.html", stats=data["stats"], ultimos_camps=data["ultimos_camps"])
+        active_tab = request.args.get("tab", "visao-geral").strip()
+        data_ini = request.args.get("data_ini", "").strip()
+        data_fim = request.args.get("data_fim", "").strip()
+        campeonatos = []
+        usuarios = []
+        if active_tab == "relatorios":
+            campeonatos, warning = services["reports"].build_report(current_user, data_ini, data_fim)
+            if warning:
+                flash(warning, "warning")
+        if active_tab == "usuarios" and session.get("role") == ROLE_SUPER_ADMIN:
+            usuarios = services["users"].list_admin_accounts()
+        return render_template(
+            "dashboard.html",
+            stats=data["stats"],
+            ultimos_camps=data["ultimos_camps"],
+            usuarios=usuarios,
+            campeonatos=campeonatos,
+            data_ini=data_ini,
+            data_fim=data_fim,
+            active_tab=active_tab,
+        )
 
     @app.route("/jogadores", endpoint="listar_jogadores")
     @login_required
