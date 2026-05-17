@@ -1,233 +1,156 @@
 # FPS Arena
 
-Sistema web para gestao de campeonatos de e-Sports com controle de acesso por perfil, provisionamento controlado de usuarios e isolamento entre organizadores.
+## Sobre o trabalho
 
-## Visao Geral
+O FPS Arena e um sistema web desenvolvido para organizar campeonatos de e-Sports, com foco em jogos de FPS como CS2 e Valorant. O objetivo do trabalho e facilitar a administracao de campeonatos, jogadores, times e partidas em uma plataforma simples, funcional e com controle de acesso por perfil.
 
-O projeto foi refatorado para adotar um modelo RBAC com tres perfis:
+O projeto foi pensado para resolver um problema comum em competicoes: a falta de uma ferramenta centralizada para cadastrar participantes, montar equipes, acompanhar campeonatos e separar as permissoes de cada tipo de usuario.
 
-- `SUPER_ADMIN`
-  Responsavel pela plataforma. Pode criar contas de `ADMIN`, gerar codigo de acesso e senha inicial e visualizar o ambiente global.
+## Objetivo do sistema
 
-- `ADMIN`
-  Representa o organizador do campeonato. Nao faz cadastro livre. Entra no sistema por convite do `SUPER_ADMIN` e gerencia apenas os seus dados.
+O principal objetivo do FPS Arena e permitir que organizadores criem e gerenciem campeonatos de forma segura. Cada usuario acessa apenas as informacoes permitidas pelo seu perfil, evitando que dados de outros organizadores ou jogadores sejam exibidos indevidamente.
 
-- `PLAYER`
-  Usuario final vinculado a um organizador. Tem acesso de leitura ao proprio contexto e apenas aos campeonatos em que esta inscrito.
+Com isso, o sistema demonstra conceitos importantes de desenvolvimento web, banco de dados, seguranca, controle de acesso e organizacao de regras de negocio.
 
-## Principais Regras Implementadas
+## Funcionalidades principais
 
-- Nao existe cadastro livre de `ADMIN`.
-- O `SUPER_ADMIN` cria contas de `ADMIN` com `codigo_acesso` unico.
-- O `ADMIN` entra no primeiro acesso com `codigo + senha inicial`.
-- O sistema obriga troca de senha no primeiro login do `ADMIN`.
-- Jogadores sao provisionados pelo `ADMIN`, com `login` e `senha`.
-- Todo dado sensivel e filtrado por `admin_id` no backend.
-- Senhas sao armazenadas com `bcrypt`.
+- Login de usuarios com controle de permissao.
+- Cadastro e gerenciamento de campeonatos.
+- Cadastro de jogadores.
+- Cadastro de times.
+- Vinculo entre jogadores, times e campeonatos.
+- Controle de partidas.
+- Dashboard com informacoes gerais.
+- Ranking e relatorios.
+- Separacao de acesso entre administrador da plataforma, organizador e jogador.
+- Uso de MongoDB para persistencia dos dados.
+- Uso de Redis para cache quando disponivel.
 
-## Fluxos de Acesso
+## Perfis de usuario
 
-### 1. Fluxo do SUPER_ADMIN
+O sistema possui tres tipos principais de usuario:
 
-1. Faz login com `login + senha`.
-2. Acessa o painel de administracao.
-3. Cria um novo `ADMIN`.
-4. Recebe `codigo de acesso` e `senha inicial` gerados pelo sistema.
+### SUPER_ADMIN
 
-### 2. Fluxo do ADMIN
+E o administrador principal da plataforma. Ele pode criar contas de administradores, gerar convite de acesso e visualizar a estrutura geral do sistema.
 
-1. Recebe convite do `SUPER_ADMIN`.
-2. Faz o primeiro login com `codigo de acesso + senha inicial`.
-3. E redirecionado para trocar a senha obrigatoriamente.
-4. Depois disso, passa a usar `login + senha`.
-5. Pode criar campeonatos, times, jogadores e partidas apenas do seu escopo.
+### ADMIN
 
-### 3. Fluxo do PLAYER
+E o organizador do campeonato. Ele gerencia seus proprios jogadores, times, campeonatos e partidas. Cada administrador trabalha apenas com os dados do seu proprio contexto.
 
-1. E criado pelo `ADMIN`.
-2. Faz login com `login + senha`.
-3. Visualiza somente o proprio perfil, time e campeonatos em que participa.
+### PLAYER
 
-## Estrutura de Dados
+E o jogador cadastrado por um administrador. Ele acessa suas informacoes, seu time e os campeonatos nos quais esta envolvido.
 
-### Usuario
+## Tecnologias utilizadas
 
-- `id`
-- `nome`
-- `login`
-- `senha_hash`
-- `role` (`SUPER_ADMIN | ADMIN | PLAYER`)
-- `admin_id`
-- `player_id`
-- `access_code`
-- `access_code_expires_at`
-- `must_change_password`
-- `ativo`
-
-### Campeonato
-
-- `id`
-- `nome`
-- `admin_id`
-- `jogo`
-- `formato`
-- `status` (`INSCRICAO | EM_ANDAMENTO | FINALIZADO`)
-
-### Jogador
-
-- `id`
-- `nome`
-- `nick`
-- `login`
-- `admin_id`
-- `campeonato_id`
-
-## Stack Tecnologica
-
-- Python 3.10+
+- Python
 - Flask
-- PyMongo
 - MongoDB
-- Redis para cache opcional
+- PyMongo
+- Redis
 - Jinja2
-- HTML/CSS
+- HTML
+- CSS
+- Bootstrap
 - bcrypt
+- pytest
 
-## Estrutura do Projeto
+## Estrutura do projeto
 
 ```text
 fps_arena/
 |-- app.py
 |-- seed_db.py
+|-- run_local.py
 |-- requirements.txt
+|-- requirements-dev.txt
 |-- app/
 |   |-- application/
+|   |-- domain/
 |   |-- infrastructure/
 |   |-- interfaces/
 |   `-- factory.py
 |-- templates/
-|   |-- base.html
-|   |-- dashboard.html
-|   |-- login.html
-|   |-- ranking.html
-|   |-- relatorios.html
-|   |-- campeonatos/
-|   |-- jogadores/
-|   |-- times/
-|   `-- usuarios/
+|-- tests/
 `-- docs/
 ```
 
-## Instalacao e Execucao
+## Banco de dados e cache
 
-### Pre-requisitos
+O sistema utiliza MongoDB como banco de dados principal. Nele ficam armazenados usuarios, jogadores, times, campeonatos e partidas.
 
-- Python 3.10+
-- MongoDB local em execucao
-- Redis local em execucao, opcional. Se estiver desligado, o sistema usa `NoCache`.
-- `pip`
+O Redis e utilizado como cache para melhorar o desempenho em consultas que podem ser reaproveitadas, como ranking. Caso o Redis nao esteja ativo, o sistema continua funcionando sem cache.
 
-### Passos
+## Como executar o projeto
+
+Antes de iniciar, e necessario ter o Python instalado e o MongoDB em execucao. O Redis e recomendado, mas opcional.
+
+Instale as dependencias:
 
 ```bash
-cd fps_arena
 pip install -r requirements.txt
+```
+
+Crie a base inicial de teste:
+
+```bash
 python seed_db.py
+```
+
+Inicie o sistema:
+
+```bash
 python app.py
 ```
 
-Para rodar os testes automatizados:
-
-```bash
-pip install -r requirements-dev.txt
-pytest
-```
-
-Ou, no Windows, com um comando mais direto:
-
-```powershell
-.\start_windows.ps1 -Install -Seed
-```
-
-Ou usando Python:
-
-```bash
-python run_local.py --install --seed
-```
-
-Depois da primeira execucao, voce pode subir sem recriar a base:
-
-```powershell
-.\start_windows.ps1
-```
-
-Aplicacao:
+Depois, acesse no navegador:
 
 ```text
 http://localhost:5000
 ```
 
-## Dicas de Execucao no Seu PC
+No Windows, tambem e possivel executar com:
 
-- Se o projeto abrir erro de MongoDB, confirme que o servico do Mongo esta rodando localmente.
-- Se o Redis nao estiver rodando, a aplicacao continua funcionando sem cache.
-- O ranking usa cache no Redis com chaves `fps_arena:ranking:*`.
-- Se quiser desligar o cache explicitamente: `$env:REDIS_ENABLED="false"`
-- Se quiser usar outra porta: `.\start_windows.ps1 -Port 5001`
-- Se a base estiver baguncada e voce quiser recomecar: `.\start_windows.ps1 -Seed`
+```powershell
+.\start_windows.ps1 -Install -Seed
+```
 
-## Base de Perfis de Teste
+## Usuarios de teste
 
-Depois de executar `python seed_db.py`, o projeto cria uma base com os tres perfis do sistema:
+A seed do projeto cria usuarios e dados iniciais para demonstracao.
 
-### Perfil 1: SUPER_ADMIN
+### Super administrador
 
 - Login: `superadmin`
 - Senha: `super123`
-- Uso: dono da plataforma, cria contas de `ADMIN`
 
-### Perfil 2: ADMIN
+### Administrador
 
-- Login normal: `arena.demo`
+- Login: `arena.demo`
 - Senha inicial: `admin123`
-- Primeiro acesso: `codigo de acesso + admin123`
-- Uso: organizador que gerencia campeonatos, jogadores, times e partidas do proprio escopo
 
-Observacao:
-o codigo de acesso do `ADMIN` e gerado dinamicamente no `seed_db.py` e exibido no terminal ao executar a seed.
-
-### Perfil 3: PLAYER
+### Jogador
 
 - Login: `carlos_snipe`
 - Senha: `jogador1`
-- Uso: jogador com acesso somente leitura ao proprio contexto
 
-## Dados de Exemplo Criados Pela Seed
+## Testes
 
-O `seed_db.py` cria:
+Para instalar as dependencias de desenvolvimento:
 
-- 1 conta `SUPER_ADMIN`
-- 1 conta `ADMIN`
-- 6 jogadores
-- 3 times
-- 2 campeonatos
-- 1 partida
+```bash
+pip install -r requirements-dev.txt
+```
 
-Isso deixa uma base pronta para demonstrar:
+Para executar os testes:
 
-- criacao de `ADMIN` por convite
-- primeiro acesso com troca obrigatoria de senha
-- isolamento por organizador
-- acesso restrito de `PLAYER`
+```bash
+pytest
+```
 
-## Seguranca Aplicada
+## Conclusao
 
-- validacao de role no backend
-- filtros por `admin_id`
-- troca obrigatoria de senha no primeiro acesso do `ADMIN`
-- senha criptografada com `bcrypt`
-- restricao de visibilidade para `PLAYER`
+O FPS Arena representa um sistema completo para gestao de campeonatos de e-Sports. O trabalho aplica conceitos de desenvolvimento web, arquitetura em camadas, banco de dados NoSQL, cache, autenticacao, autorizacao e organizacao de regras de negocio.
 
-## Observacao
-
-Se houver dados legados no banco, a aplicacao executa uma migracao automatica basica para adaptar usuarios, campeonatos e relacionamentos ao novo modelo.
+Com esse projeto, e possivel demonstrar uma aplicacao pratica, com perfis de usuario bem definidos e funcionalidades voltadas para uma necessidade real dentro do ambiente competitivo de jogos eletronicos.
