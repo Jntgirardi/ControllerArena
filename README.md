@@ -1,156 +1,58 @@
 # FPS Arena
 
-## Sobre o trabalho
+## Sobre o sistema
 
-O FPS Arena e um sistema web desenvolvido para organizar campeonatos de e-Sports, com foco em jogos de FPS como CS2 e Valorant. O objetivo do trabalho e facilitar a administracao de campeonatos, jogadores, times e partidas em uma plataforma simples, funcional e com controle de acesso por perfil.
+O FPS Arena e uma plataforma web para gestao de campeonatos de e-Sports, com foco em jogos de FPS como CS2 e Valorant.
 
-O projeto foi pensado para resolver um problema comum em competicoes: a falta de uma ferramenta centralizada para cadastrar participantes, montar equipes, acompanhar campeonatos e separar as permissoes de cada tipo de usuario.
+O sistema foi desenvolvido para ajudar organizadores a centralizar o controle de campeonatos, jogadores, times e partidas em um unico ambiente digital.
 
-## Objetivo do sistema
+## Objetivo
 
-O principal objetivo do FPS Arena e permitir que organizadores criem e gerenciem campeonatos de forma segura. Cada usuario acessa apenas as informacoes permitidas pelo seu perfil, evitando que dados de outros organizadores ou jogadores sejam exibidos indevidamente.
+O objetivo do FPS Arena e facilitar a organizacao de competicoes, tornando o processo mais seguro, pratico e organizado para administradores, organizadores e jogadores.
 
-Com isso, o sistema demonstra conceitos importantes de desenvolvimento web, banco de dados, seguranca, controle de acesso e organizacao de regras de negocio.
+Cada usuario acessa apenas as informacoes relacionadas ao seu perfil, mantendo os dados separados e protegidos.
 
-## Funcionalidades principais
+## Funcionalidades
 
-- Login de usuarios com controle de permissao.
 - Cadastro e gerenciamento de campeonatos.
 - Cadastro de jogadores.
 - Cadastro de times.
-- Vinculo entre jogadores, times e campeonatos.
 - Controle de partidas.
+- Visualizacao de ranking.
 - Dashboard com informacoes gerais.
-- Ranking e relatorios.
-- Separacao de acesso entre administrador da plataforma, organizador e jogador.
-- Uso de MongoDB para persistencia dos dados.
-- Uso de Redis para cache quando disponivel.
+- Relatorios para acompanhamento dos campeonatos.
+- Controle de acesso por tipo de usuario.
+- Organizacao dos dados por administrador responsavel.
 
-## Perfis de usuario
+## Perfis de acesso
 
-O sistema possui tres tipos principais de usuario:
+O FPS Arena possui diferentes niveis de acesso para atender cada tipo de usuario.
 
-### SUPER_ADMIN
+### Administrador da plataforma
 
-E o administrador principal da plataforma. Ele pode criar contas de administradores, gerar convite de acesso e visualizar a estrutura geral do sistema.
+Responsavel pelo controle geral do sistema e pela criacao de novos organizadores.
 
-### ADMIN
+### Organizador
 
-E o organizador do campeonato. Ele gerencia seus proprios jogadores, times, campeonatos e partidas. Cada administrador trabalha apenas com os dados do seu proprio contexto.
-
-### PLAYER
-
-E o jogador cadastrado por um administrador. Ele acessa suas informacoes, seu time e os campeonatos nos quais esta envolvido.
-
-## Tecnologias utilizadas
-
-- Python
-- Flask
-- MongoDB
-- PyMongo
-- Redis
-- Jinja2
-- HTML
-- CSS
-- Bootstrap
-- bcrypt
-- pytest
-
-## Estrutura do projeto
-
-```text
-fps_arena/
-|-- app.py
-|-- seed_db.py
-|-- run_local.py
-|-- requirements.txt
-|-- requirements-dev.txt
-|-- app/
-|   |-- application/
-|   |-- domain/
-|   |-- infrastructure/
-|   |-- interfaces/
-|   `-- factory.py
-|-- templates/
-|-- tests/
-`-- docs/
-```
-
-## Banco de dados e cache
-
-O sistema utiliza MongoDB como banco de dados principal. Nele ficam armazenados usuarios, jogadores, times, campeonatos e partidas.
-
-O Redis e utilizado como cache para melhorar o desempenho em consultas que podem ser reaproveitadas, como ranking. Caso o Redis nao esteja ativo, o sistema continua funcionando sem cache.
-
-## Como executar o projeto
-
-Antes de iniciar, e necessario ter o Python instalado e o MongoDB em execucao. O Redis e recomendado, mas opcional.
-
-Instale as dependencias:
-
-```bash
-pip install -r requirements.txt
-```
-
-Crie a base inicial de teste:
-
-```bash
-python seed_db.py
-```
-
-Inicie o sistema:
-
-```bash
-python app.py
-```
-
-Depois, acesse no navegador:
-
-```text
-http://localhost:5000
-```
-
-No Windows, tambem e possivel executar com:
-
-```powershell
-.\start_windows.ps1 -Install -Seed
-```
-
-## Usuarios de teste
-
-A seed do projeto cria usuarios e dados iniciais para demonstracao.
-
-### Super administrador
-
-- Login: `superadmin`
-- Senha: `super123`
-
-### Administrador
-
-- Login: `arena.demo`
-- Senha inicial: `admin123`
+Responsavel por criar e gerenciar seus campeonatos, jogadores, times e partidas.
 
 ### Jogador
 
-- Login: `carlos_snipe`
-- Senha: `jogador1`
+Usuario que acessa suas informacoes, seu time e os campeonatos nos quais esta participando.
 
-## Testes
+## Beneficios
 
-Para instalar as dependencias de desenvolvimento:
+- Centraliza a gestao dos campeonatos.
+- Reduz erros de organizacao manual.
+- Facilita o acompanhamento de jogadores e times.
+- Melhora a visualizacao das informacoes da competicao.
+- Permite separar permissoes de acordo com cada perfil.
+- Torna a administracao de eventos de e-Sports mais simples e profissional.
 
-```bash
-pip install -r requirements-dev.txt
-```
+## Tecnologias
 
-Para executar os testes:
-
-```bash
-pytest
-```
+O sistema foi construido como uma aplicacao web, utilizando tecnologias modernas para interface, backend, banco de dados e controle de acesso.
 
 ## Conclusao
 
-O FPS Arena representa um sistema completo para gestao de campeonatos de e-Sports. O trabalho aplica conceitos de desenvolvimento web, arquitetura em camadas, banco de dados NoSQL, cache, autenticacao, autorizacao e organizacao de regras de negocio.
-
-Com esse projeto, e possivel demonstrar uma aplicacao pratica, com perfis de usuario bem definidos e funcionalidades voltadas para uma necessidade real dentro do ambiente competitivo de jogos eletronicos.
+O FPS Arena apresenta uma solucao completa para apoiar a organizacao de campeonatos de e-Sports. A plataforma oferece recursos essenciais para cadastrar participantes, montar times, gerenciar competicoes e acompanhar os resultados de forma clara e organizada.
