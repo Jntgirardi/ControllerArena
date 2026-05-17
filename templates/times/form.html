@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Editar' if acao == 'editar' else 'Novo' }} Time – FPS Arena{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center mb-3">
+  <a href="{{ url_for('listar_times') }}" class="btn btn-outline-secondary btn-sm me-3">← Voltar</a>
+  <h4 class="mb-0 page-title">{{ 'Editar Time' if acao == 'editar' else 'Criar Time' }}</h4>
+  {% if acao == 'editar' and time %}
+    <span class="badge bg-secondary ms-2">{{ time.tag }}</span>
+  {% endif %}
+</div>
+
+<div class="card" style="max-width:620px">
+  <div class="card-body">
+    <form method="post">
+      <div class="row g-3 mb-3">
+        <div class="col-8">
+          <label class="form-label">Nome do Time *</label>
+          <input type="text" name="nome" class="form-control"
+                 value="{{ dados.get('nome', '') }}" required>
+        </div>
+        <div class="col-4">
+          <label class="form-label">TAG *</label>
+          <input type="text" name="tag" class="form-control" maxlength="5"
+                 value="{{ dados.get('tag', '') }}" required placeholder="SHD"
+                 style="text-transform:uppercase">
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Jogo *</label>
+        <select name="jogo" class="form-select" required>
+          <option value="">Selecione...</option>
+          <option value="CS2"     {% if dados.get('jogo') == 'CS2'     %}selected{% endif %}>CS2</option>
+          <option value="Valorant"{% if dados.get('jogo') == 'Valorant'%}selected{% endif %}>Valorant</option>
+        </select>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Selecione os Jogadores *</label>
+        <div class="border rounded p-2" style="max-height:300px; overflow-y:auto; background:var(--bg-card-hd);">
+          {% for j in todos_jogadores %}
+          {% set jid = j._id|string %}
+          <div class="border rounded p-2 mb-2" style="background:var(--bg-card)">
+            <div class="form-check mb-1">
+              <input class="form-check-input" type="checkbox"
+                     name="jogadores_ids" value="{{ jid }}"
+                     id="j_{{ jid }}"
+                     {% if ids_atuais is defined and jid in ids_atuais %}checked{% endif %}>
+              <label class="form-check-label" for="j_{{ jid }}" style="color:var(--text-main)">
+                <strong>{{ j.nick }}</strong>
+                <span class="badge ms-1 {{ 'badge-cs2' if j.jogo_principal == 'CS2' else 'badge-valorant' }}">
+                  {{ j.jogo_principal }}
+                </span>
+              </label>
+            </div>
+            <div class="ps-4">
+              <input type="text" name="funcao_{{ jid }}"
+                     class="form-control form-control-sm"
+                     placeholder="Função (IGL, AWPer, Entry...)"
+                     value="{{ funcoes_atuais[jid] if funcoes_atuais is defined and jid in funcoes_atuais else '' }}"
+                     style="max-width:220px">
+            </div>
+          </div>
+          {% else %}
+          <p class="text-muted small mb-0">Nenhum jogador cadastrado.</p>
+          {% endfor %}
+        </div>
+        <small class="text-muted">Marque os jogadores que fazem parte deste time.</small>
+      </div>
+
+      <div class="d-grid gap-2 d-sm-flex mt-3">
+        <button type="submit" class="btn btn-primary flex-fill">
+          <i class="bi bi-{{ 'floppy' if acao == 'editar' else 'plus-lg' }}"></i>
+          {{ 'Salvar Alterações' if acao == 'editar' else 'Criar Time' }}
+        </button>
+        <a href="{{ url_for('listar_times') }}" class="btn btn-outline-secondary">Cancelar</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}FPS Arena{% endblock %}</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+  <style>
+    :root {
+      --bg-main: #eef2f7;
+      --bg-sidebar: #0d2137;
+      --bg-card: #ffffff;
+      --bg-card-hd: #f1f5f9;
+      --border: #d0d7de;
+      --text-main: #1a1a2e;
+      --text-muted: #57606a;
+      --text-sidebar: #c9d8ea;
+      --accent: #1e64aa;
+      --accent-lt: #4ea8f5;
+      --nav-hover: rgba(255,255,255,.10);
+      --nav-active: rgba(255,255,255,.20);
+      --table-hover: #f6f8fa;
+      --badge-cs2: #e67e22;
+      --badge-val: #e74c3c;
+    }
+    body { margin: 0; background: var(--bg-main); color: var(--text-main); font-family: "Segoe UI", system-ui, sans-serif; min-height: 100vh; }
+    .layout { display: flex; min-height: 100vh; }
+    .sidebar { width: 230px; min-width: 230px; background: var(--bg-sidebar); display: flex; flex-direction: column; }
+    .sidebar-brand { color: #fff; font-weight: 800; font-size: 1.2rem; padding: 20px; display: flex; align-items: center; gap: 10px; text-decoration: none; border-bottom: 1px solid rgba(255,255,255,.08); }
+    .sidebar .nav { padding: 8px 0; flex: 1; }
+    .sidebar .nav-link { color: var(--text-sidebar); border-radius: 8px; margin: 2px 10px; padding: 9px 14px; display: flex; align-items: center; gap: 10px; }
+    .sidebar .nav-link:hover { background: var(--nav-hover); color: #fff; }
+    .sidebar .nav-link.active { background: var(--nav-active); color: #fff; font-weight: 600; }
+    .sidebar-section { color: rgba(255,255,255,.32); font-size: .67rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; padding: 14px 22px 4px; }
+    .sidebar-footer { padding: 14px; border-top: 1px solid rgba(255,255,255,.08); }
+    .topbar { display: none; align-items: center; gap: 12px; background: var(--bg-sidebar); padding: 11px 16px; color: #fff; }
+    .hamburger { background: none; border: none; color: #fff; font-size: 1.55rem; }
+    .main-content { flex: 1; min-width: 0; }
+    .page-body { padding: 28px 32px; }
+    .card { background: var(--bg-card); border: 1px solid var(--border); }
+    .card-header { background: var(--bg-card-hd); border-bottom: 1px solid var(--border); color: var(--text-main); font-weight: 600; }
+    .table thead th { background: var(--bg-card-hd); color: var(--accent); font-size: .78rem; text-transform: uppercase; }
+    .table tbody tr:hover td { background: var(--table-hover); }
+    .form-control:focus, .form-select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(30,100,170,.15); }
+    .btn-primary { background: var(--accent); border-color: var(--accent); }
+    .badge-cs2 { background: var(--badge-cs2) !important; }
+    .badge-valorant { background: var(--badge-val) !important; }
+    .text-muted { color: var(--text-muted) !important; }
+    @media (max-width: 991px) {
+      .layout { display: block; }
+      .sidebar { width: 100%; min-width: 100%; }
+      .topbar { display: flex; }
+      .page-body { padding: 20px 16px; }
+    }
+  </style>
+</head>
+<body>
+{% if session.user_id %}
+<div class="topbar">
+  <button class="hamburger" type="button">
+    <i class="bi bi-controller"></i>
+  </button>
+  <strong>FPS Arena</strong>
+</div>
+{% endif %}
+
+<div class="layout">
+  {% if session.user_id %}
+  <nav class="sidebar">
+    <a class="sidebar-brand" href="{{ url_for('dashboard') }}">
+      <i class="bi bi-controller"></i> FPS Arena
+    </a>
+    <ul class="nav flex-column">
+      {% if session.role in ('SUPER_ADMIN', 'ADMIN') %}
+      <li><a class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
+      {% endif %}
+      {% if session.role == 'ADMIN' %}
+      <li><a class="nav-link {% if request.endpoint in ('listar_jogadores','novo_jogador','ver_jogador','editar_jogador') %}active{% endif %}" href="{{ url_for('listar_jogadores') }}"><i class="bi bi-person-badge"></i> Jogadores</a></li>
+      <li><a class="nav-link {% if request.endpoint in ('listar_times','novo_time','editar_time') %}active{% endif %}" href="{{ url_for('listar_times') }}"><i class="bi bi-people-fill"></i> Times</a></li>
+      {% endif %}
+      <li><a class="nav-link {% if request.endpoint and 'campeonato' in request.endpoint %}active{% endif %}" href="{{ url_for('listar_campeonatos') }}"><i class="bi bi-trophy-fill"></i> Campeonatos</a></li>
+      <li><a class="nav-link {% if request.endpoint == 'ranking' %}active{% endif %}" href="{{ url_for('ranking') }}"><i class="bi bi-bar-chart-fill"></i> Ranking</a></li>
+      {% if session.role == 'PLAYER' %}
+      <li><div class="sidebar-section">Minha Conta</div></li>
+      <li><a class="nav-link {% if request.endpoint in ('meu_perfil', 'meu_time') %}active{% endif %}" href="{{ url_for('meu_perfil') }}"><i class="bi bi-person-circle"></i> Meu Perfil</a></li>
+      {% endif %}
+      {% if session.role in ('SUPER_ADMIN', 'ADMIN') %}
+      <li><div class="sidebar-section">Administracao</div></li>
+      {% if session.role == 'SUPER_ADMIN' %}
+      <li><a class="nav-link {% if request.endpoint and 'usuario' in request.endpoint %}active{% endif %}" href="{{ url_for('listar_usuarios') }}"><i class="bi bi-shield-lock"></i> Admins</a></li>
+      {% endif %}
+      <li><a class="nav-link {% if request.endpoint == 'relatorios' %}active{% endif %}" href="{{ url_for('relatorios') }}"><i class="bi bi-file-earmark-bar-graph"></i> Relatorios</a></li>
+      {% endif %}
+    </ul>
+    <div class="sidebar-footer">
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <i class="bi bi-person-circle" style="color:var(--accent-lt)"></i>
+        <span class="small text-white">{{ session.nome or session.login }}</span>
+        <span class="badge bg-secondary">{{ session.role }}</span>
+        <a href="{{ url_for('logout') }}" class="btn btn-sm btn-outline-danger">Sair</a>
+      </div>
+    </div>
+  </nav>
+  {% endif %}
+
+  <div class="main-content">
+    <div class="page-body">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+        {% endfor %}
+      {% endwith %}
+      {% block content %}{% endblock %}
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

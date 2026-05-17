@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FPS Arena - Wireframes UX</title>
+  <style>
+    :root {
+      --bg: #08141f;
+      --panel: #102636;
+      --panel-2: #143247;
+      --line: #22465f;
+      --text: #f5fbff;
+      --muted: #a8bccb;
+      --accent: #42e87b;
+      --accent-2: #61d7ff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Arial, sans-serif;
+      background: linear-gradient(180deg, #07111a, #0d1f2e);
+      color: var(--text);
+      padding: 32px;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 36px;
+    }
+    p.lead {
+      margin: 0 0 28px;
+      color: var(--muted);
+      max-width: 920px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(320px, 1fr));
+      gap: 24px;
+    }
+    .screen {
+      background: rgba(16, 38, 54, 0.95);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 18px;
+      min-height: 420px;
+      box-shadow: 0 14px 40px rgba(0, 0, 0, 0.25);
+    }
+    .bar {
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      height: 44px;
+      margin-bottom: 18px;
+      padding: 10px 14px;
+      font-weight: 700;
+      color: var(--accent);
+    }
+    .columns {
+      display: grid;
+      grid-template-columns: 88px 1fr;
+      gap: 14px;
+      height: calc(100% - 62px);
+    }
+    .sidebar, .main-card, .block, .table-row, .match, .rank-row {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(8, 20, 31, 0.7);
+    }
+    .sidebar {
+      padding: 12px;
+      display: grid;
+      gap: 10px;
+      align-content: start;
+    }
+    .sidebar div, .chip {
+      height: 22px;
+      border-radius: 8px;
+      background: rgba(97, 215, 255, 0.12);
+    }
+    .main {
+      display: grid;
+      gap: 12px;
+      align-content: start;
+    }
+    .main-card {
+      height: 54px;
+      padding: 12px;
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+    .block {
+      height: 72px;
+      padding: 12px;
+    }
+    .table {
+      display: grid;
+      gap: 8px;
+    }
+    .table-row {
+      height: 30px;
+    }
+    .matches {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      align-items: center;
+      min-height: 250px;
+    }
+    .match-col {
+      display: grid;
+      gap: 16px;
+    }
+    .match {
+      height: 48px;
+    }
+    .ranking {
+      display: grid;
+      gap: 10px;
+    }
+    .rank-row {
+      height: 34px;
+    }
+    .footer {
+      margin-top: 26px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    @media (max-width: 900px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>FPS Arena - Wireframes</h1>
+  <p class="lead">Conjunto de wireframes para apresentação do TDE, focando nas telas centrais do produto: dashboard, gestão de campeonato, partidas e ranking.</p>
+
+  <div class="grid">
+    <section class="screen">
+      <div class="bar">Dashboard do Campeonato</div>
+      <div class="columns">
+        <div class="sidebar">
+          <div></div><div></div><div></div><div></div><div></div>
+        </div>
+        <div class="main">
+          <div class="main-card"></div>
+          <div class="stats">
+            <div class="block"></div>
+            <div class="block"></div>
+            <div class="block"></div>
+            <div class="block"></div>
+          </div>
+          <div class="block" style="height: 132px;"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen">
+      <div class="bar">Gestão de Campeonato</div>
+      <div class="main" style="height: calc(100% - 62px);">
+        <div class="main-card"></div>
+        <div class="main-card"></div>
+        <div class="table">
+          <div class="table-row"></div>
+          <div class="table-row"></div>
+          <div class="table-row"></div>
+          <div class="table-row"></div>
+          <div class="table-row"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen">
+      <div class="bar">Partidas e Confrontos</div>
+      <div class="matches">
+        <div class="match-col">
+          <div class="match"></div>
+          <div class="match"></div>
+          <div class="match"></div>
+        </div>
+        <div class="match-col">
+          <div class="match"></div>
+          <div class="match"></div>
+        </div>
+        <div class="match-col">
+          <div class="match"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen">
+      <div class="bar">Ranking Geral</div>
+      <div class="main" style="height: calc(100% - 62px);">
+        <div class="main-card"></div>
+        <div class="ranking">
+          <div class="rank-row"></div>
+          <div class="rank-row"></div>
+          <div class="rank-row"></div>
+          <div class="rank-row"></div>
+          <div class="rank-row"></div>
+          <div class="rank-row"></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="footer">Sugestão de uso: abrir este arquivo no navegador e tirar screenshots para a apresentação da Etapa 1.</div>
+</body>
+</html>

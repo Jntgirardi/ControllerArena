@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Admins - FPS Arena{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+  <h4 class="mb-0 page-title">Contas administrativas</h4>
+  <a href="{{ url_for('novo_usuario') }}" class="btn btn-primary btn-sm">
+    <i class="bi bi-plus-lg"></i> Novo ADMIN
+  </a>
+</div>
+
+<div class="card">
+  <div class="card-body p-0">
+    <table class="table mb-0">
+      <thead>
+        <tr>
+          <th>Login</th>
+          <th>Role</th>
+          <th>Empresa</th>
+          <th>Criado em</th>
+          <th class="text-end">Acoes</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in usuarios %}
+        <tr>
+          <td>
+            <div class="fw-bold">{{ u.login }}</div>
+            <small class="text-muted">{{ u.nome }}</small>
+          </td>
+          <td><span class="badge bg-secondary">{{ u.role }}</span></td>
+          <td>{{ u.get('nome_empresa', '-') }}</td>
+          <td class="small text-muted">{{ u.criado_em.strftime('%d/%m/%Y') if u.criado_em else '-' }}</td>
+          <td class="text-end">
+            {% if u._id|string == session.user_id %}
+              <span class="badge bg-dark">Voce</span>
+            {% else %}
+              <form method="post" action="{{ url_for('remover_usuario', user_id=u._id) }}" class="d-inline" onsubmit="return confirm('Remover {{ u.login }}?')">
+                <button type="submit" class="btn btn-sm btn-outline-danger">Remover</button>
+              </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

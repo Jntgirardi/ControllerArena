@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Novo Campeonato – FPS Arena{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center mb-3">
+  <a href="{{ url_for('listar_campeonatos') }}" class="btn btn-outline-secondary btn-sm me-3">← Voltar</a>
+  <h4 class="mb-0 page-title">Criar Campeonato</h4>
+</div>
+<div class="card" style="max-width:600px">
+  <div class="card-body">
+    <form method="post">
+      <div class="mb-3">
+        <label class="form-label">Nome *</label>
+        <input type="text" name="nome" class="form-control" value="{{ dados.get('nome','') }}" required>
+      </div>
+      <div class="row g-3 mb-3">
+        <div class="col-6">
+          <label class="form-label">Jogo *</label>
+          <select name="jogo" class="form-select" required>
+            <option value="CS2">CS2</option>
+            <option value="Valorant">Valorant</option>
+          </select>
+        </div>
+        <div class="col-6">
+          <label class="form-label">Formato *</label>
+          <select name="formato" class="form-select" required>
+            <option value="mata-mata">Mata-mata</option>
+            <option value="grupos">Grupos</option>
+          </select>
+        </div>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Máx. de Times *</label>
+        <input type="number" name="max_times" class="form-control" value="{{ dados.get('max_times', 8) }}" min="2" required>
+      </div>
+      <div class="row g-3 mb-3">
+        <div class="col-6">
+          <label class="form-label">Data Início *</label>
+          <input type="date" name="data_inicio" class="form-control" value="{{ dados.get('data_inicio','') }}" required>
+        </div>
+        <div class="col-6">
+          <label class="form-label">Data Fim *</label>
+          <input type="date" name="data_fim" class="form-control" value="{{ dados.get('data_fim','') }}" required>
+        </div>
+      </div>
+      <hr class="border-secondary">
+      <label class="form-label">Premiação</label>
+      <div class="row g-2 mb-3">
+        <div class="col-4"><input type="text" name="premio_1" class="form-control" placeholder="1º lugar" value="{{ dados.get('premio_1','') }}"></div>
+        <div class="col-4"><input type="text" name="premio_2" class="form-control" placeholder="2º lugar" value="{{ dados.get('premio_2','') }}"></div>
+        <div class="col-4"><input type="text" name="premio_3" class="form-control" placeholder="3º lugar" value="{{ dados.get('premio_3','') }}"></div>
+      </div>
+      <button type="submit" class="btn btn-primary w-100">Criar Campeonato</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

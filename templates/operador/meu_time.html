@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Meu Time – FPS Arena{% endblock %}
+{% block content %}
+
+<div class="d-flex align-items-center mb-4 gap-3">
+  <a href="{{ url_for('meu_perfil') }}" class="btn btn-outline-secondary btn-sm">← Voltar</a>
+  <h4 class="mb-0 page-title"><i class="bi bi-people-fill me-2"></i>Meu Time</h4>
+</div>
+
+<div class="card mb-4" style="max-width:640px">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span>
+      <i class="bi bi-shield-fill me-1" style="color:var(--accent)"></i>
+      <strong>{{ time.nome }}</strong>
+      <span class="badge bg-secondary ms-1" style="font-size:.7rem">{{ time.tag }}</span>
+    </span>
+    <span class="badge {{ 'badge-cs2' if time.jogo == 'CS2' else 'badge-valorant' }}">
+      {{ time.jogo }}
+    </span>
+  </div>
+  <div class="card-body p-0">
+    {% if time.get('jogadores') %}
+    <table class="table mb-0">
+      <thead>
+        <tr>
+          <th>Nick</th>
+          <th>Nome Real</th>
+          <th>Função</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for membro in time.jogadores %}
+        <tr {% if membro.jogador_id == jogador._id %}style="background:rgba(var(--accent-rgb, 0,120,200),.07)"{% endif %}>
+          <td>
+            <span class="fw-semibold">{{ membro.nick }}</span>
+            {% if membro.jogador_id == jogador._id %}
+              <span class="badge bg-primary ms-1" style="font-size:.6rem">Você</span>
+            {% endif %}
+          </td>
+          <td class="text-muted small">{{ membro.get('nome_real', '—') }}</td>
+          <td class="text-muted small">{{ membro.get('funcao', '—') }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="p-4 text-center text-muted">
+      <i class="bi bi-people d-block mb-2" style="font-size:1.5rem"></i>
+      Nenhum membro cadastrado neste time.
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

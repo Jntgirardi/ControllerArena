@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Times – FPS Arena{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="mb-0" style="color:var(--text-main)">Times</h4>
+  {% if session.role == 'ADMIN' %}
+  <a href="{{ url_for('novo_time') }}" class="btn btn-primary btn-sm">
+    <i class="bi bi-plus-lg"></i> Novo Time
+  </a>
+  {% endif %}
+</div>
+
+{% if times %}
+<div class="row g-3">
+  {% for t in times %}
+  <div class="col-md-4">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <div>
+          <strong>{{ t.nome }}</strong>
+          <span class="badge bg-secondary ms-1">{{ t.tag }}</span>
+        </div>
+        <span class="badge {{ 'badge-cs2' if t.jogo == 'CS2' else 'badge-valorant' }}">{{ t.jogo }}</span>
+      </div>
+      <div class="card-body">
+        <p class="small text-muted mb-2">
+          <i class="bi bi-people-fill me-1"></i>{{ t.jogadores|length }} jogador(es)
+        </p>
+        <ul class="list-unstyled mb-0">
+          {% for j in t.jogadores %}
+          <li class="small mb-1">
+            <i class="bi bi-person-fill me-1" style="color:var(--accent)"></i>
+            <strong>{{ j.nick }}</strong>
+            <span class="text-muted">({{ j.funcao }})</span>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% if session.role == 'ADMIN' %}
+      <div class="card-footer d-flex gap-2">
+        <a href="{{ url_for('editar_time', time_id=t._id) }}"
+           class="btn btn-sm btn-outline-warning flex-fill">
+          <i class="bi bi-pencil-fill"></i> Editar
+        </a>
+        <form method="post" action="{{ url_for('remover_time', time_id=t._id) }}"
+              class="flex-fill"
+              onsubmit="return confirm('Remover {{ t.nome }} e desvincular jogadores?')">
+          <button type="submit" class="btn btn-sm btn-outline-danger w-100">
+            <i class="bi bi-trash-fill"></i> Remover
+          </button>
+        </form>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card p-5 text-center text-muted">
+  <i class="bi bi-people display-4 mb-3"></i>
+  <p class="mb-2">Nenhum time cadastrado ainda.</p>
+  {% if session.role == 'ADMIN' %}
+  <a href="{{ url_for('novo_time') }}" class="btn btn-primary btn-sm mx-auto" style="max-width:160px">
+    Criar primeiro time
+  </a>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

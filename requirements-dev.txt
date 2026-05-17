@@ -1,0 +1,4 @@
+-r requirements.txt
+fakeredis>=2.35.0
+mongomock>=4.3.0
+pytest>=8.0.0

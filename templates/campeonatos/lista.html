@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Campeonatos - FPS Arena{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="mb-0 page-title">Campeonatos</h4>
+  {% if session.role == 'ADMIN' %}
+  <a href="{{ url_for('novo_campeonato') }}" class="btn btn-primary btn-sm">Novo Campeonato</a>
+  {% endif %}
+</div>
+<form class="row g-2 mb-3">
+  <div class="col-md-3">
+    <select name="status" class="form-select form-select-sm">
+      <option value="">Todos os status</option>
+      <option value="INSCRICAO" {% if filtro_status == 'INSCRICAO' %}selected{% endif %}>Inscricao</option>
+      <option value="EM_ANDAMENTO" {% if filtro_status == 'EM_ANDAMENTO' %}selected{% endif %}>Em andamento</option>
+      <option value="FINALIZADO" {% if filtro_status == 'FINALIZADO' %}selected{% endif %}>Finalizado</option>
+    </select>
+  </div>
+  <div class="col-md-3">
+    <select name="jogo" class="form-select form-select-sm">
+      <option value="">Todos os jogos</option>
+      <option value="CS2" {% if filtro_jogo == 'CS2' %}selected{% endif %}>CS2</option>
+      <option value="Valorant" {% if filtro_jogo == 'Valorant' %}selected{% endif %}>Valorant</option>
+    </select>
+  </div>
+  <div class="col-md-2">
+    <button type="submit" class="btn btn-secondary btn-sm w-100">Filtrar</button>
+  </div>
+</form>
+<div class="row g-3">
+  {% for c in campeonatos %}
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between">
+        <strong>{{ c.nome }}</strong>
+        <span class="badge {{ 'badge-cs2' if c.jogo == 'CS2' else 'badge-valorant' }}">{{ c.jogo }}</span>
+      </div>
+      <div class="card-body">
+        <div class="mb-2"><span class="badge bg-secondary">{{ c.status }}</span></div>
+        <div class="small text-muted">Formato: {{ c.formato }}</div>
+        <div class="small text-muted">Times: {{ c.times_inscritos|length }} / {{ c.max_times }}</div>
+        <div class="small text-muted">{{ c.datas.inicio.strftime('%d/%m/%Y') }} ate {{ c.datas.fim.strftime('%d/%m/%Y') }}</div>
+      </div>
+      <div class="card-footer">
+        <a href="{{ url_for('ver_campeonato', camp_id=c._id) }}" class="btn btn-sm btn-outline-info w-100">Ver detalhes</a>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="col-12 text-muted text-center py-4">Nenhum campeonato encontrado.</div>
+  {% endfor %}
+</div>
+{% endblock %}

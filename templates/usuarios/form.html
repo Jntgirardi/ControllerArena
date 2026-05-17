@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Novo ADMIN - FPS Arena{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center mb-3">
+  <a href="{{ url_for('listar_usuarios') }}" class="btn btn-outline-secondary btn-sm me-3">Voltar</a>
+  <h4 class="mb-0 page-title">Criar ADMIN por convite</h4>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-5">
+    <div class="card">
+      <div class="card-body">
+        <form method="post">
+          <div class="mb-3">
+            <label class="form-label">Nome do responsavel</label>
+            <input type="text" name="nome" class="form-control" value="{{ dados.get('nome', '') }}" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Login</label>
+            <input type="text" name="login" class="form-control" value="{{ dados.get('login', '') }}" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Empresa / organizador</label>
+            <input type="text" name="nome_empresa" class="form-control" value="{{ dados.get('nome_empresa', '') }}" required>
+          </div>
+          <div class="mb-4">
+            <label class="form-label">Expira em</label>
+            <input type="date" name="expira_em" class="form-control" value="{{ dados.get('expira_em', '') }}">
+          </div>
+          <button type="submit" class="btn btn-primary w-100">Gerar credenciais</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  {% if credenciais %}
+  <div class="col-lg-7">
+    <div class="card border-success">
+      <div class="card-header">Credenciais geradas</div>
+      <div class="card-body">
+        <div class="mb-2"><strong>Codigo de acesso:</strong> <code>{{ credenciais.codigo_acesso }}</code></div>
+        <div class="mb-2"><strong>Senha inicial:</strong> <code>{{ credenciais.senha_inicial }}</code></div>
+        <div class="text-muted small">Esses dados sao exibidos apenas agora. No primeiro login o ADMIN sera obrigado a trocar a senha.</div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

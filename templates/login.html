@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FPS Arena - Login</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <style>
+    body { background: #0f1117; display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 16px; }
+    .login-card { background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 2rem; width: 100%; max-width: 460px; color: #f8f9fa; }
+    .brand { color: #4ea8f5; font-size: 1.8rem; font-weight: 700; text-align: center; margin-bottom: 1.5rem; }
+    .form-control, .form-select { background: #1c2128; border-color: #30363d; color: #e0e0e0; }
+    .form-control:focus, .form-select:focus { background: #1c2128; color: #e0e0e0; border-color: #4ea8f5; box-shadow: 0 0 0 .2rem #4ea8f520; }
+    label, .form-text { color: #adb5bd; }
+  </style>
+</head>
+<body>
+  <div class="login-card">
+    <div class="brand">FPS Arena</div>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }}">{{ message }}</div>
+      {% endfor %}
+    {% endwith %}
+    <form method="post">
+      <div class="mb-3">
+        <label class="form-label">Modo de acesso</label>
+        <select name="modo" class="form-select" id="modoSelect" onchange="updateLabel()">
+          <option value="login">Login normal</option>
+          <option value="access_code">Primeiro acesso ADMIN</option>
+        </select>
+      </div>
+      <div class="mb-3">
+        <label class="form-label" id="identificadorLabel">Login</label>
+        <input type="text" name="identificador" class="form-control" required autofocus>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Senha</label>
+        <input type="password" name="senha" class="form-control" required>
+      </div>
+      <div class="form-text mb-4">Admins convidados entram com codigo + senha inicial no primeiro acesso. Depois usam login + senha normalmente.</div>
+      <button type="submit" class="btn btn-primary w-100">Entrar</button>
+    </form>
+  </div>
+  <script>
+    function updateLabel() {
+      const mode = document.getElementById("modoSelect").value;
+      document.getElementById("identificadorLabel").textContent = mode === "access_code" ? "Codigo de acesso" : "Login";
+    }
+    updateLabel();
+  </script>
+</body>
+</html>

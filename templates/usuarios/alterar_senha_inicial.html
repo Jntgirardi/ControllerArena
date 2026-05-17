@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Alterar Senha - FPS Arena{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-5">
+    <div class="card">
+      <div class="card-header">Definir nova senha</div>
+      <div class="card-body">
+        <p class="text-muted">Seu primeiro acesso foi validado. Antes de continuar, defina uma senha definitiva.</p>
+        <form method="post">
+          <div class="mb-3">
+            <label class="form-label">Nova senha</label>
+            <input type="password" name="nova_senha" class="form-control" minlength="6" required>
+          </div>
+          <div class="mb-4">
+            <label class="form-label">Confirmar nova senha</label>
+            <input type="password" name="confirmacao_senha" class="form-control" minlength="6" required>
+          </div>
+          <button type="submit" class="btn btn-primary w-100">Salvar nova senha</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

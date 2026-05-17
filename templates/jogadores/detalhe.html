@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}{{ jogador.nick }} - FPS Arena{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center gap-2 mb-4 flex-wrap">
+  <a href="{{ url_for('listar_jogadores') }}" class="btn btn-outline-secondary btn-sm">Voltar</a>
+  <h4 class="mb-0">{{ jogador.nick }}</h4>
+  <span class="badge {{ 'badge-cs2' if jogador.jogo_principal == 'CS2' else 'badge-valorant' }}">{{ jogador.jogo_principal }}</span>
+  {% if session.role == 'ADMIN' %}
+  <div class="ms-auto d-flex gap-2">
+    <a href="{{ url_for('editar_jogador', jogador_id=jogador._id) }}" class="btn btn-warning btn-sm">Editar</a>
+    <form method="post" action="{{ url_for('remover_jogador', jogador_id=jogador._id) }}" onsubmit="return confirm('Remover {{ jogador.nick }}?')">
+      <button type="submit" class="btn btn-danger btn-sm">Remover</button>
+    </form>
+  </div>
+  {% endif %}
+</div>
+
+<div class="row g-3">
+  <div class="col-md-4">
+    <div class="card h-100">
+      <div class="card-header">Perfil</div>
+      <div class="card-body">
+        <div><strong>Nome:</strong> {{ jogador.nome or jogador.nome_real }}</div>
+        <div><strong>Login:</strong> <code>{{ jogador.login or '-' }}</code></div>
+        <div><strong>Contato:</strong> {{ jogador.contato or '-' }}</div>
+        <div><strong>Campeonato:</strong> {{ jogador.get('campeonato_id') or '-' }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card h-100">
+      <div class="card-header">Time atual</div>
+      <div class="card-body">
+        {% if time %}
+        <div class="fw-bold">{{ time.nome }}</div>
+        <div class="text-muted">{{ time.tag }} - {{ time.jogo }}</div>
+        {% else %}
+        <div class="text-muted">Jogador sem time no momento.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card h-100">
+      <div class="card-header">Estatisticas</div>
+      <div class="card-body">
+        <div><strong>Partidas:</strong> {{ jogador.estatisticas.partidas_jogadas }}</div>
+        <div><strong>Vitorias:</strong> {{ jogador.estatisticas.vitorias }}</div>
+        <div><strong>Derrotas:</strong> {{ jogador.estatisticas.derrotas }}</div>
+        <div><strong>K/D:</strong> {{ "%.2f"|format(jogador.estatisticas.kd_ratio) }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

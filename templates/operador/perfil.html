@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}Meu Perfil - FPS Arena{% endblock %}
+{% block content %}
+<h4 class="mb-4 page-title">Meu Perfil</h4>
+
+{% if not data %}
+<div class="card" style="max-width:520px">
+  <div class="card-body text-center py-5">
+    <h5>Nenhum perfil de jogador vinculado</h5>
+    <p class="text-muted small mb-0">Seu acesso esta ativo, mas o cadastro do jogador ainda nao foi provisionado pelo organizador.</p>
+  </div>
+</div>
+{% else %}
+{% set jogador = data.jogador %}
+{% set time = data.time %}
+{% set camps = data.campeonatos %}
+
+<div class="row g-3 mb-4">
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-header">Dados do jogador</div>
+      <div class="card-body">
+        <h5 class="fw-bold mb-1">{{ jogador.nick }}</h5>
+        <div class="text-muted small mb-3">{{ jogador.nome or jogador.nome_real }}</div>
+        <div><strong>Login:</strong> <code>{{ jogador.login or '-' }}</code></div>
+        <div><strong>Contato:</strong> {{ jogador.contato or '-' }}</div>
+        <div><strong>Jogo:</strong> {{ jogador.jogo_principal }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-header">Estatisticas</div>
+      <div class="card-body">
+        <div><strong>Partidas:</strong> {{ jogador.estatisticas.partidas_jogadas }}</div>
+        <div><strong>Vitorias:</strong> {{ jogador.estatisticas.vitorias }}</div>
+        <div><strong>Derrotas:</strong> {{ jogador.estatisticas.derrotas }}</div>
+        <div><strong>K/D:</strong> {{ "%.2f"|format(jogador.estatisticas.kd_ratio) }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-header">Meu time</div>
+  <div class="card-body">
+    {% if time %}
+      <div class="d-flex align-items-center gap-3">
+        <div>
+          <h5 class="fw-bold mb-0">{{ time.nome }}</h5>
+          <span class="text-muted">{{ time.tag }} - {{ time.jogo }}</span>
+        </div>
+        <a href="{{ url_for('meu_time') }}" class="btn btn-sm btn-outline-primary ms-auto">Ver time</a>
+      </div>
+    {% else %}
+      <p class="text-muted mb-0">Voce ainda nao pertence a nenhum time.</p>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">Campeonatos visiveis</div>
+  <div class="card-body p-0">
+    {% if camps %}
+    <table class="table mb-0">
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>Status</th>
+          <th class="text-end">Detalhes</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in camps %}
+        <tr>
+          <td>{{ c.nome }}</td>
+          <td><span class="badge bg-secondary">{{ c.status }}</span></td>
+          <td class="text-end"><a href="{{ url_for('ver_campeonato', camp_id=c._id) }}" class="btn btn-sm btn-outline-primary">Ver</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="p-4 text-center text-muted">Nenhum campeonato disponivel para sua inscricao atual.</div>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

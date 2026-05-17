@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+{% block title %}{{ camp.nome }} - FPS Arena{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center gap-2 mb-4 flex-wrap">
+  <a href="{{ url_for('listar_campeonatos') }}" class="btn btn-outline-secondary btn-sm">Voltar</a>
+  <h4 class="mb-0 page-title">{{ camp.nome }}</h4>
+  <span class="badge {{ 'badge-cs2' if camp.jogo == 'CS2' else 'badge-valorant' }}">{{ camp.jogo }}</span>
+  <span class="badge bg-secondary">{{ camp.status }}</span>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-3">
+    <div class="card mb-3">
+      <div class="card-header">Informacoes</div>
+      <div class="card-body">
+        <div><strong>Formato:</strong> {{ camp.formato }}</div>
+        <div><strong>Times:</strong> {{ times_inscritos|length }} / {{ camp.max_times }}</div>
+        <div><strong>Inicio:</strong> {{ camp.datas.inicio.strftime('%d/%m/%Y') }}</div>
+        <div><strong>Fim:</strong> {{ camp.datas.fim.strftime('%d/%m/%Y') }}</div>
+      </div>
+    </div>
+
+    {% if session.role == 'ADMIN' %}
+    <div class="card mb-2">
+      <div class="card-header">Alterar status</div>
+      <div class="card-body">
+        <form method="post" action="{{ url_for('atualizar_status_campeonato', camp_id=camp._id) }}">
+          <select name="status" class="form-select form-select-sm mb-2">
+            <option value="INSCRICAO" {% if camp.status == 'INSCRICAO' %}selected{% endif %}>Inscricao</option>
+            <option value="EM_ANDAMENTO" {% if camp.status == 'EM_ANDAMENTO' %}selected{% endif %}>Em andamento</option>
+            <option value="FINALIZADO" {% if camp.status == 'FINALIZADO' %}selected{% endif %}>Finalizado</option>
+          </select>
+          <button type="submit" class="btn btn-sm btn-warning w-100">Atualizar</button>
+        </form>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Times inscritos</span>
+        <span class="badge bg-secondary">{{ times_inscritos|length }}/{{ camp.max_times }}</span>
+      </div>
+      <div class="card-body">
+        {% for t in times_inscritos %}
+        <div class="d-flex align-items-center gap-2 p-2 mb-2 rounded" style="background:var(--bg-card-hd);border:1px solid var(--border)">
+          <span class="badge {{ 'badge-cs2' if t.jogo == 'CS2' else 'badge-valorant' }}">{{ t.tag }}</span>
+          <span class="small fw-bold flex-fill">{{ t.nome }}</span>
+          {% if session.role == 'ADMIN' and camp.status != 'FINALIZADO' %}
+          <form method="post" action="{{ url_for('desinscrever_time', camp_id=camp._id) }}" style="margin:0">
+            <input type="hidden" name="time_id" value="{{ t._id }}">
+            <button type="submit" class="btn btn-sm btn-outline-danger">X</button>
+          </form>
+          {% endif %}
+        </div>
+        {% else %}
+        <div class="text-muted">Nenhum time inscrito ainda.</div>
+        {% endfor %}
+
+        {% if session.role == 'ADMIN' and camp.status == 'INSCRICAO' %}
+        <hr>
+        <form method="post" action="{{ url_for('inscrever_time', camp_id=camp._id) }}">
+          <div class="d-flex gap-2">
+            <select name="time_id" class="form-select form-select-sm" required>
+              <option value="">Selecione...</option>
+              {% set ids_inscritos = times_inscritos | map(attribute='_id') | list %}
+              {% for t in todos_times %}
+              {% if t._id not in ids_inscritos %}
+              <option value="{{ t._id }}">{{ t.nome }} ({{ t.tag }})</option>
+              {% endif %}
+              {% endfor %}
+            </select>
+            <button type="submit" class="btn btn-sm btn-success">Adicionar</button>
+          </div>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-5">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Partidas</span>
+        {% if session.role == 'ADMIN' and camp.status in ('INSCRICAO','EM_ANDAMENTO') %}
+        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="collapse" data-bs-target="#addPartida">Agendar</button>
+        {% endif %}
+      </div>
+      <div class="card-body">
+        {% for p in partidas %}
+        <div class="rounded p-2 mb-2" style="background:var(--bg-card-hd);border:1px solid var(--border)">
+          <div class="d-flex justify-content-between mb-1">
+            <span class="badge bg-secondary">{{ p.fase }}</span>
+            <span class="small text-muted">{{ p.mapa }}</span>
+          </div>
+          <div class="d-flex justify-content-between align-items-center">
+            <span class="small fw-bold">{{ p.time_a.nome }}</span>
+            <span class="badge bg-info text-dark">{{ p.time_a.placar }} x {{ p.time_b.placar }}</span>
+            <span class="small fw-bold">{{ p.time_b.nome }}</span>
+          </div>
+          {% if p.status != 'finalizada' and session.role == 'ADMIN' %}
+          <form method="post" action="{{ url_for('registrar_resultado', partida_id=p._id) }}" class="d-flex gap-1 mt-2">
+            <input type="number" name="placar_a" class="form-control form-control-sm" min="0" required>
+            <input type="number" name="placar_b" class="form-control form-control-sm" min="0" required>
+            <button type="submit" class="btn btn-sm btn-success">Salvar</button>
+          </form>
+          {% endif %}
+        </div>
+        {% else %}
+        <div class="text-muted">Sem partidas agendadas.</div>
+        {% endfor %}
+      </div>
+    </div>
+
+    {% if session.role == 'ADMIN' %}
+    <div class="collapse mt-2" id="addPartida">
+      <div class="card">
+        <div class="card-header">Nova partida</div>
+        <div class="card-body">
+          <form method="post" action="{{ url_for('nova_partida', camp_id=camp._id) }}">
+            <div class="mb-2">
+              <label>Fase</label>
+              <input type="text" name="fase" class="form-control form-control-sm" required>
+            </div>
+            <div class="row g-2 mb-2">
+              <div class="col-6">
+                <label>Time A</label>
+                <select name="time_a_id" class="form-select form-select-sm" required>
+                  <option value="">Selecione...</option>
+                  {% for t in times_inscritos %}
+                  <option value="{{ t._id }}">{{ t.nome }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="col-6">
+                <label>Time B</label>
+                <select name="time_b_id" class="form-select form-select-sm" required>
+                  <option value="">Selecione...</option>
+                  {% for t in times_inscritos %}
+                  <option value="{{ t._id }}">{{ t.nome }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+            <div class="mb-2">
+              <label>Mapa</label>
+              <input type="text" name="mapa" class="form-control form-control-sm">
+            </div>
+            <div class="mb-3">
+              <label>Data e hora</label>
+              <input type="datetime-local" name="data_partida" class="form-control form-control-sm">
+            </div>
+            <button type="submit" class="btn btn-sm btn-primary w-100">Agendar partida</button>
+          </form>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

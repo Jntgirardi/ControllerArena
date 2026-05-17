@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Editar' if acao == 'editar' else 'Novo' }} Jogador - FPS Arena{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center mb-3">
+  <a href="{{ url_for('listar_jogadores') }}" class="btn btn-outline-secondary btn-sm me-3">Voltar</a>
+  <h4 class="mb-0 page-title">{{ 'Editar Jogador' if acao == 'editar' else 'Cadastrar Jogador' }}</h4>
+</div>
+
+<div class="card" style="max-width:720px">
+  <div class="card-body">
+    <form method="post">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label">Nick</label>
+          <input type="text" name="nick" class="form-control" value="{{ dados.get('nick', '') }}" required>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Nome</label>
+          <input type="text" name="nome" class="form-control" value="{{ dados.get('nome', dados.get('nome_real', '')) }}" required>
+        </div>
+        {% if acao != 'editar' %}
+        <div class="col-md-6">
+          <label class="form-label">Login do jogador</label>
+          <input type="text" name="login" class="form-control" value="{{ dados.get('login', '') }}" required>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Senha inicial</label>
+          <input type="password" name="senha" class="form-control" minlength="6" required>
+        </div>
+        {% endif %}
+        <div class="col-md-6">
+          <label class="form-label">Contato</label>
+          <input type="email" name="contato" class="form-control" value="{{ dados.get('contato', '') }}">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Campeonato vinculado</label>
+          <select name="campeonato_id" class="form-select">
+            <option value="">Selecionar depois</option>
+            {% for camp in campeonatos %}
+            <option value="{{ camp._id }}" {% if dados.get('campeonato_id') and dados.get('campeonato_id')|string == camp._id|string %}selected{% endif %}>{{ camp.nome }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Jogo principal</label>
+          <select name="jogo_principal" class="form-select" id="jogoSelect" onchange="toggleCamposJogo()">
+            <option value="CS2" {% if dados.get('jogo_principal') == 'CS2' %}selected{% endif %}>CS2</option>
+            <option value="Valorant" {% if dados.get('jogo_principal') == 'Valorant' %}selected{% endif %}>Valorant</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="campos_cs2" class="mt-3">
+        <label class="form-label">Rank competitivo</label>
+        <select name="rank_competitivo" class="form-select mb-3">
+          {% for r in ['Sem Rank','Silver I','Silver II','Silver III','Silver IV','Silver Elite','Silver Elite Master','Gold Nova I','Gold Nova II','Gold Nova III','Gold Nova Master','Master Guardian I','Master Guardian II','Master Guardian Elite','Distinguished Master Guardian','Legendary Eagle','Legendary Eagle Master','Supreme Master First Class','Global Elite'] %}
+          <option {% if dados.get('rank_competitivo') == r %}selected{% endif %}>{{ r }}</option>
+          {% endfor %}
+        </select>
+        <label class="form-label">Premier Rating</label>
+        <input type="number" name="premier_rating" class="form-control" value="{{ dados.get('premier_rating', 0) }}" min="0">
+      </div>
+
+      <div id="campos_valorant" class="mt-3" style="display:none">
+        <label class="form-label">Rank do ato</label>
+        <select name="rank_ato" class="form-select mb-3">
+          {% for r in ['Sem Rank','Iron 1','Iron 2','Iron 3','Bronze 1','Bronze 2','Bronze 3','Silver 1','Silver 2','Silver 3','Gold 1','Gold 2','Gold 3','Platinum 1','Platinum 2','Platinum 3','Diamond 1','Diamond 2','Diamond 3','Ascendant 1','Ascendant 2','Ascendant 3','Immortal 1','Immortal 2','Immortal 3','Radiant'] %}
+          <option {% if dados.get('rank_ato') == r %}selected{% endif %}>{{ r }}</option>
+          {% endfor %}
+        </select>
+        <label class="form-label">Agente principal</label>
+        <input type="text" name="agente_principal" class="form-control" value="{{ dados.get('agente_principal', '') }}">
+      </div>
+
+      <button type="submit" class="btn btn-primary w-100 mt-4">{{ 'Salvar alteracoes' if acao == 'editar' else 'Cadastrar jogador' }}</button>
+    </form>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function toggleCamposJogo() {
+  const jogo = document.getElementById('jogoSelect').value;
+  document.getElementById('campos_cs2').style.display = jogo === 'CS2' ? '' : 'none';
+  document.getElementById('campos_valorant').style.display = jogo === 'Valorant' ? '' : 'none';
+}
+toggleCamposJogo();
+</script>
+{% endblock %}

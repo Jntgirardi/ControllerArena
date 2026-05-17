@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Ranking – FPS Arena{% endblock %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+  <h4 class="mb-0 page-title">Ranking de Jogadores</h4>
+  <form class="d-flex gap-2">
+    <select name="jogo" class="form-select form-select-sm" style="width:140px">
+      <option value="">Todos os jogos</option>
+      <option value="CS2"      {% if filtro_jogo == 'CS2'     %}selected{% endif %}>CS2</option>
+      <option value="Valorant" {% if filtro_jogo == 'Valorant'%}selected{% endif %}>Valorant</option>
+    </select>
+    <button type="submit" class="btn btn-secondary btn-sm">Filtrar</button>
+  </form>
+</div>
+
+<div class="card">
+  <div class="card-body p-0">
+    <table class="table mb-0">
+      <thead>
+        <tr>
+          <th style="width:50px">#</th>
+          <th>Nick</th>
+          <th>Vitórias</th>
+          <th class="text-end">Detalhes</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for j in jogadores %}
+        <tr>
+          <td class="fw-bold">
+            {% if loop.index == 1 %}🥇
+            {% elif loop.index == 2 %}🥈
+            {% elif loop.index == 3 %}🥉
+            {% else %}<span class="text-muted">{{ loop.index }}</span>
+            {% endif %}
+          </td>
+          <td>
+            <span class="fw-bold">{{ j.nick }}</span>
+            <span class="badge ms-1 {{ 'badge-cs2' if j.jogo_principal == 'CS2' else 'badge-valorant' }}"
+                  style="font-size:.65rem">{{ j.jogo_principal }}</span>
+          </td>
+          <td class="fw-bold text-success">{{ j.estatisticas.vitorias }}</td>
+          <td class="text-end">
+            <a href="{{ url_for('ver_jogador', jogador_id=j._id) }}"
+               class="btn btn-sm btn-outline-primary">
+              <i class="bi bi-eye me-1"></i>Detalhes
+            </a>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="4" class="text-muted text-center py-4">
+            <i class="bi bi-bar-chart d-block mb-1" style="font-size:1.5rem"></i>
+            Sem jogadores no ranking.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
