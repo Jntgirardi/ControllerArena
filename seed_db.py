@@ -1,12 +1,16 @@
 from datetime import UTC, datetime, timedelta
+import os
 from uuid import uuid4
 
 import bcrypt
 from pymongo import MongoClient
 
 
-client = MongoClient("mongodb://localhost:27017/")
-db = client["fps_arena"]
+mongo_uri = os.environ.get("MONGO_URI", "mongodb://localhost:27017/")
+mongo_db_name = os.environ.get("MONGO_DB_NAME", "fps_arena")
+
+client = MongoClient(mongo_uri)
+db = client[mongo_db_name]
 
 
 def utc_now():
