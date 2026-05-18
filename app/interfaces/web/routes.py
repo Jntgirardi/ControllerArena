@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from flask import flash, redirect, render_template, request, session, url_for
+from flask import Response, flash, redirect, render_template, request, session, url_for
 
 from ...application.services import ROLE_ADMIN, ROLE_PLAYER, ROLE_SUPER_ADMIN
 from .common import build_current_user, login_required, roles_required, to_oid
+from .report_exports import build_csv_bytes, build_pdf_bytes
 
 
 def _store_session_user(user):
@@ -16,7 +17,31 @@ def _store_session_user(user):
     session["must_change_password"] = bool(user.get("must_change_password"))
 
 
+def _session_user_for_logs():
+    if "user_id" not in session:
+        return None
+    return {
+        "_id": to_oid(session["user_id"]),
+        "login": session.get("login"),
+        "role": session.get("role"),
+        "admin_id": to_oid(session.get("admin_id")) if session.get("admin_id") else None,
+    }
+
+
 def register_routes(app, services):
+    @app.after_request
+    def register_audit_log(response):
+        if request.endpoint not in {"static"} and session.get("user_id"):
+            user = _session_user_for_logs()
+            services["audit_logs"].record_request(
+                user,
+                request.endpoint or "",
+                request.method,
+                request.path,
+                response.status_code,
+            )
+        return response
+
     @app.route("/")
     def index():
         return redirect(url_for("dashboard") if "user_id" in session else url_for("login"))
@@ -71,28 +96,13 @@ def register_routes(app, services):
     def dashboard():
         current_user = build_current_user()
         if session.get("role") == ROLE_PLAYER:
-            return redirect(url_for("meu_perfil"))
+            player_data = services["player_profile"].get_profile(session["user_id"])
+            return render_template("dashboard.html", active_tab="player-home", player_data=player_data)
         data = services["dashboard"].build_dashboard(current_user)
-        active_tab = request.args.get("tab", "visao-geral").strip()
-        data_ini = request.args.get("data_ini", "").strip()
-        data_fim = request.args.get("data_fim", "").strip()
-        campeonatos = []
-        usuarios = []
-        if active_tab == "relatorios":
-            campeonatos, warning = services["reports"].build_report(current_user, data_ini, data_fim)
-            if warning:
-                flash(warning, "warning")
-        if active_tab == "usuarios" and session.get("role") == ROLE_SUPER_ADMIN:
-            usuarios = services["users"].list_admin_accounts()
         return render_template(
             "dashboard.html",
             stats=data["stats"],
             ultimos_camps=data["ultimos_camps"],
-            usuarios=usuarios,
-            campeonatos=campeonatos,
-            data_ini=data_ini,
-            data_fim=data_fim,
-            active_tab=active_tab,
         )
 
     @app.route("/jogadores", endpoint="listar_jogadores")
@@ -134,16 +144,23 @@ def register_routes(app, services):
         if not oid:
             flash("ID invalido.", "danger")
             return redirect(url_for("listar_jogadores"))
-        if session.get("role") == ROLE_PLAYER:
-            profile = services["player_profile"].get_profile(session["user_id"])
-            if not profile or str(profile["jogador"]["_id"]) != jogador_id:
-                flash("Voce so pode visualizar o proprio jogador.", "danger")
-                return redirect(url_for("meu_perfil"))
         jogador, time = services["players"].get_player_details(current_user, oid)
         if not jogador:
             flash("Jogador nao encontrado.", "warning")
             return redirect(url_for("dashboard"))
-        return render_template("jogadores/detalhe.html", jogador=jogador, time=time)
+        own_player_id = None
+        if session.get("role") == ROLE_PLAYER:
+            profile = services["player_profile"].get_profile(session["user_id"])
+            own_player_id = str((profile or {}).get("jogador", {}).get("_id", ""))
+        is_own_profile = bool(own_player_id and own_player_id == jogador_id)
+        can_view_sensitive = session.get("role") in (ROLE_ADMIN, ROLE_SUPER_ADMIN) or is_own_profile
+        return render_template(
+            "jogadores/detalhe.html",
+            jogador=jogador,
+            time=time,
+            is_own_profile=is_own_profile,
+            can_view_sensitive=can_view_sensitive,
+        )
 
     @app.route("/jogadores/<jogador_id>/editar", methods=["GET", "POST"], endpoint="editar_jogador")
     @login_required
@@ -428,16 +445,26 @@ def register_routes(app, services):
     @login_required
     @roles_required(ROLE_PLAYER)
     def meu_perfil():
-        data = services["player_profile"].get_profile(session["user_id"])
-        return render_template("operador/perfil.html", data=data)
+        return redirect(url_for("dashboard"))
 
     @app.route("/ranking", endpoint="ranking")
     @login_required
     def ranking():
         current_user = build_current_user()
+        player_data = services["player_profile"].get_profile(session["user_id"]) if session.get("role") == ROLE_PLAYER else None
+        player_game = ((player_data or {}).get("jogador") or {}).get("jogo_principal", "")
         jogo = request.args.get("jogo", "").strip()
+        if session.get("role") == ROLE_PLAYER:
+            jogo = player_game
         jogadores = services["ranking"].list_ranking(current_user, jogo)
-        return render_template("ranking.html", jogadores=jogadores, filtro_jogo=jogo)
+        team_ranking = services["ranking"].list_team_ranking(current_user, jogo) if session.get("role") == ROLE_PLAYER and jogo else []
+        return render_template(
+            "ranking.html",
+            jogadores=jogadores,
+            filtro_jogo=jogo,
+            player_game=player_game,
+            team_ranking=team_ranking,
+        )
 
     @app.route("/relatorios", endpoint="relatorios")
     @login_required
@@ -446,10 +473,41 @@ def register_routes(app, services):
         current_user = build_current_user()
         data_ini = request.args.get("data_ini", "").strip()
         data_fim = request.args.get("data_fim", "").strip()
-        campeonatos, warning = services["reports"].build_report(current_user, data_ini, data_fim)
+        reports, warning = services["reports"].list_reports(current_user, data_ini, data_fim)
         if warning:
             flash(warning, "warning")
-        return render_template("relatorios.html", campeonatos=campeonatos, data_ini=data_ini, data_fim=data_fim)
+        return render_template("relatorios.html", reports=reports, data_ini=data_ini, data_fim=data_fim)
+
+    @app.route("/relatorios/export/<report_key>.<file_format>", endpoint="exportar_relatorio")
+    @login_required
+    @roles_required(ROLE_ADMIN, ROLE_SUPER_ADMIN)
+    def exportar_relatorio(report_key, file_format):
+        current_user = build_current_user()
+        data_ini = request.args.get("data_ini", "").strip()
+        data_fim = request.args.get("data_fim", "").strip()
+        report, warning = services["reports"].get_report(current_user, report_key, data_ini, data_fim)
+        if warning:
+            flash(warning, "warning")
+        if not report:
+            flash("Relatorio nao encontrado.", "warning")
+            return redirect(url_for("relatorios"))
+
+        if file_format == "csv":
+            payload = build_csv_bytes(report)
+            mimetype = "text/csv"
+        elif file_format == "pdf":
+            payload = build_pdf_bytes(report)
+            mimetype = "application/pdf"
+        else:
+            flash("Formato de exportacao invalido.", "warning")
+            return redirect(url_for("relatorios"))
+
+        filename = f"{report_key}.{file_format}"
+        return Response(
+            payload,
+            mimetype=mimetype,
+            headers={"Content-Disposition": f"attachment; filename={filename}"},
+        )
 
     @app.route("/usuarios", endpoint="listar_usuarios")
     @login_required

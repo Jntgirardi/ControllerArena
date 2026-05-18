@@ -551,8 +551,9 @@ class MatchService:
 
 
 class RankingService:
-    def __init__(self, player_repo, cache):
+    def __init__(self, player_repo, team_repo, cache):
         self.player_repo = player_repo
+        self.team_repo = team_repo
         self.cache = cache
 
     def _cache_key(self, current_user: dict[str, Any], jogo: str) -> str:
@@ -577,29 +578,438 @@ class RankingService:
         self.cache.set(cache_key, ranking)
         return ranking
 
-
-class ReportService:
-    def __init__(self, championship_repo, match_repo):
-        self.championship_repo = championship_repo
-        self.match_repo = match_repo
-
-    def build_report(self, current_user: dict[str, Any], data_ini: str, data_fim: str) -> tuple[list[dict[str, Any]], str | None]:
+    def list_team_ranking(self, current_user: dict[str, Any], jogo: str):
         filtro = {}
         if current_user["role"] != ROLE_SUPER_ADMIN:
             filtro["admin_id"] = get_scope_admin_id(current_user)
+        if jogo:
+            filtro["jogo"] = jogo
+
+        teams = self.team_repo.list_all(filtro)
+        ranking = []
+        for team in teams:
+            partidas = 0
+            vitorias = 0
+            derrotas = 0
+            jogadores = []
+            for member in team.get("jogadores", []):
+                player = self.player_repo.find_by_id(member.get("jogador_id"))
+                if not player:
+                    continue
+                stats = player.get("estatisticas", {})
+                partidas += int(stats.get("partidas_jogadas", 0) or 0)
+                vitorias += int(stats.get("vitorias", 0) or 0)
+                derrotas += int(stats.get("derrotas", 0) or 0)
+                jogadores.append(player.get("nick", "-"))
+
+            membros_count = max(len(team.get("jogadores", [])), 1)
+            media_vitorias = round(vitorias / membros_count, 1)
+            win_rate = round((vitorias / partidas) * 100, 1) if partidas else 0.0
+            ranking.append(
+                {
+                    "_id": team["_id"],
+                    "nome": team.get("nome", "-"),
+                    "tag": team.get("tag", "-"),
+                    "jogo": team.get("jogo", "-"),
+                    "partidas": partidas,
+                    "vitorias": vitorias,
+                    "derrotas": derrotas,
+                    "media_vitorias": media_vitorias,
+                    "win_rate": win_rate,
+                    "jogadores": jogadores,
+                }
+            )
+
+        ranking.sort(key=lambda team: (-team["vitorias"], -team["win_rate"], team["nome"]))
+        return ranking
+
+
+class AuditLogService:
+    def __init__(self, log_repo):
+        self.log_repo = log_repo
+
+    def record_request(self, user: dict[str, Any], endpoint: str, method: str, path: str, status_code: int) -> None:
+        if not user or not endpoint:
+            return
+        self.log_repo.insert(
+            {
+                "user_id": user.get("_id"),
+                "admin_id": get_scope_admin_id(user),
+                "login": user.get("login", ""),
+                "role": user.get("role", ""),
+                "endpoint": endpoint,
+                "method": method,
+                "path": path,
+                "status_code": status_code,
+                "created_at": datetime.utcnow(),
+            }
+        )
+
+
+class ReportService:
+    SUMMARY_PREVIEW_LIMIT = 5
+
+    def __init__(self, championship_repo, match_repo, player_repo, team_repo, event_repo, ticket_repo, log_repo):
+        self.championship_repo = championship_repo
+        self.match_repo = match_repo
+        self.player_repo = player_repo
+        self.team_repo = team_repo
+        self.event_repo = event_repo
+        self.ticket_repo = ticket_repo
+        self.log_repo = log_repo
+        self.report_builders = {
+            "system-logs": self._build_system_logs_report,
+            "player-ranking": self._build_player_ranking_report,
+            "match-history": self._build_match_history_report,
+            "championship-stats": self._build_championship_stats_report,
+            "tournament-players": self._build_tournament_players_report,
+            "ticket-sales": self._build_ticket_sales_report,
+            "capacity-control": self._build_capacity_control_report,
+        }
+
+    def _base_filter(self, current_user: dict[str, Any]) -> dict[str, Any]:
+        filtro = {}
+        if current_user["role"] != ROLE_SUPER_ADMIN:
+            filtro["admin_id"] = get_scope_admin_id(current_user)
+        return filtro
+
+    def _parse_date_filters(self, data_ini: str, data_fim: str) -> tuple[datetime | None, datetime | None, str | None]:
         warning = None
         try:
-            if data_ini:
-                filtro.setdefault("datas.inicio", {})["$gte"] = datetime.strptime(data_ini, "%Y-%m-%d")
-            if data_fim:
-                filtro.setdefault("datas.fim", {})["$lte"] = datetime.strptime(data_fim, "%Y-%m-%d")
+            start = datetime.strptime(data_ini, "%Y-%m-%d") if data_ini else None
+            end = datetime.strptime(data_fim, "%Y-%m-%d") if data_fim else None
         except ValueError:
             warning = "Datas invalidas para o filtro."
-        camps = self.championship_repo.list_by_query(filtro, sort_key="datas.inicio", sort_order=DESCENDING)
-        for camp in camps:
-            camp["_num_times"] = len(camp.get("times_inscritos", []))
-            camp["_num_partidas"] = self.match_repo.count_by_championship(camp["_id"])
-        return camps, warning
+            start = None
+            end = None
+        return start, end, warning
+
+    def _filter_by_date_range(self, value: datetime | None, start: datetime | None, end: datetime | None) -> bool:
+        if value is None:
+            return start is None and end is None
+        value = normalize_utc_naive(value)
+        if start and value < start:
+            return False
+        if end and value > end:
+            return False
+        return True
+
+    def _serialize_date(self, value: datetime | None) -> str:
+        return normalize_utc_naive(value).strftime("%d/%m/%Y") if value else "-"
+
+    def _normalize_status_label(self, status: str) -> str:
+        mapping = {
+            STATUS_INSCRICAO: "Inscricoes",
+            STATUS_EM_ANDAMENTO: "Em andamento",
+            STATUS_FINALIZADO: "Finalizado",
+            "agendada": "Agendada",
+            "finalizada": "Finalizada",
+            "cancelado": "Cancelado",
+            "pago": "Pago",
+            "reservado": "Reservado",
+        }
+        return mapping.get(status, status.replace("_", " ").title() if status else "-")
+
+    def _build_summary(self, rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        return rows[: self.SUMMARY_PREVIEW_LIMIT]
+
+    def _is_report_allowed(self, current_user: dict[str, Any], report: dict[str, Any]) -> bool:
+        return current_user.get("role") in report.get("allowed_roles", [ROLE_ADMIN, ROLE_SUPER_ADMIN])
+
+    def _build_system_logs_report(self, current_user: dict[str, Any], start, end):
+        logs = self.log_repo.list_by_query(self._base_filter(current_user), sort=[("created_at", DESCENDING)])
+        rows = []
+        for log in logs:
+            created_at = log.get("created_at")
+            if not self._filter_by_date_range(created_at, start, end):
+                continue
+            created_at = normalize_utc_naive(created_at) if created_at else None
+            rows.append(
+                {
+                    "Horario": created_at.strftime("%H:%M:%S") if created_at else "-",
+                    "Dia": created_at.strftime("%d/%m/%Y") if created_at else "-",
+                    "Usuario": log.get("login", "-"),
+                    "Perfil": log.get("role", "-"),
+                    "Acao": f"{log.get('method', '-')}: {log.get('endpoint', '-')}",
+                    "Rota": log.get("path", "-"),
+                    "Status": log.get("status_code", "-"),
+                }
+            )
+        return {
+            "key": "system-logs",
+            "title": "Relatorio de logs",
+            "category": "E-Sports & Gaming",
+            "admin_only": False,
+            "allowed_roles": [ROLE_ADMIN, ROLE_SUPER_ADMIN],
+            "summary_columns": ["Horario", "Dia", "Usuario", "Acao"],
+            "columns": ["Horario", "Dia", "Usuario", "Perfil", "Acao", "Rota", "Status"],
+            "rows": rows,
+            "summary_rows": self._build_summary(rows),
+            "metrics": [
+                {"label": "Registros", "value": len(rows)},
+                {"label": "Ultimo usuario", "value": rows[0]["Usuario"] if rows else "-"},
+            ],
+        }
+
+    def _build_player_ranking_report(self, current_user: dict[str, Any], start, end):
+        players = self.player_repo.list_by_query(
+            self._base_filter(current_user),
+            sort=[("estatisticas.vitorias", DESCENDING), ("estatisticas.kd_ratio", DESCENDING), ("nick", 1)],
+        )
+        rows = []
+        for index, player in enumerate(players, start=1):
+            stats = player.get("estatisticas", {})
+            partidas = int(stats.get("partidas_jogadas", 0) or 0)
+            vitorias = int(stats.get("vitorias", 0) or 0)
+            win_rate = round((vitorias / partidas) * 100, 1) if partidas else 0.0
+            rows.append(
+                {
+                    "Posicao": index,
+                    "Nick": player.get("nick", "-"),
+                    "Nome": player.get("nome", "-"),
+                    "Jogo": player.get("jogo_principal", "-"),
+                    "Vitorias": vitorias,
+                    "Partidas": partidas,
+                    "Win Rate (%)": win_rate,
+                }
+            )
+        return {
+            "key": "player-ranking",
+            "title": "Ranking de jogadores",
+            "category": "E-Sports & Gaming",
+            "admin_only": False,
+            "allowed_roles": [ROLE_ADMIN, ROLE_SUPER_ADMIN],
+            "summary_columns": ["Posicao", "Nick", "Jogo", "Vitorias", "Win Rate (%)"],
+            "columns": ["Posicao", "Nick", "Nome", "Jogo", "Vitorias", "Partidas", "Win Rate (%)"],
+            "rows": rows,
+            "summary_rows": self._build_summary(rows),
+            "metrics": [
+                {"label": "Jogadores ranqueados", "value": len(rows)},
+                {"label": "Topo", "value": rows[0]["Nick"] if rows else "-"},
+            ],
+        }
+
+    def _build_match_history_report(self, current_user: dict[str, Any], start, end):
+        championships = self.championship_repo.list_by_query(self._base_filter(current_user), "datas.inicio", DESCENDING)
+        championship_names = {camp["_id"]: camp.get("nome", "-") for camp in championships}
+        matches = self.match_repo.list_by_query(self._base_filter(current_user), sort=[("data_partida", DESCENDING)])
+        rows = []
+        for match in matches:
+            match_date = match.get("data_partida")
+            if not self._filter_by_date_range(match_date, start, end):
+                continue
+            rows.append(
+                {
+                    "Campeonato": championship_names.get(match.get("campeonato_id"), "-"),
+                    "Data": self._serialize_date(match_date),
+                    "Fase": match.get("fase", "-"),
+                    "Time A": match.get("time_a", {}).get("nome", "-"),
+                    "Placar": f"{match.get('time_a', {}).get('placar', 0)} x {match.get('time_b', {}).get('placar', 0)}",
+                    "Time B": match.get("time_b", {}).get("nome", "-"),
+                    "Mapa": match.get("mapa", "-"),
+                    "Status": self._normalize_status_label(match.get("status", "")),
+                }
+            )
+        return {
+            "key": "match-history",
+            "title": "Historico de partidas por campeonato",
+            "category": "E-Sports & Gaming",
+            "admin_only": False,
+            "allowed_roles": [ROLE_ADMIN, ROLE_SUPER_ADMIN],
+            "summary_columns": ["Campeonato", "Data", "Fase", "Placar", "Status"],
+            "columns": ["Campeonato", "Data", "Fase", "Time A", "Placar", "Time B", "Mapa", "Status"],
+            "rows": rows,
+            "summary_rows": self._build_summary(rows),
+            "metrics": [
+                {"label": "Partidas", "value": len(rows)},
+                {"label": "Finalizadas", "value": sum(1 for row in rows if row["Status"] == "Finalizada")},
+            ],
+        }
+
+    def _build_championship_stats_report(self, current_user: dict[str, Any], start, end):
+        championships = self.championship_repo.list_by_query(self._base_filter(current_user), "datas.inicio", DESCENDING)
+        rows = []
+        for camp in championships:
+            start_date = (camp.get("datas") or {}).get("inicio")
+            if not self._filter_by_date_range(start_date, start, end):
+                continue
+            match_count = self.match_repo.count_by_championship(camp["_id"])
+            matches = self.match_repo.list_by_championship(camp["_id"])
+            finalized = sum(1 for match in matches if match.get("status") == "finalizada")
+            inscritos = len(camp.get("times_inscritos", []))
+            ocupacao = round((inscritos / camp["max_times"]) * 100, 1) if camp.get("max_times") else 0.0
+            rows.append(
+                {
+                    "Campeonato": camp.get("nome", "-"),
+                    "Jogo": camp.get("jogo", "-"),
+                    "Status": self._normalize_status_label(camp.get("status", "")),
+                    "Inicio": self._serialize_date(start_date),
+                    "Fim": self._serialize_date((camp.get("datas") or {}).get("fim")),
+                    "Times inscritos": inscritos,
+                    "Limite de times": camp.get("max_times", 0),
+                    "Taxa de ocupacao (%)": ocupacao,
+                    "Partidas": match_count,
+                    "Partidas finalizadas": finalized,
+                }
+            )
+        return {
+            "key": "championship-stats",
+            "title": "Estatisticas de campeonatos",
+            "category": "E-Sports & Gaming",
+            "admin_only": False,
+            "allowed_roles": [ROLE_ADMIN, ROLE_SUPER_ADMIN],
+            "summary_columns": ["Campeonato", "Status", "Times inscritos", "Partidas", "Taxa de ocupacao (%)"],
+            "columns": ["Campeonato", "Jogo", "Status", "Inicio", "Fim", "Times inscritos", "Limite de times", "Taxa de ocupacao (%)", "Partidas", "Partidas finalizadas"],
+            "rows": rows,
+            "summary_rows": self._build_summary(rows),
+            "metrics": [
+                {"label": "Campeonatos", "value": len(rows)},
+                {"label": "Em andamento", "value": sum(1 for row in rows if row["Status"] == "Em andamento")},
+            ],
+        }
+
+    def _build_tournament_players_report(self, current_user: dict[str, Any], start, end):
+        championships = self.championship_repo.list_by_query(self._base_filter(current_user), "datas.inicio", DESCENDING)
+        rows = []
+        for camp in championships:
+            start_date = (camp.get("datas") or {}).get("inicio")
+            if not self._filter_by_date_range(start_date, start, end):
+                continue
+            teams = self.team_repo.list_by_ids(camp.get("times_inscritos", []))
+            for team in teams:
+                for member in team.get("jogadores", []):
+                    player = self.player_repo.find_by_id(member.get("jogador_id"))
+                    rows.append(
+                        {
+                            "Campeonato": camp.get("nome", "-"),
+                            "Jogo": camp.get("jogo", "-"),
+                            "Time": team.get("nome", "-"),
+                            "Tag": team.get("tag", "-"),
+                            "Jogador": member.get("nick", player.get("nick") if player else "-"),
+                            "Nome": player.get("nome", "-") if player else "-",
+                            "Funcao": member.get("funcao", "-"),
+                        }
+                    )
+        return {
+            "key": "tournament-players",
+            "title": "Jogadores inscritos por torneio",
+            "category": "E-Sports & Gaming",
+            "admin_only": False,
+            "allowed_roles": [ROLE_ADMIN, ROLE_SUPER_ADMIN],
+            "summary_columns": ["Campeonato", "Time", "Jogador", "Funcao"],
+            "columns": ["Campeonato", "Jogo", "Time", "Tag", "Jogador", "Nome", "Funcao"],
+            "rows": rows,
+            "summary_rows": self._build_summary(rows),
+            "metrics": [
+                {"label": "Inscricoes", "value": len(rows)},
+                {"label": "Torneios com inscritos", "value": len({row['Campeonato'] for row in rows})},
+            ],
+        }
+
+    def _build_ticket_sales_report(self, current_user: dict[str, Any], start, end):
+        base_filter = self._base_filter(current_user)
+        events = self.event_repo.list_by_query(base_filter, sort=[("data_evento", DESCENDING)])
+        event_names = {event["_id"]: event.get("nome", "-") for event in events}
+        tickets = self.ticket_repo.list_by_query(base_filter, sort=[("vendido_em", DESCENDING)])
+        rows = []
+        faturamento = 0.0
+        vendidos = 0
+        for ticket in tickets:
+            sold_at = ticket.get("vendido_em")
+            if not self._filter_by_date_range(sold_at, start, end):
+                continue
+            quantidade = int(ticket.get("quantidade", 0) or 0)
+            valor_total = float(ticket.get("valor_total", 0) or 0)
+            faturamento += valor_total
+            vendidos += quantidade
+            rows.append(
+                {
+                    "Evento": event_names.get(ticket.get("evento_id"), "-"),
+                    "Comprador": ticket.get("comprador", "-"),
+                    "Lote": ticket.get("lote", "-"),
+                    "Quantidade": quantidade,
+                    "Valor total (R$)": f"{valor_total:.2f}",
+                    "Status": self._normalize_status_label(ticket.get("status", "")),
+                    "Venda": self._serialize_date(sold_at),
+                }
+            )
+        return {
+            "key": "ticket-sales",
+            "title": "Relatorio de vendas de ingressos",
+            "category": "Shows e Eventos",
+            "admin_only": True,
+            "allowed_roles": [ROLE_ADMIN],
+            "summary_columns": ["Evento", "Lote", "Quantidade", "Valor total (R$)", "Status"],
+            "columns": ["Evento", "Comprador", "Lote", "Quantidade", "Valor total (R$)", "Status", "Venda"],
+            "rows": rows,
+            "summary_rows": self._build_summary(rows),
+            "metrics": [
+                {"label": "Ingressos vendidos", "value": vendidos},
+                {"label": "Faturamento", "value": f"R$ {faturamento:.2f}"},
+            ],
+        }
+
+    def _build_capacity_control_report(self, current_user: dict[str, Any], start, end):
+        events = self.event_repo.list_by_query(self._base_filter(current_user), sort=[("data_evento", DESCENDING)])
+        tickets = self.ticket_repo.list_by_query(self._base_filter(current_user))
+        sold_by_event = {}
+        for ticket in tickets:
+            sold_by_event[ticket.get("evento_id")] = sold_by_event.get(ticket.get("evento_id"), 0) + int(ticket.get("quantidade", 0) or 0)
+
+        rows = []
+        for event in events:
+            event_date = event.get("data_evento")
+            if not self._filter_by_date_range(event_date, start, end):
+                continue
+            capacidade = int(event.get("capacidade_total", 0) or 0)
+            vendidos = sold_by_event.get(event["_id"], 0)
+            disponivel = max(capacidade - vendidos, 0)
+            ocupacao = round((vendidos / capacidade) * 100, 1) if capacidade else 0.0
+            rows.append(
+                {
+                    "Evento": event.get("nome", "-"),
+                    "Data": self._serialize_date(event_date),
+                    "Local": event.get("local", "-"),
+                    "Capacidade total": capacidade,
+                    "Ingressos vendidos": vendidos,
+                    "Disponivel": disponivel,
+                    "Ocupacao (%)": ocupacao,
+                }
+            )
+        return {
+            "key": "capacity-control",
+            "title": "Controle de lotacao",
+            "category": "Shows e Eventos",
+            "admin_only": True,
+            "allowed_roles": [ROLE_ADMIN],
+            "summary_columns": ["Evento", "Data", "Capacidade total", "Ingressos vendidos", "Ocupacao (%)"],
+            "columns": ["Evento", "Data", "Local", "Capacidade total", "Ingressos vendidos", "Disponivel", "Ocupacao (%)"],
+            "rows": rows,
+            "summary_rows": self._build_summary(rows),
+            "metrics": [
+                {"label": "Eventos monitorados", "value": len(rows)},
+                {"label": "Maior ocupacao", "value": f"{max((row['Ocupacao (%)'] for row in rows), default=0):.1f}%"},
+            ],
+        }
+
+    def list_reports(self, current_user: dict[str, Any], data_ini: str, data_fim: str) -> tuple[list[dict[str, Any]], str | None]:
+        start, end, warning = self._parse_date_filters(data_ini, data_fim)
+        reports = []
+        for builder in self.report_builders.values():
+            report = builder(current_user, start, end)
+            if self._is_report_allowed(current_user, report):
+                reports.append(report)
+        return reports, warning
+
+    def get_report(self, current_user: dict[str, Any], report_key: str, data_ini: str, data_fim: str) -> tuple[dict[str, Any] | None, str | None]:
+        start, end, warning = self._parse_date_filters(data_ini, data_fim)
+        builder = self.report_builders.get(report_key)
+        if not builder:
+            return None, warning
+        report = builder(current_user, start, end)
+        if not self._is_report_allowed(current_user, report):
+            return None, warning
+        return report, warning
 
 
 class PlayerProfileService:
@@ -714,8 +1124,17 @@ def build_services(repositories: dict[str, Any], password_hasher, cache):
             repositories["players"],
             cache,
         ),
-        "ranking": RankingService(repositories["players"], cache),
-        "reports": ReportService(repositories["championships"], repositories["matches"]),
+        "ranking": RankingService(repositories["players"], repositories["teams"], cache),
+        "audit_logs": AuditLogService(repositories["logs"]),
+        "reports": ReportService(
+            repositories["championships"],
+            repositories["matches"],
+            repositories["players"],
+            repositories["teams"],
+            repositories["events"],
+            repositories["tickets"],
+            repositories["logs"],
+        ),
         "users": UserService(repositories["users"], password_hasher),
         "player_profile": PlayerProfileService(
             repositories["users"],

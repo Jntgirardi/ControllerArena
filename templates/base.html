@@ -119,18 +119,15 @@
     </button>
     <div class="collapse navbar-collapse" id="mainNavbar">
       <ul class="navbar-nav me-auto mb-2 mb-lg-0 gap-lg-1">
-        {% if session.role in ('SUPER_ADMIN', 'ADMIN') %}
         <li class="nav-item"><a class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
-        {% endif %}
         {% if session.role == 'ADMIN' %}
         <li class="nav-item"><a class="nav-link {% if request.endpoint in ('listar_jogadores','novo_jogador','ver_jogador','editar_jogador') %}active{% endif %}" href="{{ url_for('listar_jogadores') }}"><i class="bi bi-person-badge"></i> Jogadores</a></li>
         <li class="nav-item"><a class="nav-link {% if request.endpoint in ('listar_times','novo_time','editar_time') %}active{% endif %}" href="{{ url_for('listar_times') }}"><i class="bi bi-people-fill"></i> Times</a></li>
         {% endif %}
+        {% if session.role in ('SUPER_ADMIN', 'ADMIN') %}
         <li class="nav-item"><a class="nav-link {% if request.endpoint and 'campeonato' in request.endpoint %}active{% endif %}" href="{{ url_for('listar_campeonatos') }}"><i class="bi bi-trophy-fill"></i> Campeonatos</a></li>
-        <li class="nav-item"><a class="nav-link {% if request.endpoint == 'ranking' %}active{% endif %}" href="{{ url_for('ranking') }}"><i class="bi bi-bar-chart-fill"></i> Ranking</a></li>
-        {% if session.role == 'PLAYER' %}
-        <li class="nav-item"><a class="nav-link {% if request.endpoint in ('meu_perfil', 'meu_time') %}active{% endif %}" href="{{ url_for('meu_perfil') }}"><i class="bi bi-person-circle"></i> Meu Perfil</a></li>
         {% endif %}
+        <li class="nav-item"><a class="nav-link {% if request.endpoint == 'ranking' %}active{% endif %}" href="{{ url_for('ranking') }}"><i class="bi bi-bar-chart-fill"></i> Ranking</a></li>
       </ul>
       <div class="user-menu">
         <a class="user-trigger {% if session.role in ('SUPER_ADMIN', 'ADMIN') and (request.endpoint == 'relatorios' or (request.endpoint and 'usuario' in request.endpoint)) %}active{% endif %}" href="{{ url_for('dashboard') }}">
@@ -139,7 +136,6 @@
           <span class="badge bg-secondary">{{ session.role }}</span>
         </a>
         <div class="user-dropdown">
-          <a class="{% if request.endpoint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}"><i class="bi bi-grid-1x2"></i> Dashboard</a>
           {% if session.role == 'SUPER_ADMIN' %}
           <a class="{% if request.endpoint and 'usuario' in request.endpoint %}active{% endif %}" href="{{ url_for('listar_usuarios') }}"><i class="bi bi-shield-lock"></i> Admins</a>
           {% endif %}

@@ -21,6 +21,9 @@ class MongoDatabase:
         self.teams = self.db["times"]
         self.championships = self.db["campeonatos"]
         self.matches = self.db["partidas"]
+        self.events = self.db["eventos"]
+        self.tickets = self.db["ingressos"]
+        self.logs = self.db["logs"]
 
     def _ensure_index(self, collection, keys, name: str, **options):
         existing = collection.index_information().get(name)
@@ -70,3 +73,17 @@ class MongoDatabase:
         # partidas
         self._ensure_index(self.matches, "admin_id", "admin_id_1")
         self._ensure_index(self.matches, "campeonato_id", "campeonato_id_1")
+
+        # eventos
+        self._ensure_index(self.events, "admin_id", "admin_id_1")
+        self._ensure_index(self.events, "data_evento", "data_evento_1")
+
+        # ingressos
+        self._ensure_index(self.tickets, "admin_id", "admin_id_1")
+        self._ensure_index(self.tickets, "evento_id", "evento_id_1")
+        self._ensure_index(self.tickets, "status", "status_1")
+
+        # logs
+        self._ensure_index(self.logs, "user_id", "user_id_1")
+        self._ensure_index(self.logs, "role", "role_1")
+        self._ensure_index(self.logs, [("created_at", DESCENDING)], "created_at_-1")

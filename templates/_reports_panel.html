@@ -1,0 +1,189 @@
+<form class="row g-2 mb-4 align-items-end" action="{{ form_action }}">
+  {% if form_tab %}
+  <input type="hidden" name="tab" value="{{ form_tab }}">
+  {% endif %}
+  <div class="col-12 col-sm-6 col-md-3">
+    <label class="form-label small">Data Inicio</label>
+    <input type="date" name="data_ini" class="form-control form-control-sm" value="{{ data_ini or '' }}">
+  </div>
+  <div class="col-12 col-sm-6 col-md-3">
+    <label class="form-label small">Data Fim</label>
+    <input type="date" name="data_fim" class="form-control form-control-sm" value="{{ data_fim or '' }}">
+  </div>
+  <div class="col-12 col-sm-6 col-md-2">
+    <button type="submit" class="btn btn-secondary btn-sm w-100">Filtrar</button>
+  </div>
+  <div class="col-12 col-sm-6 col-md-2">
+    <a href="{{ clear_url }}" class="btn btn-outline-secondary btn-sm w-100">Limpar</a>
+  </div>
+</form>
+
+{% set logs_reports = [] %}
+{% set report_groups = {'E-Sports & Gaming': [], 'Shows e Eventos': []} %}
+{% for report in reports %}
+  {% if report.key == 'system-logs' %}
+    {% set _ = logs_reports.append(report) %}
+  {% elif report.category in report_groups %}
+    {% set _ = report_groups[report.category].append(report) %}
+  {% endif %}
+{% endfor %}
+
+{% if logs_reports %}
+<section class="mb-4">
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div>
+      <h5 class="mb-1">Logs</h5>
+      <div class="text-muted small">
+        Visualizacao resumida na interface e download dos dados completos.
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    {% for report in logs_reports %}
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+          <div>
+            <div class="fw-semibold">{{ report.title }}</div>
+            <div class="small text-muted">
+              Resumo limitado na tela. Exportacao libera a versao completa.
+            </div>
+          </div>
+          <div class="d-flex gap-2 flex-wrap">
+            <a class="btn btn-sm btn-outline-primary" href="{{ url_for('exportar_relatorio', report_key=report.key, file_format='pdf', data_ini=data_ini, data_fim=data_fim) }}">
+              PDF
+            </a>
+            <a class="btn btn-sm btn-outline-success" href="{{ url_for('exportar_relatorio', report_key=report.key, file_format='csv', data_ini=data_ini, data_fim=data_fim) }}">
+              CSV/Excel
+            </a>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="row g-3 mb-3">
+            {% for metric in report.metrics %}
+            <div class="col-12 col-sm-6 col-lg-3">
+              <div class="border rounded p-3 h-100">
+                <div class="text-muted small">{{ metric.label }}</div>
+                <div class="fw-bold fs-5">{{ metric.value }}</div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+
+          <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+              <thead>
+                <tr>
+                  {% for column in report.summary_columns %}
+                  <th>{{ column }}</th>
+                  {% endfor %}
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in report.summary_rows %}
+                <tr>
+                  {% for column in report.summary_columns %}
+                  <td>{{ row[column] }}</td>
+                  {% endfor %}
+                </tr>
+                {% else %}
+                <tr>
+                  <td colspan="{{ report.summary_columns|length }}" class="text-center text-muted py-4">
+                    Nenhum dado disponivel para os filtros selecionados.
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{% for category, category_reports in report_groups.items() %}
+  {% if category_reports %}
+  <section class="mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+      <div>
+        <h5 class="mb-1">{{ category }}</h5>
+        <div class="text-muted small">
+          {% if category == 'Shows e Eventos' %}
+          Relatorios administrativos com exportacao completa.
+          {% else %}
+          Visualizacao resumida na interface e download dos dados completos.
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-3">
+      {% for report in category_reports %}
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+              <div class="fw-semibold">{{ report.title }}</div>
+              <div class="small text-muted">
+                Resumo limitado na tela. Exportacao libera a versao completa.
+              </div>
+            </div>
+            <div class="d-flex gap-2 flex-wrap">
+              <a class="btn btn-sm btn-outline-primary" href="{{ url_for('exportar_relatorio', report_key=report.key, file_format='pdf', data_ini=data_ini, data_fim=data_fim) }}">
+                PDF
+              </a>
+              <a class="btn btn-sm btn-outline-success" href="{{ url_for('exportar_relatorio', report_key=report.key, file_format='csv', data_ini=data_ini, data_fim=data_fim) }}">
+                CSV/Excel
+              </a>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="row g-3 mb-3">
+              {% for metric in report.metrics %}
+              <div class="col-12 col-sm-6 col-lg-3">
+                <div class="border rounded p-3 h-100">
+                  <div class="text-muted small">{{ metric.label }}</div>
+                  <div class="fw-bold fs-5">{{ metric.value }}</div>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+
+            <div class="table-responsive">
+              <table class="table table-sm align-middle mb-0">
+                <thead>
+                  <tr>
+                    {% for column in report.summary_columns %}
+                    <th>{{ column }}</th>
+                    {% endfor %}
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for row in report.summary_rows %}
+                  <tr>
+                    {% for column in report.summary_columns %}
+                    <td>{{ row[column] }}</td>
+                    {% endfor %}
+                  </tr>
+                  {% else %}
+                  <tr>
+                    <td colspan="{{ report.summary_columns|length }}" class="text-center text-muted py-4">
+                      Nenhum dado disponivel para os filtros selecionados.
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+{% endfor %}

@@ -1,9 +1,9 @@
 {% extends "base.html" %}
-{% block title %}Meu Time – FPS Arena{% endblock %}
+{% block title %}Meu Time - FPS Arena{% endblock %}
 {% block content %}
 
 <div class="d-flex align-items-center mb-4 gap-3">
-  <a href="{{ url_for('meu_perfil') }}" class="btn btn-outline-secondary btn-sm">← Voltar</a>
+  <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary btn-sm">Voltar</a>
   <h4 class="mb-0 page-title"><i class="bi bi-people-fill me-2"></i>Meu Time</h4>
 </div>
 
@@ -25,20 +25,20 @@
         <tr>
           <th>Nick</th>
           <th>Nome Real</th>
-          <th>Função</th>
+          <th>Funcao</th>
         </tr>
       </thead>
       <tbody>
         {% for membro in time.jogadores %}
-        <tr {% if membro.jogador_id == jogador._id %}style="background:rgba(var(--accent-rgb, 0,120,200),.07)"{% endif %}>
+        <tr>
           <td>
             <span class="fw-semibold">{{ membro.nick }}</span>
             {% if membro.jogador_id == jogador._id %}
-              <span class="badge bg-primary ms-1" style="font-size:.6rem">Você</span>
+              <span class="badge bg-primary ms-1" style="font-size:.6rem">Voce</span>
             {% endif %}
           </td>
-          <td class="text-muted small">{{ membro.get('nome_real', '—') }}</td>
-          <td class="text-muted small">{{ membro.get('funcao', '—') }}</td>
+          <td class="text-muted small">{{ membro.get('nome_real', '-') }}</td>
+          <td class="text-muted small">{{ membro.get('funcao', '-') }}</td>
         </tr>
         {% endfor %}
       </tbody>

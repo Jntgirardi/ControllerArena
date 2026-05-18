@@ -12,7 +12,7 @@ db = client["fps_arena"]
 def utc_now():
     return datetime.now(UTC)
 
-for col in ["usuarios", "jogadores", "times", "campeonatos", "partidas"]:
+for col in ["usuarios", "jogadores", "times", "campeonatos", "partidas", "eventos", "ingressos", "logs"]:
     db[col].drop()
 
 print("Banco limpo.")
@@ -191,6 +191,90 @@ db.partidas.insert_one(
         "data_partida": hoje - timedelta(days=1),
         "status": "finalizada",
     }
+)
+
+evento_show = db.eventos.insert_one(
+    {
+        "nome": "Arena Music Clash",
+        "local": "Arena Demo Stage",
+        "data_evento": hoje + timedelta(days=12),
+        "capacidade_total": 500,
+        "admin_id": admin_id,
+        "criado_em": hoje,
+    }
+).inserted_id
+
+evento_festival = db.eventos.insert_one(
+    {
+        "nome": "Valorant Fan Fest",
+        "local": "Expo Center",
+        "data_evento": hoje + timedelta(days=25),
+        "capacidade_total": 800,
+        "admin_id": admin_id,
+        "criado_em": hoje,
+    }
+).inserted_id
+
+db.ingressos.insert_many(
+    [
+        {
+            "evento_id": evento_show,
+            "admin_id": admin_id,
+            "comprador": "Julia Martins",
+            "lote": "1o lote",
+            "quantidade": 2,
+            "valor_total": 240.0,
+            "status": "pago",
+            "vendido_em": hoje - timedelta(days=1),
+        },
+        {
+            "evento_id": evento_show,
+            "admin_id": admin_id,
+            "comprador": "Felipe Nunes",
+            "lote": "1o lote",
+            "quantidade": 3,
+            "valor_total": 360.0,
+            "status": "pago",
+            "vendido_em": hoje,
+        },
+        {
+            "evento_id": evento_festival,
+            "admin_id": admin_id,
+            "comprador": "Camila Rocha",
+            "lote": "Pista premium",
+            "quantidade": 4,
+            "valor_total": 720.0,
+            "status": "reservado",
+            "vendido_em": hoje,
+        },
+    ]
+)
+
+db.logs.insert_many(
+    [
+        {
+            "user_id": admin_id,
+            "admin_id": admin_id,
+            "login": "arena.demo",
+            "role": "ADMIN",
+            "endpoint": "dashboard",
+            "method": "GET",
+            "path": "/dashboard",
+            "status_code": 200,
+            "created_at": hoje - timedelta(hours=3),
+        },
+        {
+            "user_id": admin_id,
+            "admin_id": admin_id,
+            "login": "arena.demo",
+            "role": "ADMIN",
+            "endpoint": "relatorios",
+            "method": "GET",
+            "path": "/relatorios",
+            "status_code": 200,
+            "created_at": hoje - timedelta(hours=1),
+        },
+    ]
 )
 
 print("Seed concluido.")

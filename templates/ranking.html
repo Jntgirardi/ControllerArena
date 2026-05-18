@@ -4,6 +4,7 @@
 
 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
   <h4 class="mb-0 page-title">Ranking de Jogadores</h4>
+  {% if session.role != 'PLAYER' %}
   <form class="d-flex gap-2 flex-wrap">
     <select name="jogo" class="form-select form-select-sm" style="width:min(100%, 160px)">
       <option value="">Todos os jogos</option>
@@ -12,6 +13,7 @@
     </select>
     <button type="submit" class="btn btn-secondary btn-sm">Filtrar</button>
   </form>
+  {% endif %}
 </div>
 
 <div class="card">
@@ -60,4 +62,48 @@
     </table>
   </div>
 </div>
+
+{% if session.role == 'PLAYER' %}
+<div class="d-flex justify-content-between align-items-center mt-4 mb-3 flex-wrap gap-2">
+  <h4 class="mb-0 page-title">Ranking de Times{% if player_game %} • {{ player_game }}{% endif %}</h4>
+  <span class="text-muted small">Baseado no desempenho agregado dos jogadores do time.</span>
+</div>
+
+<div class="card">
+  <div class="card-body p-0">
+    <table class="table mb-0">
+      <thead>
+        <tr>
+          <th style="width:50px">#</th>
+          <th>Time</th>
+          <th>Vitorias</th>
+          <th>Win Rate</th>
+          <th>Jogadores</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for team in team_ranking %}
+        <tr>
+          <td class="fw-bold">{{ loop.index }}</td>
+          <td>
+            <div class="fw-bold">{{ team.nome }}</div>
+            <div class="small text-muted">{{ team.tag }} • {{ team.jogo }}</div>
+          </td>
+          <td class="fw-bold text-success">{{ team.vitorias }}</td>
+          <td>{{ "%.1f"|format(team.win_rate) }}%</td>
+          <td class="small text-muted">{{ team.jogadores|join(', ') if team.jogadores else '-' }}</td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="5" class="text-muted text-center py-4">
+            <i class="bi bi-people d-block mb-1" style="font-size:1.5rem"></i>
+            Sem times ranqueados para o seu jogo.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
 {% endblock %}

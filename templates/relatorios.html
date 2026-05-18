@@ -1,104 +1,12 @@
 {% extends "base.html" %}
-{% block title %}Relatórios – FPS Arena{% endblock %}
+{% block title %}Relatorios - FPS Arena{% endblock %}
 {% block content %}
-
-<h4 class="mb-3 page-title">Relatório de Campeonatos</h4>
-
-<form class="row g-2 mb-4 align-items-end">
-  <div class="col-12 col-sm-6 col-md-3">
-    <label class="form-label small">Data Início</label>
-    <input type="date" name="data_ini" class="form-control form-control-sm" value="{{ data_ini or '' }}">
-  </div>
-  <div class="col-12 col-sm-6 col-md-3">
-    <label class="form-label small">Data Fim</label>
-    <input type="date" name="data_fim" class="form-control form-control-sm" value="{{ data_fim or '' }}">
-  </div>
-  <div class="col-12 col-sm-6 col-md-2">
-    <button type="submit" class="btn btn-secondary btn-sm w-100">Filtrar</button>
-  </div>
-  <div class="col-12 col-sm-6 col-md-2">
-    <a href="{{ url_for('relatorios') }}" class="btn btn-outline-secondary btn-sm w-100">Limpar</a>
-  </div>
-</form>
-
-<div class="card mb-4">
-  <div class="card-body p-0">
-    <table class="table mb-0">
-      <thead>
-        <tr>
-          <th>Campeonato</th>
-          <th>Status</th>
-          <th>Times</th>
-          <th class="text-end">Detalhes</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for c in campeonatos %}
-        <tr>
-          <td>
-            <div class="fw-bold">{{ c.nome }}</div>
-            <small class="text-muted">
-              <span class="badge {{ 'badge-cs2' if c.jogo == 'CS2' else 'badge-valorant' }}"
-                    style="font-size:.65rem">{{ c.jogo }}</span>
-              {{ c.datas.inicio.strftime('%d/%m/%Y') }} → {{ c.datas.fim.strftime('%d/%m/%Y') }}
-            </small>
-          </td>
-          <td>
-            {% if c.status == 'aberto' %}
-              <span class="badge bg-success">Aberto</span>
-            {% elif c.status == 'em_andamento' %}
-              <span class="badge bg-warning text-dark">Em Andamento</span>
-            {% else %}
-              <span class="badge bg-secondary">Finalizado</span>
-            {% endif %}
-          </td>
-          <td>
-            <span class="fw-bold">{{ c._num_times }}</span>
-            <span class="text-muted small">/ {{ c.max_times }}</span>
-          </td>
-          <td class="text-end">
-            <a href="{{ url_for('ver_campeonato', camp_id=c._id) }}"
-               class="btn btn-sm btn-outline-primary">
-              <i class="bi bi-eye me-1"></i>Detalhes
-            </a>
-          </td>
-        </tr>
-        {% else %}
-        <tr>
-          <td colspan="4" class="text-muted text-center py-4">
-            <i class="bi bi-calendar-x d-block mb-1" style="font-size:1.5rem"></i>
-            Nenhum campeonato encontrado no período.
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+  <h4 class="mb-0 page-title">Central de Relatorios</h4>
 </div>
 
-<!-- Totalizadores -->
-<div class="row g-3">
-  <div class="col-12 col-sm-4">
-    <div class="card p-3 text-center">
-      <div class="text-muted small mb-1">Total</div>
-      <div class="fs-2 fw-bold" style="color:var(--accent)">{{ campeonatos|length }}</div>
-    </div>
-  </div>
-  <div class="col-12 col-sm-4">
-    <div class="card p-3 text-center">
-      <div class="text-muted small mb-1">Abertos</div>
-      <div class="fs-2 fw-bold text-success">
-        {{ campeonatos|selectattr('status','equalto','aberto')|list|length }}
-      </div>
-    </div>
-  </div>
-  <div class="col-12 col-sm-4">
-    <div class="card p-3 text-center">
-      <div class="text-muted small mb-1">Finalizados</div>
-      <div class="fs-2 fw-bold text-secondary">
-        {{ campeonatos|selectattr('status','equalto','finalizado')|list|length }}
-      </div>
-    </div>
-  </div>
-</div>
+{% set form_action = url_for('relatorios') %}
+{% set clear_url = url_for('relatorios') %}
+{% set form_tab = None %}
+{% include "_reports_panel.html" %}
 {% endblock %}

@@ -1,233 +1,197 @@
 {% extends "base.html" %}
 {% block title %}Dashboard - FPS Arena{% endblock %}
 {% block content %}
-{% set tab = active_tab if active_tab in ['visao-geral', 'usuarios', 'relatorios'] else 'visao-geral' %}
-{% if session.role != 'SUPER_ADMIN' and tab == 'usuarios' %}
-  {% set tab = 'visao-geral' %}
+{% if session.role == 'PLAYER' %}
+{% set data = player_data %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+  <div>
+    <h4 class="mb-1 page-title">Dashboard do Jogador</h4>
+    <div class="text-muted small">Seu perfil e desempenho em um unico lugar.</div>
+  </div>
+</div>
+
+{% if not data %}
+<div class="card" style="max-width:520px">
+  <div class="card-body text-center py-5">
+    <h5>Nenhum perfil de jogador vinculado</h5>
+    <p class="text-muted small mb-0">Seu acesso esta ativo, mas o cadastro do jogador ainda nao foi provisionado pelo organizador.</p>
+  </div>
+</div>
+{% else %}
+{% set jogador = data.jogador %}
+{% set time = data.time %}
+<div class="row g-3 mb-4">
+  <div class="col-12 col-lg-4">
+    <div class="card h-100">
+      <div class="card-header">Perfil do jogador</div>
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+          <div>
+            <h5 class="fw-bold mb-1">{{ jogador.nick }}</h5>
+            <div class="text-muted small">{{ jogador.nome or jogador.nome_real }}</div>
+          </div>
+          <span class="badge {{ 'badge-cs2' if jogador.jogo_principal == 'CS2' else 'badge-valorant' }}">{{ jogador.jogo_principal }}</span>
+        </div>
+        <div class="small mb-2"><strong>Login:</strong> <code>{{ jogador.login or '-' }}</code></div>
+        <div class="small mb-2"><strong>Contato:</strong> {{ jogador.contato or '-' }}</div>
+        <div class="small"><strong>Time atual:</strong> {{ time.nome if time else 'Sem time' }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-lg-8">
+    <div class="row g-3">
+      <div class="col-6 col-md-3">
+        <div class="card p-3 h-100">
+          <div class="text-muted small mb-1">Partidas</div>
+          <div class="fs-2 fw-bold text-info">{{ jogador.estatisticas.partidas_jogadas }}</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card p-3 h-100">
+          <div class="text-muted small mb-1">Vitorias</div>
+          <div class="fs-2 fw-bold text-success">{{ jogador.estatisticas.vitorias }}</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card p-3 h-100">
+          <div class="text-muted small mb-1">Derrotas</div>
+          <div class="fs-2 fw-bold text-danger">{{ jogador.estatisticas.derrotas }}</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card p-3 h-100">
+          <div class="text-muted small mb-1">K/D</div>
+          <div class="fs-2 fw-bold" style="color:var(--accent)">{{ "%.2f"|format(jogador.estatisticas.kd_ratio) }}</div>
+        </div>
+      </div>
+      <div class="col-12">
+        <div class="card h-100">
+          <div class="card-header">Meu time</div>
+          <div class="card-body">
+            {% if time %}
+            <div class="d-flex justify-content-between align-items-center gap-3 flex-wrap">
+              <div>
+                <h5 class="fw-bold mb-1">{{ time.nome }}</h5>
+                <div class="text-muted small">{{ time.tag }} • {{ time.jogo }}</div>
+              </div>
+              <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#meuTimeModal">
+                Ver composicao
+              </button>
+            </div>
+            {% else %}
+            <p class="text-muted mb-0">Voce ainda nao pertence a nenhum time.</p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if time %}
+<div class="modal fade" id="meuTimeModal" tabindex="-1" aria-labelledby="meuTimeModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content" style="background:var(--bg-card); border:1px solid var(--border); color:var(--text-main)">
+      <div class="modal-header" style="border-bottom:1px solid var(--border); background:var(--bg-card-hd)">
+        <h5 class="modal-title" id="meuTimeModalLabel">Composicao do meu time</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body p-0">
+        <div class="p-3 border-bottom" style="border-color:var(--border)!important">
+          <div class="fw-bold">{{ time.nome }}</div>
+          <div class="text-muted small">{{ time.tag }} • {{ time.jogo }}</div>
+        </div>
+        <div class="table-responsive">
+          <table class="table mb-0">
+            <thead>
+              <tr>
+                <th>Nick</th>
+                <th>Nome</th>
+                <th>Funcao</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for membro in time.jogadores %}
+              <tr>
+                <td>
+                  <span class="fw-semibold">{{ membro.nick }}</span>
+                  {% if membro.jogador_id == jogador._id %}
+                  <span class="badge bg-primary ms-1" style="font-size:.6rem">Voce</span>
+                  {% endif %}
+                </td>
+                <td class="text-muted small">{{ membro.get('nome_real', jogador.nome if membro.jogador_id == jogador._id else '-') }}</td>
+                <td class="text-muted small">{{ membro.get('funcao', '-') }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer" style="border-top:1px solid var(--border)">
+        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>
 {% endif %}
+{% endif %}
+{% else %}
 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
   <h4 class="mb-0 page-title">Dashboard</h4>
 </div>
-
-<ul class="nav nav-tabs mb-4">
-  <li class="nav-item">
-    <a class="nav-link {% if tab == 'visao-geral' %}active{% endif %}" href="{{ url_for('dashboard', tab='visao-geral') }}">
-      <i class="bi bi-speedometer2 me-1"></i>Visao geral
-    </a>
-  </li>
-  {% if session.role == 'SUPER_ADMIN' %}
-  <li class="nav-item">
-    <a class="nav-link {% if tab == 'usuarios' %}active{% endif %}" href="{{ url_for('dashboard', tab='usuarios') }}">
-      <i class="bi bi-shield-lock me-1"></i>Usuarios
-    </a>
-  </li>
-  {% endif %}
-  <li class="nav-item">
-    <a class="nav-link {% if tab == 'relatorios' %}active{% endif %}" href="{{ url_for('dashboard', tab='relatorios') }}">
-      <i class="bi bi-file-earmark-bar-graph me-1"></i>Relatorios
-    </a>
-  </li>
-</ul>
-
-{% if tab == 'visao-geral' %}
-  <div class="row g-3 mb-4">
-    {% for label, value, color in [
-      ('Admins', stats.get('admins'), 'danger'),
-      ('Jogadores', stats.get('jogadores'), 'primary'),
-      ('Times', stats.get('times'), 'warning'),
-      ('Campeonatos', stats.get('campeonatos'), 'success'),
-      ('Partidas', stats.get('partidas'), 'info'),
-      ('Inscricao', stats.get('camp_inscricao'), 'secondary'),
-      ('Em andamento', stats.get('camp_andamento'), 'dark')
-    ] %}
-      {% if value is not none %}
-      <div class="col-6 col-md-3">
-        <div class="card p-3">
-          <div class="text-muted small mb-1">{{ label }}</div>
-          <div class="fs-2 fw-bold text-{{ color }}">{{ value }}</div>
-        </div>
-      </div>
-      {% endif %}
-    {% endfor %}
-  </div>
-
-  <div class="card">
-    <div class="card-header d-flex justify-content-between align-items-center">
-      <span>Ultimos Campeonatos</span>
-      <a href="{{ url_for('listar_campeonatos') }}" class="btn btn-sm btn-outline-secondary">Ver todos</a>
-    </div>
-    <div class="card-body p-0">
-      <table class="table mb-0">
-        <thead>
-          <tr>
-            <th>Nome</th>
-            <th>Status</th>
-            <th>Inicio</th>
-            <th class="text-end">Detalhes</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for c in ultimos_camps %}
-          <tr>
-            <td>
-              <div class="fw-bold">{{ c.nome }}</div>
-              <span class="badge {{ 'badge-cs2' if c.jogo == 'CS2' else 'badge-valorant' }}">{{ c.jogo }}</span>
-            </td>
-            <td><span class="badge bg-secondary">{{ c.status }}</span></td>
-            <td class="small text-muted">{{ c.datas.inicio.strftime('%d/%m/%Y') if c.get('datas') else '-' }}</td>
-            <td class="text-end"><a href="{{ url_for('ver_campeonato', camp_id=c._id) }}" class="btn btn-sm btn-outline-primary">Ver</a></td>
-          </tr>
-          {% else %}
-          <tr><td colspan="4" class="text-center text-muted py-4">Nenhum campeonato cadastrado.</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </div>
-{% elif tab == 'usuarios' and session.role == 'SUPER_ADMIN' %}
-  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-    <h5 class="mb-0">Contas administrativas</h5>
-    <a href="{{ url_for('novo_usuario') }}" class="btn btn-primary btn-sm">
-      <i class="bi bi-plus-lg"></i> Novo ADMIN
-    </a>
-  </div>
-
-  <div class="card">
-    <div class="card-body p-0">
-      <table class="table mb-0">
-        <thead>
-          <tr>
-            <th>Login</th>
-            <th>Role</th>
-            <th>Empresa</th>
-            <th>Criado em</th>
-            <th class="text-end">Acoes</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for u in usuarios %}
-          <tr>
-            <td>
-              <div class="fw-bold">{{ u.login }}</div>
-              <small class="text-muted">{{ u.nome }}</small>
-            </td>
-            <td><span class="badge bg-secondary">{{ u.role }}</span></td>
-            <td>{{ u.get('nome_empresa', '-') }}</td>
-            <td class="small text-muted">{{ u.criado_em.strftime('%d/%m/%Y') if u.criado_em else '-' }}</td>
-            <td class="text-end">
-              {% if u._id|string == session.user_id %}
-                <span class="badge bg-dark">Voce</span>
-              {% else %}
-                <form method="post" action="{{ url_for('remover_usuario', user_id=u._id) }}" class="d-inline" onsubmit="return confirm('Remover {{ u.login }}?')">
-                  <button type="submit" class="btn btn-sm btn-outline-danger">Remover</button>
-                </form>
-              {% endif %}
-            </td>
-          </tr>
-          {% else %}
-          <tr><td colspan="5" class="text-center text-muted py-4">Nenhum usuario cadastrado.</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </div>
-{% elif tab == 'relatorios' %}
-  <h5 class="mb-3">Relatorio de Campeonatos</h5>
-
-  <form class="row g-2 mb-4 align-items-end" action="{{ url_for('dashboard') }}">
-    <input type="hidden" name="tab" value="relatorios">
-    <div class="col-12 col-sm-6 col-md-3">
-      <label class="form-label small">Data Inicio</label>
-      <input type="date" name="data_ini" class="form-control form-control-sm" value="{{ data_ini or '' }}">
-    </div>
-    <div class="col-12 col-sm-6 col-md-3">
-      <label class="form-label small">Data Fim</label>
-      <input type="date" name="data_fim" class="form-control form-control-sm" value="{{ data_fim or '' }}">
-    </div>
-    <div class="col-12 col-sm-6 col-md-2">
-      <button type="submit" class="btn btn-secondary btn-sm w-100">Filtrar</button>
-    </div>
-    <div class="col-12 col-sm-6 col-md-2">
-      <a href="{{ url_for('dashboard', tab='relatorios') }}" class="btn btn-outline-secondary btn-sm w-100">Limpar</a>
-    </div>
-  </form>
-
-  <div class="card mb-4">
-    <div class="card-body p-0">
-      <table class="table mb-0">
-        <thead>
-          <tr>
-            <th>Campeonato</th>
-            <th>Status</th>
-            <th>Times</th>
-            <th class="text-end">Detalhes</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for c in campeonatos %}
-          <tr>
-            <td>
-              <div class="fw-bold">{{ c.nome }}</div>
-              <small class="text-muted">
-                <span class="badge {{ 'badge-cs2' if c.jogo == 'CS2' else 'badge-valorant' }}" style="font-size:.65rem">{{ c.jogo }}</span>
-                {{ c.datas.inicio.strftime('%d/%m/%Y') }} -> {{ c.datas.fim.strftime('%d/%m/%Y') }}
-              </small>
-            </td>
-            <td>
-              {% if c.status == 'aberto' %}
-                <span class="badge bg-success">Aberto</span>
-              {% elif c.status == 'em_andamento' %}
-                <span class="badge bg-warning text-dark">Em Andamento</span>
-              {% else %}
-                <span class="badge bg-secondary">Finalizado</span>
-              {% endif %}
-            </td>
-            <td>
-              <span class="fw-bold">{{ c._num_times }}</span>
-              <span class="text-muted small">/ {{ c.max_times }}</span>
-            </td>
-            <td class="text-end">
-              <a href="{{ url_for('ver_campeonato', camp_id=c._id) }}" class="btn btn-sm btn-outline-primary">
-                <i class="bi bi-eye me-1"></i>Detalhes
-              </a>
-            </td>
-          </tr>
-          {% else %}
-          <tr>
-            <td colspan="4" class="text-muted text-center py-4">
-              <i class="bi bi-calendar-x d-block mb-1" style="font-size:1.5rem"></i>
-              Nenhum campeonato encontrado no periodo.
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <div class="row g-3">
-    <div class="col-12 col-sm-4">
-      <div class="card p-3 text-center">
-        <div class="text-muted small mb-1">Total</div>
-        <div class="fs-2 fw-bold" style="color:var(--accent)">{{ campeonatos|length }}</div>
+<div class="row g-3 mb-4">
+  {% for label, value, color in [
+    ('Admins', stats.get('admins'), 'danger'),
+    ('Jogadores', stats.get('jogadores'), 'primary'),
+    ('Times', stats.get('times'), 'warning'),
+    ('Campeonatos', stats.get('campeonatos'), 'success'),
+    ('Partidas', stats.get('partidas'), 'info'),
+    ('Inscricao', stats.get('camp_inscricao'), 'secondary'),
+    ('Em andamento', stats.get('camp_andamento'), 'dark')
+  ] %}
+    {% if value is not none %}
+    <div class="col-6 col-md-3">
+      <div class="card p-3">
+        <div class="text-muted small mb-1">{{ label }}</div>
+        <div class="fs-2 fw-bold text-{{ color }}">{{ value }}</div>
       </div>
     </div>
-    <div class="col-12 col-sm-4">
-      <div class="card p-3 text-center">
-        <div class="text-muted small mb-1">Abertos</div>
-        <div class="fs-2 fw-bold text-success">
-          {{ campeonatos|selectattr('status','equalto','aberto')|list|length }}
-        </div>
-      </div>
-    </div>
-    <div class="col-12 col-sm-4">
-      <div class="card p-3 text-center">
-        <div class="text-muted small mb-1">Finalizados</div>
-        <div class="fs-2 fw-bold text-secondary">
-          {{ campeonatos|selectattr('status','equalto','finalizado')|list|length }}
-        </div>
-      </div>
-    </div>
+    {% endif %}
+  {% endfor %}
+</div>
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span>Ultimos Campeonatos</span>
+    <a href="{{ url_for('listar_campeonatos') }}" class="btn btn-sm btn-outline-secondary">Ver todos</a>
   </div>
+  <div class="card-body p-0">
+    <table class="table mb-0">
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>Status</th>
+          <th>Inicio</th>
+          <th class="text-end">Detalhes</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in ultimos_camps %}
+        <tr>
+          <td>
+            <div class="fw-bold">{{ c.nome }}</div>
+            <span class="badge {{ 'badge-cs2' if c.jogo == 'CS2' else 'badge-valorant' }}">{{ c.jogo }}</span>
+          </td>
+          <td><span class="badge bg-secondary">{{ c.status }}</span></td>
+          <td class="small text-muted">{{ c.datas.inicio.strftime('%d/%m/%Y') if c.get('datas') else '-' }}</td>
+          <td class="text-end"><a href="{{ url_for('ver_campeonato', camp_id=c._id) }}" class="btn btn-sm btn-outline-primary">Ver</a></td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" class="text-center text-muted py-4">Nenhum campeonato cadastrado.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
 {% endif %}
 {% endblock %}

@@ -63,6 +63,12 @@ class MongoPlayerRepository:
             .limit(50)
         )
 
+    def list_by_query(self, filtro=None, projection=None, sort=None):
+        cursor = self.collection.find(filtro or {}, projection)
+        if sort:
+            cursor = cursor.sort(sort)
+        return list(cursor)
+
     def find_by_id(self, object_id):
         return self.collection.find_one({"_id": object_id})
 
@@ -113,6 +119,9 @@ class MongoTeamRepository:
         query = dict(filtro or {})
         query["jogo"] = jogo
         return list(self.collection.find(query, {"nome": 1, "tag": 1, "jogo": 1}).sort("nome", 1))
+
+    def list_by_ids(self, ids):
+        return list(self.collection.find({"_id": {"$in": list(ids or [])}}).sort("nome", 1))
 
     def find_by_id(self, object_id):
         return self.collection.find_one({"_id": object_id})
@@ -191,6 +200,12 @@ class MongoMatchRepository:
     def list_by_championship(self, championship_id):
         return list(self.collection.find({"campeonato_id": championship_id}).sort("data_partida", 1))
 
+    def list_by_query(self, filtro=None, sort=None):
+        cursor = self.collection.find(filtro or {})
+        if sort:
+            cursor = cursor.sort(sort)
+        return list(cursor)
+
     def find_by_id(self, object_id):
         return self.collection.find_one({"_id": object_id})
 
@@ -203,3 +218,40 @@ class MongoMatchRepository:
 
     def delete_by_championship(self, championship_id):
         self.collection.delete_many({"campeonato_id": championship_id})
+
+
+class MongoEventRepository:
+    def __init__(self, collection):
+        self.collection = collection
+
+    def list_by_query(self, filtro=None, sort=None):
+        cursor = self.collection.find(filtro or {})
+        if sort:
+            cursor = cursor.sort(sort)
+        return list(cursor)
+
+
+class MongoTicketRepository:
+    def __init__(self, collection):
+        self.collection = collection
+
+    def list_by_query(self, filtro=None, sort=None):
+        cursor = self.collection.find(filtro or {})
+        if sort:
+            cursor = cursor.sort(sort)
+        return list(cursor)
+
+
+class MongoLogRepository:
+    def __init__(self, collection):
+        self.collection = collection
+
+    def insert(self, document):
+        result = self.collection.insert_one(document)
+        return result.inserted_id
+
+    def list_by_query(self, filtro=None, sort=None):
+        cursor = self.collection.find(filtro or {})
+        if sort:
+            cursor = cursor.sort(sort)
+        return list(cursor)
