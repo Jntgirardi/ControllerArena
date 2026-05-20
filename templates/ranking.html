@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Ranking – FPS Arena{% endblock %}
+{% block title %}Ranking - FPS Arena{% endblock %}
 {% block content %}
 
 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
@@ -8,8 +8,8 @@
   <form class="d-flex gap-2 flex-wrap">
     <select name="jogo" class="form-select form-select-sm" style="width:min(100%, 160px)">
       <option value="">Todos os jogos</option>
-      <option value="CS2"      {% if filtro_jogo == 'CS2'     %}selected{% endif %}>CS2</option>
-      <option value="Valorant" {% if filtro_jogo == 'Valorant'%}selected{% endif %}>Valorant</option>
+      <option value="CS2" {% if filtro_jogo == 'CS2' %}selected{% endif %}>CS2</option>
+      <option value="Valorant" {% if filtro_jogo == 'Valorant' %}selected{% endif %}>Valorant</option>
     </select>
     <button type="submit" class="btn btn-secondary btn-sm">Filtrar</button>
   </form>
@@ -23,7 +23,7 @@
         <tr>
           <th style="width:50px">#</th>
           <th>Nick</th>
-          <th>Vitórias</th>
+          <th>Vitorias</th>
           <th class="text-end">Detalhes</th>
         </tr>
       </thead>
@@ -31,9 +31,9 @@
         {% for j in jogadores %}
         <tr>
           <td class="fw-bold">
-            {% if loop.index == 1 %}🥇
-            {% elif loop.index == 2 %}🥈
-            {% elif loop.index == 3 %}🥉
+            {% if loop.index == 1 %}<i class="bi bi-trophy-fill text-warning"></i>
+            {% elif loop.index == 2 %}<i class="bi bi-award-fill text-secondary"></i>
+            {% elif loop.index == 3 %}<i class="bi bi-award-fill" style="color:#cd7f32"></i>
             {% else %}<span class="text-muted">{{ loop.index }}</span>
             {% endif %}
           </td>
@@ -63,9 +63,9 @@
   </div>
 </div>
 
-{% if session.role == 'PLAYER' %}
+{% if show_team_ranking %}
 <div class="d-flex justify-content-between align-items-center mt-4 mb-3 flex-wrap gap-2">
-  <h4 class="mb-0 page-title">Ranking de Times{% if player_game %} • {{ player_game }}{% endif %}</h4>
+  <h4 class="mb-0 page-title">Ranking de Times{% if filtro_jogo %} - {{ filtro_jogo }}{% elif player_game %} - {{ player_game }}{% endif %}</h4>
   <span class="text-muted small">Baseado no desempenho agregado dos jogadores do time.</span>
 </div>
 
@@ -87,7 +87,7 @@
           <td class="fw-bold">{{ loop.index }}</td>
           <td>
             <div class="fw-bold">{{ team.nome }}</div>
-            <div class="small text-muted">{{ team.tag }} • {{ team.jogo }}</div>
+            <div class="small text-muted">{{ team.tag }} - {{ team.jogo }}</div>
           </td>
           <td class="fw-bold text-success">{{ team.vitorias }}</td>
           <td>{{ "%.1f"|format(team.win_rate) }}%</td>
@@ -97,7 +97,7 @@
         <tr>
           <td colspan="5" class="text-muted text-center py-4">
             <i class="bi bi-people d-block mb-1" style="font-size:1.5rem"></i>
-            Sem times ranqueados para o seu jogo.
+            Sem times ranqueados{% if filtro_jogo or player_game %} para este jogo{% endif %}.
           </td>
         </tr>
         {% endfor %}

@@ -457,12 +457,14 @@ def register_routes(app, services):
         if session.get("role") == ROLE_PLAYER:
             jogo = player_game
         jogadores = services["ranking"].list_ranking(current_user, jogo)
-        team_ranking = services["ranking"].list_team_ranking(current_user, jogo) if session.get("role") == ROLE_PLAYER and jogo else []
+        show_team_ranking = session.get("role") in (ROLE_ADMIN, ROLE_SUPER_ADMIN) or bool(jogo)
+        team_ranking = services["ranking"].list_team_ranking(current_user, jogo) if show_team_ranking else []
         return render_template(
             "ranking.html",
             jogadores=jogadores,
             filtro_jogo=jogo,
             player_game=player_game,
+            show_team_ranking=show_team_ranking,
             team_ranking=team_ranking,
         )
 

@@ -214,6 +214,78 @@ def test_player_ranking_includes_team_ranking_for_player_game(monkeypatch):
     assert b"PlayerOne" in ranking_response.data
 
 
+def test_admin_ranking_displays_team_ranking_with_game_filter(monkeypatch):
+    flask_app = build_test_app(monkeypatch)
+    mongo = flask_app.extensions["mongo"]
+    password_hasher = PasswordHasher()
+
+    admin_id = mongo.users.insert_one(
+        {
+            "nome": "Organizador",
+            "login": "organizador",
+            "role": "ADMIN",
+            "senha_hash": password_hasher.hash("admin123"),
+            "ativo": True,
+            "must_change_password": False,
+            "criado_em": datetime.now(UTC),
+        }
+    ).inserted_id
+
+    cs_player_id = mongo.players.insert_one(
+        {
+            "nick": "EntryFrag",
+            "nome": "Jogador CS",
+            "login": "entry.frag",
+            "jogo_principal": "CS2",
+            "admin_id": admin_id,
+            "estatisticas": {"partidas_jogadas": 12, "vitorias": 8, "derrotas": 4, "kd_ratio": 1.3},
+            "criado_em": datetime.now(UTC),
+        }
+    ).inserted_id
+    valorant_player_id = mongo.players.insert_one(
+        {
+            "nick": "SiteAnchor",
+            "nome": "Jogador Valorant",
+            "login": "site.anchor",
+            "jogo_principal": "Valorant",
+            "admin_id": admin_id,
+            "estatisticas": {"partidas_jogadas": 9, "vitorias": 6, "derrotas": 3, "kd_ratio": 1.1},
+            "criado_em": datetime.now(UTC),
+        }
+    ).inserted_id
+
+    mongo.teams.insert_one(
+        {
+            "nome": "Alpha Team",
+            "tag": "ALP",
+            "jogo": "CS2",
+            "admin_id": admin_id,
+            "jogadores": [{"jogador_id": cs_player_id, "nick": "EntryFrag", "funcao": "IGL"}],
+            "criado_em": datetime.now(UTC),
+        }
+    )
+    mongo.teams.insert_one(
+        {
+            "nome": "Beta Squad",
+            "tag": "BET",
+            "jogo": "Valorant",
+            "admin_id": admin_id,
+            "jogadores": [{"jogador_id": valorant_player_id, "nick": "SiteAnchor", "funcao": "Sentinela"}],
+            "criado_em": datetime.now(UTC),
+        }
+    )
+
+    client = flask_app.test_client()
+    client.post("/login", data={"modo": "login", "identificador": "organizador", "senha": "admin123"})
+
+    ranking_response = client.get("/ranking?jogo=CS2")
+
+    assert ranking_response.status_code == 200
+    assert b"Ranking de Times" in ranking_response.data
+    assert b"Alpha Team" in ranking_response.data
+    assert b"Beta Squad" not in ranking_response.data
+
+
 def test_player_can_view_other_player_with_sensitive_fields_hidden(monkeypatch):
     flask_app = build_test_app(monkeypatch)
     mongo = flask_app.extensions["mongo"]
