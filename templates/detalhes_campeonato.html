@@ -1,0 +1,101 @@
+{% extends "public_base.html" %}
+
+{% block title %}{{ campeonato.nome }} - FPS Arena{% endblock %}
+
+{% block content %}
+<section class="hero" aria-labelledby="campTitle">
+  <div>
+    <a class="btn-ghost mb-3" href="{{ url_for('index') }}"><i class="bi bi-arrow-left"></i> Voltar ao mural</a>
+    <div class="eyebrow">{{ campeonato.jogo }} - {{ campeonato.regiao }}</div>
+    <h1 id="campTitle">{{ campeonato.nome }}</h1>
+    <p>{{ campeonato.descricao }}</p>
+    <div class="d-flex flex-wrap gap-2 mt-3">
+      {% for tag in campeonato.tags %}
+      <span class="badge text-bg-dark border border-secondary">{{ tag }}</span>
+      {% endfor %}
+    </div>
+  </div>
+  <aside class="hero-panel" aria-label="Dados do campeonato">
+    <div class="metric">
+      <strong>{{ campeonato.status }}</strong>
+      <span>Status do torneio</span>
+    </div>
+    <div class="metric">
+      <strong>{{ campeonato.formato }}</strong>
+      <span>Formato</span>
+    </div>
+    <div class="metric">
+      <strong>{{ campeonato.periodo }}</strong>
+      <span>Periodo publico</span>
+    </div>
+  </aside>
+</section>
+
+<section class="mt-4" aria-labelledby="partidasTitle">
+  <div class="section-title">
+    <div>
+      <div class="eyebrow">Tabela publica</div>
+      <h2 id="partidasTitle">Partidas do campeonato</h2>
+    </div>
+    <a class="btn-fps" href="{{ url_for('login') }}"><i class="bi bi-person-badge"></i> Area do Competidor</a>
+  </div>
+
+  <div class="tabs-shell">
+    <ul class="nav nav-tabs" id="publicMatchTabs" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="live-tab" data-bs-toggle="tab" data-bs-target="#live-pane" type="button" role="tab" aria-controls="live-pane" aria-selected="true">
+          <i class="bi bi-broadcast"></i> Partidas Ao Vivo
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="schedule-tab" data-bs-toggle="tab" data-bs-target="#schedule-pane" type="button" role="tab" aria-controls="schedule-pane" aria-selected="false">
+          <i class="bi bi-calendar-event"></i> Proximos Jogos
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="results-tab" data-bs-toggle="tab" data-bs-target="#results-pane" type="button" role="tab" aria-controls="results-pane" aria-selected="false">
+          <i class="bi bi-trophy-fill"></i> Resultados
+        </button>
+      </li>
+    </ul>
+
+    <div class="tab-content">
+      <div class="tab-pane fade show active" id="live-pane" role="tabpanel" aria-labelledby="live-tab" tabindex="0">
+        <div class="match-list">
+          {% if partidas_ao_vivo %}
+            {% for partida in partidas_ao_vivo %}
+              {% include "_public_match_card.html" %}
+            {% endfor %}
+          {% else %}
+            <div class="empty-state">Nenhuma partida ao vivo neste momento.</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="tab-pane fade" id="schedule-pane" role="tabpanel" aria-labelledby="schedule-tab" tabindex="0">
+        <div class="match-list">
+          {% if proximos_jogos %}
+            {% for partida in proximos_jogos %}
+              {% include "_public_match_card.html" %}
+            {% endfor %}
+          {% else %}
+            <div class="empty-state">Nao existem proximos jogos cadastrados para este campeonato.</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="tab-pane fade" id="results-pane" role="tabpanel" aria-labelledby="results-tab" tabindex="0">
+        <div class="match-list">
+          {% if resultados %}
+            {% for partida in resultados %}
+              {% include "_public_match_card.html" %}
+            {% endfor %}
+          {% else %}
+            <div class="empty-state">Nenhum resultado publicado para este campeonato.</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

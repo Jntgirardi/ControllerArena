@@ -1,0 +1,132 @@
+{% extends "public_base.html" %}
+
+{% block title %}Campeonatos - FPS Arena{% endblock %}
+
+{% block content %}
+<section class="hero" aria-labelledby="homeTitle">
+  <div>
+    <div class="eyebrow">Mural publico</div>
+    <h1 id="homeTitle">Acompanhe a <span>arena.</span></h1>
+    <p>
+      Veja campeonatos ativos, partidas ao vivo, agenda e resultados sem entrar no painel interno.
+      A area de competidor continua separada para jogadores e administradores.
+    </p>
+    <div class="d-flex flex-wrap gap-2 mt-4">
+      <a class="btn-fps" href="#campeonatos"><i class="bi bi-trophy-fill"></i> Ver campeonatos</a>
+      <a class="btn-ghost" href="{{ url_for('login') }}"><i class="bi bi-person-badge"></i> Area do Competidor</a>
+    </div>
+  </div>
+  <aside class="hero-panel" aria-label="Resumo publico">
+    <div class="metric">
+      <strong>{{ campeonatos|length }}</strong>
+      <span>campeonatos no mural</span>
+    </div>
+    <div class="metric">
+      <strong>{{ campeonatos|sum(attribute='equipes') }}</strong>
+      <span>equipes em disputa</span>
+    </div>
+    <div class="metric">
+      <strong>Live</strong>
+      <span>sumulas publicas com KDA</span>
+    </div>
+  </aside>
+</section>
+
+<section id="campeonatos" aria-labelledby="championshipTitle">
+  <div class="section-title">
+    <div>
+      <div class="eyebrow">Campeonatos ativos</div>
+      <h2 id="championshipTitle">Escolha um torneio</h2>
+    </div>
+  </div>
+
+  {% if campeonatos %}
+  <div class="championship-grid">
+    {% for campeonato in campeonatos %}
+    <a class="public-card" href="{{ url_for('detalhes_campeonato_publico', camp_id=campeonato.id) }}">
+      <span class="badge-game {{ 'valorant' if campeonato.jogo == 'Valorant' else 'cs2' }}">{{ campeonato.jogo }}</span>
+      <h3>{{ campeonato.nome }}</h3>
+      <p>{{ campeonato.descricao }}</p>
+      <div class="d-flex flex-wrap gap-2 mb-3">
+        {% for tag in campeonato.tags %}
+        <span class="badge text-bg-dark border border-secondary">{{ tag }}</span>
+        {% endfor %}
+      </div>
+      <div class="card-meta">
+        <span class="meta-item"><strong>{{ campeonato.status }}</strong>Status</span>
+        <span class="meta-item"><strong>{{ campeonato.equipes }}</strong>Equipes</span>
+        <span class="meta-item"><strong>{{ campeonato.premio }}</strong>Premio</span>
+        <span class="meta-item"><strong>{{ campeonato.regiao }}</strong>Regiao</span>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state">Nenhum campeonato publico disponivel no momento.</div>
+  {% endif %}
+</section>
+
+<section id="ao-vivo" aria-labelledby="liveTitle">
+  <div class="section-title">
+    <div>
+      <div class="eyebrow">Transmissao</div>
+      <h2 id="liveTitle">Partidas em destaque</h2>
+    </div>
+  </div>
+  <div class="match-list">
+    {% set live_count = namespace(total=0) %}
+    {% for campeonato in campeonatos %}
+      {% for partida in campeonato.partidas if partida.status == 'ao_vivo' %}
+        {% set live_count.total = live_count.total + 1 %}
+        <a class="match-card" href="{{ url_for('sumula_partida_publica', partida_id=partida.id) }}">
+          <div>
+            <div class="team-name">{{ partida.time_a.nome }}</div>
+            <div class="team-tag">{{ partida.time_a.tag }} - {{ campeonato.nome }}</div>
+          </div>
+          <div class="score-box">{{ partida.score_a }} <span>x</span> {{ partida.score_b }}</div>
+          <div>
+            <div class="team-name">{{ partida.time_b.nome }}</div>
+            <div class="team-tag">{{ partida.time_b.tag }} - {{ partida.mapa }}</div>
+          </div>
+          <span class="btn-ghost"><i class="bi bi-clipboard-data"></i> Sumula</span>
+        </a>
+      {% endfor %}
+    {% endfor %}
+    {% if live_count.total == 0 %}
+      <div class="empty-state">Nao ha partidas ao vivo agora.</div>
+    {% endif %}
+  </div>
+</section>
+
+<section id="resultados" aria-labelledby="resultTitle">
+  <div class="section-title">
+    <div>
+      <div class="eyebrow">Historico</div>
+      <h2 id="resultTitle">Ultimos resultados</h2>
+    </div>
+  </div>
+  <div class="match-list">
+    {% set result_count = namespace(total=0) %}
+    {% for campeonato in campeonatos %}
+      {% for partida in campeonato.partidas if partida.status == 'finalizado' %}
+        {% set result_count.total = result_count.total + 1 %}
+        <a class="match-card" href="{{ url_for('sumula_partida_publica', partida_id=partida.id) }}">
+          <div>
+            <div class="team-name">{{ partida.time_a.nome }}</div>
+            <div class="team-tag">{{ partida.time_a.tag }} - {{ partida.fase }}</div>
+          </div>
+          <div class="score-box">{{ partida.score_a }} <span>x</span> {{ partida.score_b }}</div>
+          <div>
+            <div class="team-name">{{ partida.time_b.nome }}</div>
+            <div class="team-tag">{{ partida.time_b.tag }} - {{ partida.data }}</div>
+          </div>
+          <span class="btn-ghost"><i class="bi bi-clipboard-data"></i> Ver KDA</span>
+        </a>
+      {% endfor %}
+    {% endfor %}
+    {% if result_count.total == 0 %}
+      <div class="empty-state">Nenhum resultado publicado ainda.</div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

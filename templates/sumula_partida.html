@@ -1,0 +1,90 @@
+{% extends "public_base.html" %}
+
+{% block title %}Sumula - {{ partida.time_a.nome }} x {{ partida.time_b.nome }}{% endblock %}
+
+{% macro kda_table(time, jogadores, variant) %}
+<section class="table-panel {{ variant }}" aria-labelledby="table-{{ variant }}">
+  <div class="table-heading">
+    <div>
+      <h2 id="table-{{ variant }}">{{ time.nome }}</h2>
+      <div class="team-tag">{{ time.tag }} - {{ time.lado }}</div>
+    </div>
+    <span class="badge text-bg-dark border border-secondary">{{ jogadores|length }} jogadores</span>
+  </div>
+  <div class="table-wrap">
+    <table class="kda-table">
+      <thead>
+        <tr>
+          <th>Jogador</th>
+          <th class="text-end">Abates</th>
+          <th class="text-end">Mortes</th>
+          <th class="text-end">Assistencias</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for jogador in jogadores %}
+        <tr>
+          <td>{{ jogador.nick }}</td>
+          <td class="text-end">{{ jogador.kills }}</td>
+          <td class="text-end">{{ jogador.deaths }}</td>
+          <td class="text-end">{{ jogador.assists }}</td>
+        </tr>
+        {% endfor %}
+        {% if not jogadores %}
+        <tr>
+          <td colspan="4" class="text-center text-muted">KDA sera publicado quando a partida iniciar.</td>
+        </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endmacro %}
+
+{% block content %}
+<a class="btn-ghost mb-3" href="{{ url_for('detalhes_campeonato_publico', camp_id=campeonato.id) }}"><i class="bi bi-arrow-left"></i> Voltar ao campeonato</a>
+
+<section class="summary-hero" aria-label="Placar da partida">
+  <div class="summary-team">
+    <span class="badge-game cs2">{{ partida.time_a.tag }}</span>
+    <div class="team-name">{{ partida.time_a.nome }}</div>
+    <div class="team-tag">{{ partida.time_a.lado }}</div>
+  </div>
+  <div class="summary-score">
+    {% if partida.score_a is not none and partida.score_b is not none %}
+      {{ partida.score_a }} <span>x</span> {{ partida.score_b }}
+    {% else %}
+      <span>vs</span>
+    {% endif %}
+  </div>
+  <div class="summary-team right">
+    <span class="badge-game valorant ms-lg-auto">{{ partida.time_b.tag }}</span>
+    <div class="team-name">{{ partida.time_b.nome }}</div>
+    <div class="team-tag">{{ partida.time_b.lado }}</div>
+  </div>
+</section>
+
+<section class="mb-4">
+  <div class="section-title">
+    <div>
+      <div class="eyebrow">{{ campeonato.nome }}</div>
+      <h1>Sumula da partida</h1>
+      <p>
+        {{ partida.fase }} - {{ partida.mapa }} - {{ partida.data }} as {{ partida.hora }}.
+        {% if partida.status == 'ao_vivo' %}
+          Placar em acompanhamento ao vivo.
+        {% elif partida.status == 'finalizado' %}
+          Resultado encerrado com estatisticas finais.
+        {% else %}
+          Confronto agendado.
+        {% endif %}
+      </p>
+    </div>
+  </div>
+</section>
+
+<div class="tables-grid">
+  {{ kda_table(partida.time_a, partida.kda_a, "blue") }}
+  {{ kda_table(partida.time_b, partida.kda_b, "red") }}
+</div>
+{% endblock %}

@@ -1,0 +1,42 @@
+{% set has_sumula = partida.status in ('ao_vivo', 'finalizado') %}
+{% if has_sumula %}
+<a class="match-card" href="{{ url_for('sumula_partida_publica', partida_id=partida.id) }}">
+{% else %}
+<div class="match-card">
+{% endif %}
+  <div>
+    <div class="team-name">{{ partida.time_a.nome }}</div>
+    <div class="team-tag">{{ partida.time_a.tag }} - {{ partida.time_a.lado }}</div>
+  </div>
+  <div class="score-box">
+    {% if partida.score_a is not none and partida.score_b is not none %}
+      {{ partida.score_a }} <span>x</span> {{ partida.score_b }}
+    {% else %}
+      <span>vs</span>
+    {% endif %}
+  </div>
+  <div>
+    <div class="team-name">{{ partida.time_b.nome }}</div>
+    <div class="team-tag">{{ partida.time_b.tag }} - {{ partida.time_b.lado }}</div>
+  </div>
+  <div class="match-info">
+    <div class="{% if partida.status == 'ao_vivo' %}status-live{% elif partida.status == 'finalizado' %}status-finished{% endif %}">
+      {% if partida.status == 'ao_vivo' %}
+        Ao vivo
+      {% elif partida.status == 'finalizado' %}
+        Finalizado
+      {% else %}
+        Agendado
+      {% endif %}
+    </div>
+    <div>{{ partida.fase }} - {{ partida.mapa }}</div>
+    <div>{{ partida.data }} as {{ partida.hora }}</div>
+    {% if has_sumula %}
+    <span class="btn-ghost mt-2"><i class="bi bi-clipboard-data"></i> Ver sumula</span>
+    {% endif %}
+  </div>
+{% if has_sumula %}
+</a>
+{% else %}
+</div>
+{% endif %}

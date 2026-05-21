@@ -18,6 +18,32 @@ def build_test_app(monkeypatch):
     return create_app()
 
 
+def test_public_championship_flow_uses_mock_data(monkeypatch):
+    flask_app = build_test_app(monkeypatch)
+    client = flask_app.test_client()
+
+    home = client.get("/")
+    assert home.status_code == 200
+    assert b"FPS Arena Masters" in home.data
+    assert b"Area do Competidor" in home.data
+    assert b"/campeonato/1" in home.data
+
+    details = client.get("/campeonato/1")
+    assert details.status_code == 200
+    assert b"Partidas Ao Vivo" in details.data
+    assert b"Proximos Jogos" in details.data
+    assert b"Resultados" in details.data
+    assert b"/partida/1001" in details.data
+
+    summary = client.get("/partida/1001")
+    assert summary.status_code == 200
+    assert b"Abates" in summary.data
+    assert b"Mortes" in summary.data
+    assert b"Assistencias" in summary.data
+    assert b"Blue Storm" in summary.data
+    assert b"Red Vipers" in summary.data
+
+
 def test_app_boots_with_mongo_and_redis(monkeypatch):
     flask_app = build_test_app(monkeypatch)
     assert type(flask_app.extensions["cache"]).__name__ == "RedisCache"
