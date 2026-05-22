@@ -168,7 +168,7 @@ class PlayerService:
             "admin_id": admin_id,
             "campeonato_id": ObjectId(data["campeonato_id"]) if data.get("campeonato_id") else None,
             "estatisticas": {"partidas_jogadas": 0, "vitorias": 0, "derrotas": 0, "kd_ratio": 0.0},
-            "criado_em": datetime.utcnow(),
+            "criado_em": utc_now_naive(),
         }
         if data["jogo_principal"] == "CS2":
             player_document["rank_competitivo"] = data.get("rank_competitivo", "Sem Rank")
@@ -188,7 +188,7 @@ class PlayerService:
                 "player_id": player_id,
                 "ativo": True,
                 "must_change_password": False,
-                "criado_em": datetime.utcnow(),
+                "criado_em": utc_now_naive(),
             }
         )
         invalidate_ranking_cache(self.cache)
@@ -302,7 +302,7 @@ class TeamService:
                 "jogo": jogo,
                 "admin_id": get_scope_admin_id(current_user),
                 "jogadores": membros,
-                "criado_em": datetime.utcnow(),
+                "criado_em": utc_now_naive(),
             }
         )
         for membro in membros:
@@ -412,7 +412,7 @@ class ChampionshipService:
                 "admin_id": get_scope_admin_id(current_user),
                 "times_inscritos": [],
                 "criado_por": current_user["_id"],
-                "criado_em": datetime.utcnow(),
+                "criado_em": utc_now_naive(),
             }
         )
         return []
@@ -493,9 +493,9 @@ class MatchService:
             return "Um dos times nao foi encontrado."
         data_str = form_data.get("data_partida", "").strip()
         try:
-            data_partida = datetime.strptime(data_str, "%Y-%m-%dT%H:%M") if data_str else datetime.utcnow()
+            data_partida = datetime.strptime(data_str, "%Y-%m-%dT%H:%M") if data_str else utc_now_naive()
         except ValueError:
-            data_partida = datetime.utcnow()
+            data_partida = utc_now_naive()
         self.match_repo.insert(
             {
                 "admin_id": camp.get("admin_id"),
@@ -641,7 +641,7 @@ class AuditLogService:
                 "method": method,
                 "path": path,
                 "status_code": status_code,
-                "created_at": datetime.utcnow(),
+                "created_at": utc_now_naive(),
             }
         )
 
@@ -1075,7 +1075,7 @@ class UserService:
                 "senha_hash": self.password_hasher.hash(initial_password),
                 "ativo": True,
                 "must_change_password": True,
-                "criado_em": datetime.utcnow(),
+                "criado_em": utc_now_naive(),
             }
         )
         return [], {"user_id": user_id, "codigo_acesso": access_code, "senha_inicial": initial_password}

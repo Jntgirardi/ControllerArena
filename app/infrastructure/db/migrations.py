@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 
 import bcrypt
 
@@ -30,7 +30,7 @@ def migrate_legacy_data(mongo):
                 "role": "SUPER_ADMIN",
                 "ativo": True,
                 "must_change_password": False,
-                "criado_em": datetime.utcnow(),
+                "criado_em": datetime.now(UTC).replace(tzinfo=None),
             }
         )
 
@@ -49,7 +49,7 @@ def migrate_legacy_data(mongo):
         if "must_change_password" not in user:
             updates["must_change_password"] = False
         if "criado_em" not in user:
-            updates["criado_em"] = datetime.utcnow()
+            updates["criado_em"] = datetime.now(UTC).replace(tzinfo=None)
         if role == "PLAYER" and "admin_id" not in user:
             updates["admin_id"] = None
         if role == "ADMIN":
