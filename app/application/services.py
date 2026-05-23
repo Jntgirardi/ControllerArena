@@ -758,7 +758,11 @@ class ReportService:
             sort=[("estatisticas.vitorias", DESCENDING), ("estatisticas.kd_ratio", DESCENDING), ("nick", 1)],
         )
         rows = []
-        for index, player in enumerate(players, start=1):
+        index = 1
+        for player in players:
+            criado_em = player.get("criado_em")
+            if not self._filter_by_date_range(criado_em, start, end):
+                continue
             stats = player.get("estatisticas", {})
             partidas = int(stats.get("partidas_jogadas", 0) or 0)
             vitorias = int(stats.get("vitorias", 0) or 0)
@@ -774,6 +778,7 @@ class ReportService:
                     "Win Rate (%)": win_rate,
                 }
             )
+            index += 1
         return {
             "key": "player-ranking",
             "title": "Ranking de jogadores",

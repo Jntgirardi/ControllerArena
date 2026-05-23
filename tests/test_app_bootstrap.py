@@ -753,3 +753,55 @@ def test_player_deletion_removes_user_account(monkeypatch):
     assert mongo.users.find_one({"player_id": player_id}) is None
 
 
+def test_player_ranking_report_filters_by_date(monkeypatch):
+    flask_app = build_test_app(monkeypatch)
+    mongo = flask_app.extensions["mongo"]
+    services = flask_app.extensions["services"]
+
+    admin_id = ObjectId()
+    current_user = {"role": "ADMIN", "_id": admin_id}
+
+    # 1. Insert players with different created_at dates
+    now = datetime.now(UTC).replace(tzinfo=None)
+    mongo.players.insert_many([
+        {
+            "nick": "OldPlayer",
+            "nome": "Old",
+            "jogo_principal": "CS2",
+            "admin_id": admin_id,
+            "estatisticas": {"partidas_jogadas": 10, "vitorias": 8, "derrotas": 2, "kd_ratio": 1.5},
+            "criado_em": now - timedelta(days=10),
+        },
+        {
+            "nick": "NewPlayer",
+            "nome": "New",
+            "jogo_principal": "CS2",
+            "admin_id": admin_id,
+            "estatisticas": {"partidas_jogadas": 5, "vitorias": 4, "derrotas": 1, "kd_ratio": 1.2},
+            "criado_em": now,
+        }
+    ])
+
+    # 2. Get report with date range filtering only today/recent
+    start_date = (now - timedelta(days=2)).strftime("%Y-%m-%d")
+    end_date = (now + timedelta(days=2)).strftime("%Y-%m-%d")
+
+    # Get ranking report
+    report, warning = services["reports"].get_report(
+        current_user,
+        "player-ranking",
+        start_date,
+        end_date
+    )
+    assert not warning
+    assert report is not None
+
+    # Should only contain NewPlayer, not OldPlayer
+    nicks = [row["Nick"] for row in report["rows"]]
+    assert "NewPlayer" in nicks
+    assert "OldPlayer" not in nicks
+    assert len(report["rows"]) == 1
+    assert report["rows"][0]["Posicao"] == 1
+
+
+
