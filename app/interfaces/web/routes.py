@@ -260,9 +260,23 @@ def register_routes(app, services):
         if not campeonato:
             abort(404)
         partidas = campeonato["partidas"]
+        
+        times_seen = set()
+        times_inscritos = []
+        for p in partidas:
+            for side in ("time_a", "time_b"):
+                team_data = p.get(side)
+                if team_data and team_data.get("nome"):
+                    nome = team_data["nome"]
+                    tag = team_data.get("tag", "TBD")
+                    if nome not in times_seen:
+                        times_seen.add(nome)
+                        times_inscritos.append({"nome": nome, "tag": tag})
+
         return render_template(
             "detalhes_campeonato.html",
             campeonato=campeonato,
+            times_inscritos=times_inscritos,
             partidas_ao_vivo=[p for p in partidas if p["status"] == "ao_vivo"],
             proximos_jogos=[p for p in partidas if p["status"] == "agendado"],
             resultados=[p for p in partidas if p["status"] == "finalizado"],

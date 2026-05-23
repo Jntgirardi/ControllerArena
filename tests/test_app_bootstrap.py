@@ -34,6 +34,10 @@ def test_public_championship_flow_uses_mock_data(monkeypatch):
     assert b"Proximos Jogos" in details.data
     assert b"Resultados" in details.data
     assert b"/partida/1001" in details.data
+    assert b"Times Inscritos" in details.data
+    assert b"Blue Storm" in details.data
+    assert b"Red Vipers" in details.data
+    assert b"Delta Five" in details.data
 
     summary = client.get("/partida/1001")
     assert summary.status_code == 200
