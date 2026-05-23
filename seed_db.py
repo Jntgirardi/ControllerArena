@@ -197,6 +197,20 @@ db.partidas.insert_one(
     }
 )
 
+db.partidas.insert_one(
+    {
+        "admin_id": admin_id,
+        "campeonato_id": camp_cs,
+        "fase": "Grande Final",
+        "time_a": {"time_id": time_cs, "nome": "Shadow Squad", "placar": 0},
+        "time_b": {"time_id": time_cs_2, "nome": "Void Hunters", "placar": 0},
+        "mapa": "Mirage",
+        "data_partida": hoje + timedelta(hours=1),
+        "status": "agendada",
+    }
+)
+
+
 evento_show = db.eventos.insert_one(
     {
         "nome": "Arena Music Clash",
