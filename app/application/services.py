@@ -236,6 +236,7 @@ class PlayerService:
             return False
         deleted = self.player_repo.delete_by_id(object_id)
         if deleted:
+            self.user_repo.delete_by_player_id(object_id)
             self.team_repo.remove_player_from_all_teams(object_id)
             invalidate_ranking_cache(self.cache)
         return deleted

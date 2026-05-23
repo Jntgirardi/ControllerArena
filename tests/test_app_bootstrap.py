@@ -713,3 +713,43 @@ def test_mongodb_optimized_indexes_are_created(monkeypatch):
     assert "admin_id_1_vendido_em_-1" in tickets_indexes
     assert tickets_indexes["admin_id_1_vendido_em_-1"]["key"] == [("admin_id", 1), ("vendido_em", -1)]
 
+
+def test_player_deletion_removes_user_account(monkeypatch):
+    flask_app = build_test_app(monkeypatch)
+    mongo = flask_app.extensions["mongo"]
+    services = flask_app.extensions["services"]
+
+    # 1. Create admin and player
+    admin_id = ObjectId()
+    current_user = {"role": "ADMIN", "_id": admin_id}
+
+    player_data = {
+        "nick": "TestPlayer",
+        "nome": "Test Name",
+        "login": "test.player",
+        "senha": "password123",
+        "jogo_principal": "CS2",
+        "rank_competitivo": "Sem Rank",
+        "premier_rating": "0",
+    }
+
+    errors = services["players"].create_player(current_user, player_data)
+    assert not errors
+
+    # Verify both documents exist
+    player = mongo.players.find_one({"nick": "TestPlayer"})
+    assert player is not None
+    player_id = player["_id"]
+
+    user = mongo.users.find_one({"player_id": player_id})
+    assert user is not None
+
+    # 2. Delete player
+    deleted = services["players"].delete_player(current_user, player_id)
+    assert deleted is True
+
+    # Verify both documents are deleted
+    assert mongo.players.find_one({"_id": player_id}) is None
+    assert mongo.users.find_one({"player_id": player_id}) is None
+
+

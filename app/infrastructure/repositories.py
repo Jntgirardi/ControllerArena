@@ -34,6 +34,9 @@ class MongoUserRepository:
     def delete_by_id(self, object_id):
         self.collection.delete_one({"_id": object_id})
 
+    def delete_by_player_id(self, player_id):
+        self.collection.delete_one({"player_id": player_id})
+
 
 class MongoPlayerRepository:
     def __init__(self, collection):
