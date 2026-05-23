@@ -657,3 +657,55 @@ def test_player_cannot_access_reports(monkeypatch):
 
     assert response.status_code == 302
     assert response.headers["Location"] == "/dashboard"
+
+
+def test_mongodb_optimized_indexes_are_created(monkeypatch):
+    flask_app = build_test_app(monkeypatch)
+    mongo = flask_app.extensions["mongo"]
+
+    # Verify users indexes
+    users_indexes = mongo.users.index_information()
+    assert "criado_em_-1" in users_indexes
+    assert users_indexes["criado_em_-1"]["key"] == [("criado_em", -1)]
+
+    # Verify players indexes
+    players_indexes = mongo.players.index_information()
+    assert "admin_id_1_nick_1" in players_indexes
+    assert players_indexes["admin_id_1_nick_1"]["key"] == [("admin_id", 1), ("nick", 1)]
+    assert "estatisticas.vitorias_-1_estatisticas.kd_ratio_-1" in players_indexes
+    assert players_indexes["estatisticas.vitorias_-1_estatisticas.kd_ratio_-1"]["key"] == [
+        ("estatisticas.vitorias", -1),
+        ("estatisticas.kd_ratio", -1),
+    ]
+
+    # Verify teams indexes
+    teams_indexes = mongo.teams.index_information()
+    assert "jogadores.jogador_id_1" in teams_indexes
+    assert teams_indexes["jogadores.jogador_id_1"]["key"] == [("jogadores.jogador_id", 1)]
+    assert "admin_id_1_nome_1" in teams_indexes
+    assert teams_indexes["admin_id_1_nome_1"]["key"] == [("admin_id", 1), ("nome", 1)]
+    assert "admin_id_1_jogo_1_nome_1" in teams_indexes
+    assert teams_indexes["admin_id_1_jogo_1_nome_1"]["key"] == [("admin_id", 1), ("jogo", 1), ("nome", 1)]
+
+    # Verify championships indexes
+    championships_indexes = mongo.championships.index_information()
+    assert "admin_id_1_criado_em_-1" in championships_indexes
+    assert championships_indexes["admin_id_1_criado_em_-1"]["key"] == [("admin_id", 1), ("criado_em", -1)]
+    assert "times_inscritos_1_datas.inicio_-1" in championships_indexes
+    assert championships_indexes["times_inscritos_1_datas.inicio_-1"]["key"] == [
+        ("times_inscritos", 1),
+        ("datas.inicio", -1),
+    ]
+
+    # Verify matches indexes
+    matches_indexes = mongo.matches.index_information()
+    assert "campeonato_id_1_data_partida_1" in matches_indexes
+    assert matches_indexes["campeonato_id_1_data_partida_1"]["key"] == [("campeonato_id", 1), ("data_partida", 1)]
+    assert "admin_id_1_data_partida_-1" in matches_indexes
+    assert matches_indexes["admin_id_1_data_partida_-1"]["key"] == [("admin_id", 1), ("data_partida", -1)]
+
+    # Verify tickets indexes
+    tickets_indexes = mongo.tickets.index_information()
+    assert "admin_id_1_vendido_em_-1" in tickets_indexes
+    assert tickets_indexes["admin_id_1_vendido_em_-1"]["key"] == [("admin_id", 1), ("vendido_em", -1)]
+
