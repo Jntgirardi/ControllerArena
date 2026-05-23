@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import uuid4
 
@@ -548,6 +548,83 @@ class MatchService:
                 for membro in team.get("jogadores", []):
                     self.player_repo.increment_stats(membro["jogador_id"], increment)
         invalidate_ranking_cache(self.cache)
+        return None, match["campeonato_id"]
+
+    def solicitar_checkin(self, current_user: dict[str, Any], match_id, antecedencia_minutos: str) -> tuple[str | None, ObjectId | None]:
+        match = self.match_repo.find_by_id(match_id)
+        if not match or not can_access_admin_scope(current_user, match.get("admin_id")):
+            return "Partida nao encontrada.", None
+        if match.get("status") == "finalizada":
+            return "Esta partida ja foi finalizada.", match["campeonato_id"]
+        try:
+            minutos = int(antecedencia_minutos)
+            if minutos < 5:
+                return "A antecedencia minima e de 5 minutos.", match["campeonato_id"]
+        except ValueError:
+            return "Antecedencia invalida.", match["campeonato_id"]
+
+        self.match_repo.update_fields(
+            match_id,
+            {
+                "checkin": {
+                    "solicitado": True,
+                    "antecedencia_minutos": minutos,
+                    "solicitado_em": utc_now_naive(),
+                    "time_a_confirmado": False,
+                    "time_b_confirmado": False,
+                }
+            }
+        )
+        return None, match["campeonato_id"]
+
+    def confirmar_presenca(self, current_user: dict[str, Any], match_id, team_id: ObjectId) -> tuple[str | None, ObjectId | None]:
+        match = self.match_repo.find_by_id(match_id)
+        if not match:
+            return "Partida nao encontrada.", None
+        if match.get("status") == "finalizada":
+            return "Esta partida ja foi finalizada.", match["campeonato_id"]
+
+        checkin = match.get("checkin")
+        if not checkin or not checkin.get("solicitado"):
+            return "O check-in nao foi solicitado para esta partida.", match["campeonato_id"]
+
+        # Validate team in match
+        time_a_id = match["time_a"]["time_id"]
+        time_b_id = match["time_b"]["time_id"]
+        if team_id not in (time_a_id, time_b_id):
+            return "Este time nao pertence a esta partida.", match["campeonato_id"]
+
+        # Validate permission
+        is_admin = can_access_admin_scope(current_user, match.get("admin_id"))
+        is_player_on_team = False
+        if current_user.get("role") == ROLE_PLAYER and current_user.get("player_id"):
+            # Check if player belongs to team_id
+            team = self.team_repo.find_by_id(team_id)
+            if team:
+                member_ids = {m["jogador_id"] for m in team.get("jogadores", [])}
+                if current_user["player_id"] in member_ids:
+                    is_player_on_team = True
+
+        if not is_admin and not is_player_on_team:
+            return "Acesso negado para confirmar presenca deste time.", match["campeonato_id"]
+
+        # Validate time window
+        data_partida = match.get("data_partida")
+        if data_partida:
+            agora = utc_now_naive()
+            antecedencia = timedelta(minutes=checkin["antecedencia_minutos"])
+            inicio_janela = data_partida - antecedencia
+            # Only players are restricted to the window, admins can confirm at any time
+            if not is_admin:
+                if agora < inicio_janela:
+                    minutos_restantes = int((inicio_janela - agora).total_seconds() / 60)
+                    return f"A janela de check-in ainda nao abriu. Tente novamente em {minutos_restantes} minutos.", match["campeonato_id"]
+                if agora > data_partida:
+                    return "O horario de inicio da partida ja passou. Nao e mais possivel confirmar presenca.", match["campeonato_id"]
+
+        # Update confirmation field
+        field_to_update = "checkin.time_a_confirmado" if team_id == time_a_id else "checkin.time_b_confirmado"
+        self.match_repo.update_fields(match_id, {field_to_update: True})
         return None, match["campeonato_id"]
 
 

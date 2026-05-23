@@ -107,6 +107,82 @@
             <button type="submit" class="btn btn-sm btn-success">Salvar</button>
           </form>
           {% endif %}
+
+          {% if p.status != 'finalizada' %}
+          <div class="mt-2 pt-2 border-top border-secondary-subtle" style="border-top-style: dashed !important;">
+            {% if p.get('checkin') and p.checkin.solicitado %}
+              <div class="small mb-1 d-flex align-items-center justify-content-between flex-wrap gap-1">
+                <span class="text-muted" style="font-size: 0.8rem;"><i class="bi bi-clock-history"></i> Check-in ({{ p.checkin.antecedencia_minutos }} min):</span>
+                <div class="d-flex gap-2">
+                  <span class="badge {{ 'bg-success' if p.checkin.time_a_confirmado else 'bg-warning text-dark' }}" style="font-size: 0.7rem;">
+                    {{ p.time_a.nome }}: {{ 'Confirmado' if p.checkin.time_a_confirmado else 'Pendente' }}
+                  </span>
+                  <span class="badge {{ 'bg-success' if p.checkin.time_b_confirmado else 'bg-warning text-dark' }}" style="font-size: 0.7rem;">
+                    {{ p.time_b.nome }}: {{ 'Confirmado' if p.checkin.time_b_confirmado else 'Pendente' }}
+                  </span>
+                </div>
+              </div>
+
+              {% if not p.checkin.time_a_confirmado or not p.checkin.time_b_confirmado %}
+              <div class="alert alert-danger py-1 px-2 small mb-1 text-center" role="alert" style="font-size: 0.7rem; margin: 6px 0 0 0;">
+                <i class="bi bi-exclamation-triangle-fill"></i> Alerta de W.O. pendente!
+              </div>
+              {% endif %}
+
+              {% if session.role == 'PLAYER' %}
+                <div class="d-flex gap-1 mt-2">
+                  {% if not p.checkin.time_a_confirmado %}
+                  <form method="post" action="{{ url_for('confirmar_presenca', partida_id=p._id) }}" class="w-100" style="margin:0">
+                    <input type="hidden" name="time_id" value="{{ p.time_a.time_id }}">
+                    <button type="submit" class="btn btn-xs btn-outline-success w-100 py-1" style="font-size:0.72rem; padding: 2px 4px;"><i class="bi bi-check-circle"></i> Confirmar {{ p.time_a.nome }}</button>
+                  </form>
+                  {% endif %}
+                  {% if not p.checkin.time_b_confirmado %}
+                  <form method="post" action="{{ url_for('confirmar_presenca', partida_id=p._id) }}" class="w-100" style="margin:0">
+                    <input type="hidden" name="time_id" value="{{ p.time_b.time_id }}">
+                    <button type="submit" class="btn btn-xs btn-outline-success w-100 py-1" style="font-size:0.72rem; padding: 2px 4px;"><i class="bi bi-check-circle"></i> Confirmar {{ p.time_b.nome }}</button>
+                  </form>
+                  {% endif %}
+                </div>
+              {% endif %}
+
+              {% if session.role == 'ADMIN' %}
+                <div class="d-flex gap-1 mt-2">
+                  {% if not p.checkin.time_a_confirmado %}
+                  <form method="post" action="{{ url_for('confirmar_presenca', partida_id=p._id) }}" class="w-100" style="margin:0">
+                    <input type="hidden" name="time_id" value="{{ p.time_a.time_id }}">
+                    <button type="submit" class="btn btn-xs btn-outline-primary w-100 py-1" style="font-size:0.68rem; padding: 2px 4px;"><i class="bi bi-check-all"></i> Forçar {{ p.time_a.nome }}</button>
+                  </form>
+                  {% endif %}
+                  {% if not p.checkin.time_b_confirmado %}
+                  <form method="post" action="{{ url_for('confirmar_presenca', partida_id=p._id) }}" class="w-100" style="margin:0">
+                    <input type="hidden" name="time_id" value="{{ p.time_b.time_id }}">
+                    <button type="submit" class="btn btn-xs btn-outline-primary w-100 py-1" style="font-size:0.68rem; padding: 2px 4px;"><i class="bi bi-check-all"></i> Forçar {{ p.time_b.nome }}</button>
+                  </form>
+                  {% endif %}
+                </div>
+              {% endif %}
+
+            {% elif session.role == 'ADMIN' %}
+              <div class="collapse" id="solicitarCheckinCollapse_{{ p._id }}">
+                <form method="post" action="{{ url_for('solicitar_checkin', partida_id=p._id) }}" class="d-grid gap-1 mt-2 d-sm-flex" style="margin:0">
+                  <select name="antecedencia_minutos" class="form-select form-select-sm" required style="font-size:0.75rem;">
+                    <option value="15">15 minutos</option>
+                    <option value="30" selected>30 minutos</option>
+                    <option value="45">45 minutos</option>
+                    <option value="60">60 minutos</option>
+                  </select>
+                  <button type="submit" class="btn btn-sm btn-primary py-0" style="font-size:0.75rem;">Ativar</button>
+                </form>
+              </div>
+              <div class="d-grid mt-2">
+                <button class="btn btn-xs btn-outline-secondary py-1" type="button" data-bs-toggle="collapse" data-bs-target="#solicitarCheckinCollapse_{{ p._id }}" style="font-size:0.72rem; padding: 2px 4px;">
+                  <i class="bi bi-clock-history"></i> Configurar Check-in
+                </button>
+              </div>
+            {% endif %}
+          </div>
+          {% endif %}
         </div>
         {% else %}
         <div class="text-muted">Sem partidas agendadas.</div>

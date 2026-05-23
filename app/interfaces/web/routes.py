@@ -674,6 +674,38 @@ def register_routes(app, services):
         redirect_id = str(camp_id) if camp_id else None
         return redirect(url_for("ver_campeonato", camp_id=redirect_id) if redirect_id else url_for("listar_campeonatos"))
 
+    @app.route("/partidas/<partida_id>/checkin/solicitar", methods=["POST"], endpoint="solicitar_checkin")
+    @login_required
+    @roles_required(ROLE_ADMIN)
+    def solicitar_checkin(partida_id):
+        current_user = build_current_user()
+        oid = to_oid(partida_id)
+        if not oid:
+            flash("ID invalido.", "danger")
+            return redirect(url_for("listar_campeonatos"))
+        minutos = request.form.get("antecedencia_minutos", "30")
+        error, camp_id = services["matches"].solicitar_checkin(current_user, oid, minutos)
+        flash(error or "Check-in solicitado com sucesso!", "danger" if error else "success")
+        redirect_id = str(camp_id) if camp_id else None
+        return redirect(url_for("ver_campeonato", camp_id=redirect_id) if redirect_id else url_for("listar_campeonatos"))
+
+    @app.route("/partidas/<partida_id>/checkin/confirmar", methods=["POST"], endpoint="confirmar_presenca")
+    @login_required
+    def confirmar_presenca(partida_id):
+        current_user = build_current_user()
+        oid = to_oid(partida_id)
+        if not oid:
+            flash("ID invalido.", "danger")
+            return redirect(url_for("listar_campeonatos"))
+        tid = to_oid(request.form.get("time_id", ""))
+        if not tid:
+            flash("Time invalido.", "danger")
+            return redirect(url_for("listar_campeonatos"))
+        error, camp_id = services["matches"].confirmar_presenca(current_user, oid, tid)
+        flash(error or "Presenca confirmada com sucesso!", "danger" if error else "success")
+        redirect_id = str(camp_id) if camp_id else None
+        return redirect(url_for("ver_campeonato", camp_id=redirect_id) if redirect_id else url_for("listar_campeonatos"))
+
     @app.route("/meu-time", endpoint="meu_time")
     @login_required
     @roles_required(ROLE_PLAYER)
