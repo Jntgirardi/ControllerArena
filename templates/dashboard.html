@@ -38,7 +38,43 @@
       </div>
     </div>
   </div>
-  <div class="col-12 col-lg-8">
+  <div class="col-12 order-3">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Notificacoes de partidas</span>
+        {% if notifications %}
+        <form method="post" action="{{ url_for('marcar_todas_notificacoes_lidas') }}" style="margin: 0;">
+          <button type="submit" class="btn btn-xs btn-outline-secondary py-0 px-2" style="font-size:0.68rem;">Limpar Tudo</button>
+        </form>
+        {% endif %}
+      </div>
+      <div class="card-body p-0">
+        <ul class="list-group list-group-flush mb-0" id="player-notifications-list">
+          {% for n in notifications %}
+          <li class="list-group-item p-3 border-bottom border-secondary-subtle" style="background:transparent;" id="notif_{{ n._id }}">
+            <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+              <span class="badge {{ 'badge-cs2' if n.jogo == 'CS2' else 'badge-valorant' }}">{{ n.jogo or 'Jogo' }}</span>
+              <button onclick="marcarComoLida('{{ n._id }}')" class="btn btn-xs btn-outline-secondary border-0 p-0 text-muted" style="font-size:0.75rem;"><i class="bi bi-x-lg"></i></button>
+            </div>
+            <div class="small fw-semibold text-wrap mb-2">{{ n.mensagem }}</div>
+            <div class="d-flex justify-content-between align-items-center gap-2">
+              <div class="small text-muted" style="font-size:0.68rem;">{{ n.criado_em.strftime('%d/%m %H:%M') if n.get('criado_em') else 'Agora' }}</div>
+              {% if n.get('link') %}
+              <a href="{{ n.link }}" class="btn btn-sm btn-outline-primary py-1 px-2">Ver partida</a>
+              {% endif %}
+            </div>
+          </li>
+          {% else %}
+          <li class="list-group-item text-center text-muted py-5" style="background:transparent;">
+            <i class="bi bi-bell-slash fs-3 d-block mb-2 text-muted"></i>
+            <span class="small">Nenhuma partida do seu jogo com inicio em ate 1 hora.</span>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-lg-8 order-2">
     <div class="row g-3">
       <div class="col-6 col-md-3">
         <div class="card p-3 h-100">
@@ -218,7 +254,7 @@
         {% endif %}
       </div>
       <div class="card-body p-0">
-        <ul class="list-group list-group-flush mb-0">
+        <ul class="list-group list-group-flush mb-0" id="referee-notifications-list">
           {% for n in stats.notificacoes %}
           <li class="list-group-item p-3 border-bottom border-secondary-subtle" style="background:transparent;" id="notif_{{ n._id }}">
             <div class="d-flex justify-content-between align-items-start gap-2 mb-1">
@@ -280,38 +316,186 @@ function marcarComoLida(notifId) {
 </div>
 
 <div class="card">
-  <div class="card-header d-flex justify-content-between align-items-center">
-    <span>Ultimos Campeonatos</span>
-    <a href="{{ url_for('listar_campeonatos') }}" class="btn btn-sm btn-outline-secondary">Ver todos</a>
-  </div>
-  <div class="card-body p-0">
-    <table class="table mb-0">
-      <thead>
-        <tr>
-          <th>Nome</th>
-          <th>Status</th>
-          <th>Inicio</th>
-          <th class="text-end">Detalhes</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for c in ultimos_camps %}
-        <tr>
-          <td>
-            <div class="fw-bold">{{ c.nome }}</div>
-            <span class="badge {{ 'badge-cs2' if c.jogo == 'CS2' else 'badge-valorant' }}">{{ c.jogo }}</span>
-          </td>
-          <td><span class="badge bg-secondary">{{ c.status }}</span></td>
-          <td class="small text-muted">{{ c.datas.inicio.strftime('%d/%m/%Y') if c.get('datas') else '-' }}</td>
-          <td class="text-end"><a href="{{ url_for('ver_campeonato', camp_id=c._id) }}" class="btn btn-sm btn-outline-primary">Ver</a></td>
-        </tr>
-        {% else %}
-        <tr><td colspan="4" class="text-center text-muted py-4">Nenhum campeonato cadastrado.</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
+  <div class="row g-0">
+    <div class="col-12 col-xl-8">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Ultimos Campeonatos</span>
+        <a href="{{ url_for('listar_campeonatos') }}" class="btn btn-sm btn-outline-secondary">Ver todos</a>
+      </div>
+      <div class="card-body p-0">
+        <table class="table mb-0">
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>Status</th>
+              <th>Inicio</th>
+              <th class="text-end">Detalhes</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for c in ultimos_camps %}
+            <tr>
+              <td>
+                <div class="fw-bold">{{ c.nome }}</div>
+                <span class="badge {{ 'badge-cs2' if c.jogo == 'CS2' else 'badge-valorant' }}">{{ c.jogo }}</span>
+              </td>
+              <td><span class="badge bg-secondary">{{ c.status }}</span></td>
+              <td class="small text-muted">{{ c.datas.inicio.strftime('%d/%m/%Y') if c.get('datas') else '-' }}</td>
+              <td class="text-end"><a href="{{ url_for('ver_campeonato', camp_id=c._id) }}" class="btn btn-sm btn-outline-primary">Ver</a></td>
+            </tr>
+            {% else %}
+            <tr><td colspan="4" class="text-center text-muted py-4">Nenhum campeonato cadastrado.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="col-12 col-xl-4" style="border-left:1px solid var(--border)">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Alertas de partidas</span>
+        {% if notifications %}
+        <form method="post" action="{{ url_for('marcar_todas_notificacoes_lidas') }}" style="margin: 0;">
+          <button type="submit" class="btn btn-xs btn-outline-secondary py-0 px-2" style="font-size:0.68rem;">Limpar Tudo</button>
+        </form>
+        {% endif %}
+      </div>
+      <div class="card-body p-0">
+        <ul class="list-group list-group-flush mb-0" id="admin-notifications-list">
+          {% for n in notifications %}
+          <li class="list-group-item p-3 border-bottom border-secondary-subtle" style="background:transparent;" id="notif_{{ n._id }}">
+            <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+              <span class="badge {{ 'badge-cs2' if n.jogo == 'CS2' else 'badge-valorant' }}">{{ n.jogo or 'Jogo' }}</span>
+              <button onclick="marcarComoLida('{{ n._id }}')" class="btn btn-xs btn-outline-secondary border-0 p-0 text-muted" style="font-size:0.75rem;"><i class="bi bi-x-lg"></i></button>
+            </div>
+            <div class="small fw-semibold text-wrap mb-2">{{ n.mensagem }}</div>
+            <div class="d-flex justify-content-between align-items-center gap-2">
+              <div class="small text-muted" style="font-size:0.68rem;">{{ n.criado_em.strftime('%d/%m %H:%M') if n.get('criado_em') else 'Agora' }}</div>
+              {% if n.get('link') %}
+              <a href="{{ n.link }}" class="btn btn-sm btn-outline-primary py-1 px-2">Abrir</a>
+              {% endif %}
+            </div>
+          </li>
+          {% else %}
+          <li class="list-group-item text-center text-muted py-5" style="background:transparent;">
+            <i class="bi bi-bell-slash fs-3 d-block mb-2 text-muted"></i>
+            <span class="small">Nenhum jogo agendado para comecar em ate 1 hora.</span>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
   </div>
 </div>
 {% endif %}
 {% endif %}
+<script>
+function marcarComoLida(notifId) {
+  fetch(`/notificacoes/${notifId}/ler`, {
+    method: 'POST'
+  }).then(response => {
+    if (response.ok) {
+      const el = document.getElementById(`notif_${notifId}`);
+      if (el) {
+        el.style.opacity = '0';
+        setTimeout(() => el.remove(), 200);
+      }
+      refreshNotifications();
+    }
+  });
+}
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function updateTopbarNotificationCount(count) {
+  const badge = document.getElementById('notifications-unread-badge');
+  const countEl = document.getElementById('notifications-unread-count');
+  if (!badge || !countEl) return;
+  countEl.textContent = String(count);
+  badge.classList.toggle('d-none', count === 0);
+}
+
+function renderNotificationList(listId, notifications, emptyMessage, linkLabel) {
+  const list = document.getElementById(listId);
+  if (!list) return;
+
+  if (!notifications.length) {
+    list.innerHTML = `
+      <li class="list-group-item text-center text-muted py-5" style="background:transparent;">
+        <i class="bi bi-bell-slash fs-3 d-block mb-2 text-muted"></i>
+        <span class="small">${escapeHtml(emptyMessage)}</span>
+      </li>
+    `;
+    return;
+  }
+
+  list.innerHTML = notifications.map(n => `
+    <li class="list-group-item p-3 border-bottom border-secondary-subtle" style="background:transparent;" id="notif_${escapeHtml(n.id)}">
+      <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+        ${n.jogo ? `<span class="badge ${n.jogo === 'CS2' ? 'badge-cs2' : 'badge-valorant'}">${escapeHtml(n.jogo)}</span>` : '<span></span>'}
+        <button onclick="marcarComoLida('${escapeHtml(n.id)}')" class="btn btn-xs btn-outline-secondary border-0 p-0 text-muted" style="font-size:0.75rem;"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <div class="small fw-semibold text-wrap mb-2">${escapeHtml(n.mensagem)}</div>
+      <div class="d-flex justify-content-between align-items-center gap-2">
+        <div class="small text-muted" style="font-size:0.68rem;">${escapeHtml(n.criado_em || 'Agora')}</div>
+        ${n.link ? `<a href="${escapeHtml(n.link)}" class="btn btn-sm btn-outline-primary py-1 px-2">${escapeHtml(linkLabel)}</a>` : ''}
+      </div>
+    </li>
+  `).join('');
+}
+
+async function refreshNotifications() {
+  const playerList = document.getElementById('player-notifications-list');
+  const adminList = document.getElementById('admin-notifications-list');
+  const refereeList = document.getElementById('referee-notifications-list');
+  if (!playerList && !adminList && !refereeList) return;
+
+  try {
+    const response = await fetch('/api/notificacoes', {
+      method: 'GET',
+      headers: { 'Accept': 'application/json' }
+    });
+    if (!response.ok) return;
+
+    const data = await response.json();
+    updateTopbarNotificationCount(Number(data.unread_count || 0));
+
+    if (playerList) {
+      renderNotificationList(
+        'player-notifications-list',
+        data.notifications || [],
+        'Nenhuma partida do seu jogo com inicio em ate 1 hora.',
+        'Ver partida'
+      );
+    }
+    if (adminList) {
+      renderNotificationList(
+        'admin-notifications-list',
+        data.notifications || [],
+        'Nenhum jogo agendado para comecar em ate 1 hora.',
+        'Abrir'
+      );
+    }
+    if (refereeList) {
+      renderNotificationList(
+        'referee-notifications-list',
+        data.notifications || [],
+        'Nenhuma notificacao pendente.',
+        'Abrir'
+      );
+    }
+  } catch (error) {
+    console.error('Erro ao atualizar notificacoes:', error);
+  }
+}
+
+refreshNotifications();
+setInterval(refreshNotifications, 30000);
+</script>
 {% endblock %}

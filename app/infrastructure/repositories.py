@@ -305,9 +305,12 @@ class MongoNotificationRepository:
         result = self.collection.insert_one(document)
         return result.inserted_id
 
-    def list_by_user(self, user_id, limit=50):
+    def list_by_user(self, user_id, limit=50, unread_only=False):
+        filtro = {"user_id": user_id}
+        if unread_only:
+            filtro["lida"] = False
         return list(
-            self.collection.find({"user_id": user_id})
+            self.collection.find(filtro)
             .sort("criado_em", DESCENDING)
             .limit(limit)
         )
@@ -320,5 +323,4 @@ class MongoNotificationRepository:
 
     def mark_all_as_read(self, user_id):
         self.collection.update_many({"user_id": user_id, "lida": False}, {"$set": {"lida": True}})
-
 

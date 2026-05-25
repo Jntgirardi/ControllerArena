@@ -240,6 +240,7 @@ def register_routes(app, services):
     def inject_notifications_count():
         current_user = build_current_user()
         if current_user:
+            services["notifications"].ensure_upcoming_match_notifications(current_user)
             count = services["notifications"].count_unread(current_user)
         else:
             count = 0
@@ -347,14 +348,18 @@ def register_routes(app, services):
     @login_required
     def dashboard():
         current_user = build_current_user()
+        services["notifications"].ensure_upcoming_match_notifications(current_user)
         if session.get("role") == ROLE_PLAYER:
             player_data = services["player_profile"].get_profile(session["user_id"])
-            return render_template("dashboard.html", active_tab="player-home", player_data=player_data)
+            notifications = services["notifications"].list_notifications(current_user, unread_only=True)
+            return render_template("dashboard.html", active_tab="player-home", player_data=player_data, notifications=notifications)
         data = services["dashboard"].build_dashboard(current_user)
+        notifications = services["notifications"].list_notifications(current_user, unread_only=True) if session.get("role") == ROLE_ADMIN else []
         return render_template(
             "dashboard.html",
             stats=data["stats"],
             ultimos_camps=data["ultimos_camps"],
+            notifications=notifications,
         )
 
     @app.route("/jogadores", endpoint="listar_jogadores")
@@ -1015,6 +1020,26 @@ def register_routes(app, services):
         current_user = build_current_user()
         services["notifications"].mark_as_read(current_user, notif_id)
         return {"status": "ok"}
+
+    @app.route("/api/notificacoes", methods=["GET"], endpoint="api_notificacoes")
+    @login_required
+    def api_notificacoes():
+        current_user = build_current_user()
+        services["notifications"].ensure_upcoming_match_notifications(current_user)
+        notifications = services["notifications"].list_notifications(current_user, unread_only=True)
+        payload = []
+        for notification in notifications:
+            created_at = notification.get("criado_em")
+            payload.append(
+                {
+                    "id": str(notification["_id"]),
+                    "mensagem": notification.get("mensagem", ""),
+                    "jogo": notification.get("jogo", ""),
+                    "link": notification.get("link", ""),
+                    "criado_em": created_at.strftime("%d/%m %H:%M") if created_at else "Agora",
+                }
+            )
+        return {"notifications": payload, "unread_count": len(payload), "role": current_user.get("role")}
 
     @app.route("/arbitros", endpoint="listar_arbitros")
     @login_required

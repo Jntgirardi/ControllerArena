@@ -1618,11 +1618,97 @@ class ArbitroService:
 
 
 class NotificationService:
-    def __init__(self, notification_repo):
-        self.notification_repo = notification_repo
+    UPCOMING_ALERT_TYPE = "match_start_1h"
 
-    def list_notifications(self, current_user: dict[str, Any], limit: int = 50) -> list[dict[str, Any]]:
-        return self.notification_repo.list_by_user(current_user["_id"], limit)
+    def __init__(self, notification_repo, user_repo, player_repo, team_repo, championship_repo, match_repo):
+        self.notification_repo = notification_repo
+        self.user_repo = user_repo
+        self.player_repo = player_repo
+        self.team_repo = team_repo
+        self.championship_repo = championship_repo
+        self.match_repo = match_repo
+
+    def _notification_exists(self, user_id, match_id) -> bool:
+        return self.notification_repo.collection.count_documents(
+            {
+                "user_id": user_id,
+                "tipo": self.UPCOMING_ALERT_TYPE,
+                "partida_id": match_id,
+            }
+        ) > 0
+
+    def _match_game(self, match: dict[str, Any], championship_cache: dict[ObjectId, dict[str, Any]]) -> str:
+        if match.get("jogo"):
+            return match["jogo"]
+        championship_id = match.get("campeonato_id")
+        if championship_id not in championship_cache:
+            championship_cache[championship_id] = self.championship_repo.find_by_id(championship_id) or {}
+        return championship_cache[championship_id].get("jogo", "")
+
+    def _build_match_alert_message(self, match: dict[str, Any], game: str) -> str:
+        inicio = match.get("data_partida")
+        horario = inicio.strftime("%H:%M") if inicio else "--:--"
+        return f"[{game}] A partida {match['time_a']['nome']} x {match['time_b']['nome']} comeca em ate 1 hora, as {horario}."
+
+    def ensure_upcoming_match_notifications(self, current_user: dict[str, Any] | None) -> None:
+        if not current_user:
+            return
+
+        role = current_user.get("role")
+        if role not in (ROLE_ADMIN, ROLE_PLAYER):
+            return
+
+        now = utc_now_naive()
+        window_end = now + timedelta(hours=1)
+        match_filter = {
+            "status": "agendada",
+            "data_partida": {"$gte": now, "$lte": window_end},
+        }
+        if role == ROLE_ADMIN:
+            admin_id = get_scope_admin_id(current_user)
+            if admin_id:
+                match_filter["admin_id"] = admin_id
+            users_to_notify = {current_user["_id"]: ""}
+        else:
+            user = self.user_repo.find_by_id(current_user["_id"])
+            if not user or not user.get("player_id"):
+                return
+            player = self.player_repo.find_by_id(user["player_id"])
+            if not player:
+                return
+            admin_id = user.get("admin_id")
+            if admin_id:
+                match_filter["admin_id"] = admin_id
+            users_to_notify = {current_user["_id"]: player.get("jogo_principal", "")}
+
+        championship_cache: dict[ObjectId, dict[str, Any]] = {}
+        matches = self.match_repo.list_by_query(match_filter, sort=[("data_partida", 1)])
+        for match in matches:
+            match_id = match.get("_id")
+            if not match_id:
+                continue
+            game = self._match_game(match, championship_cache)
+            for user_id, allowed_game in users_to_notify.items():
+                if allowed_game and game != allowed_game:
+                    continue
+                if self._notification_exists(user_id, match_id):
+                    continue
+                self.notification_repo.insert(
+                    {
+                        "user_id": user_id,
+                        "mensagem": self._build_match_alert_message(match, game or "Jogo"),
+                        "jogo": game,
+                        "tipo": self.UPCOMING_ALERT_TYPE,
+                        "partida_id": match_id,
+                        "campeonato_id": match.get("campeonato_id"),
+                        "lida": False,
+                        "link": f"/campeonatos/{match['campeonato_id']}",
+                        "criado_em": now,
+                    }
+                )
+
+    def list_notifications(self, current_user: dict[str, Any], limit: int = 50, unread_only: bool = False) -> list[dict[str, Any]]:
+        return self.notification_repo.list_by_user(current_user["_id"], limit, unread_only=unread_only)
 
     def count_unread(self, current_user: dict[str, Any]) -> int:
         if not current_user:
@@ -1683,5 +1769,12 @@ def build_services(repositories: dict[str, Any], password_hasher, cache):
             repositories["championships"],
         ),
         "arbitros": ArbitroService(repositories["arbitros"], repositories["users"], password_hasher),
-        "notifications": NotificationService(repositories["notifications"]),
+        "notifications": NotificationService(
+            repositories["notifications"],
+            repositories["users"],
+            repositories["players"],
+            repositories["teams"],
+            repositories["championships"],
+            repositories["matches"],
+        ),
     }
