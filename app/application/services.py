@@ -373,6 +373,7 @@ class ChampionshipService:
         self.championship_repo = championship_repo
         self.team_repo = team_repo
         self.match_repo = match_repo
+        self.valid_formats = ("mata-mata", "grupos")
 
     def _scope_filter(self, current_user: dict[str, Any], status: str = "", jogo: str = "") -> dict[str, Any]:
         filtro = {}
@@ -390,6 +391,8 @@ class ChampionshipService:
             errors.append("Nome do campeonato e obrigatorio.")
         if data.get("jogo") not in ("CS2", "Valorant"):
             errors.append("Jogo invalido.")
+        if data.get("formato") not in self.valid_formats:
+            errors.append("Formato invalido.")
         try:
             inicio = datetime.strptime(data.get("data_inicio", ""), "%Y-%m-%d")
             fim = datetime.strptime(data.get("data_fim", ""), "%Y-%m-%d")
@@ -409,6 +412,16 @@ class ChampionshipService:
 
     def list_available_for_admin(self, current_user: dict[str, Any]) -> list[dict[str, Any]]:
         return self.championship_repo.list_filtered(self._scope_filter(current_user, STATUS_INSCRICAO, ""))
+
+    def validate_edit_settings(self, data: dict[str, Any], current_registered_teams: int = 0) -> list[str]:
+        errors = self.validate(data)
+        try:
+            max_times = int(data.get("max_times") or 0)
+            if max_times < current_registered_teams:
+                errors.append("O maximo de times nao pode ser menor que a quantidade de times ja inscritos.")
+        except ValueError:
+            pass
+        return errors
 
     def create_championship(self, current_user: dict[str, Any], data: dict[str, Any]) -> list[str]:
         errors = self.validate(data)
@@ -435,6 +448,39 @@ class ChampionshipService:
                 "criado_por": current_user["_id"],
                 "criado_em": utc_now_naive(),
             }
+        )
+        return []
+
+    def get_championship_for_edit(self, current_user: dict[str, Any], championship_id):
+        camp = self.championship_repo.find_by_id(championship_id)
+        if not camp or not can_access_admin_scope(current_user, camp.get("admin_id")):
+            return None
+        return camp
+
+    def update_championship_settings(self, current_user: dict[str, Any], championship_id, data: dict[str, Any]) -> list[str]:
+        camp = self.championship_repo.find_by_id(championship_id)
+        if not camp or not can_access_admin_scope(current_user, camp.get("admin_id")):
+            return ["Campeonato nao encontrado."]
+        if camp.get("status") == STATUS_ARQUIVADO:
+            return ["Nao e possivel editar um campeonato arquivado."]
+
+        errors = self.validate_edit_settings(data, len(camp.get("times_inscritos", [])))
+        if errors:
+            return errors
+
+        self.championship_repo.update_fields(
+            championship_id,
+            {
+                "nome": data["nome"].strip(),
+                "jogo": data["jogo"],
+                "formato": data["formato"],
+                "max_times": int(data["max_times"]),
+                "premiacao.1_lugar": data.get("premio_1", "").strip(),
+                "premiacao.2_lugar": data.get("premio_2", "").strip(),
+                "premiacao.3_lugar": data.get("premio_3", "").strip(),
+                "datas.inicio": datetime.strptime(data["data_inicio"], "%Y-%m-%d"),
+                "datas.fim": datetime.strptime(data["data_fim"], "%Y-%m-%d"),
+            },
         )
         return []
 

@@ -43,7 +43,12 @@
         <div class="small text-muted">{{ c.datas.inicio.strftime('%d/%m/%Y') }} ate {{ c.datas.fim.strftime('%d/%m/%Y') }}</div>
       </div>
       <div class="card-footer">
-        <a href="{{ url_for('ver_campeonato', camp_id=c._id) }}" class="btn btn-sm btn-outline-info w-100">Ver detalhes</a>
+        <div class="d-grid gap-2">
+          <a href="{{ url_for('ver_campeonato', camp_id=c._id) }}" class="btn btn-sm btn-outline-info w-100">Ver detalhes</a>
+          {% if session.role == 'ADMIN' %}
+          <a href="{{ url_for('editar_campeonato', camp_id=c._id) }}" class="btn btn-sm btn-outline-primary w-100">Editar campeonato</a>
+          {% endif %}
+        </div>
       </div>
     </div>
   </div>
@@ -70,7 +75,7 @@
         <div class="small text-muted">{{ c.datas.inicio.strftime('%d/%m/%Y') }} ate {{ c.datas.fim.strftime('%d/%m/%Y') }}</div>
       </div>
       <div class="card-footer">
-        <a href="{{ url_for('ver_campeonato', camp_id=c._id) }}" class="btn btn-sm btn-outline-secondary w-100">Consultar histórico</a>
+        <a href="{{ url_for('ver_campeonato', camp_id=c._id) }}" class="btn btn-sm btn-outline-secondary w-100">Consultar historico</a>
       </div>
     </div>
   </div>
@@ -78,4 +83,3 @@
 </div>
 {% endif %}
 {% endblock %}
-

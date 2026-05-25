@@ -6,6 +6,9 @@
   <h4 class="mb-0 page-title">{{ camp.nome }}</h4>
   <span class="badge {{ 'badge-cs2' if camp.jogo == 'CS2' else 'badge-valorant' }}">{{ camp.jogo }}</span>
   <span class="badge bg-secondary">{{ camp.status }}</span>
+  {% if session.role == 'ADMIN' and camp.status != 'ARQUIVADO' %}
+  <a href="{{ url_for('editar_campeonato', camp_id=camp._id) }}" class="btn btn-sm btn-outline-primary ms-auto">Editar campeonato</a>
+  {% endif %}
 </div>
 
 <div class="row g-3">

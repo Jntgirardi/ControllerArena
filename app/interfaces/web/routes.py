@@ -592,6 +592,43 @@ def register_routes(app, services):
             return redirect(url_for("listar_campeonatos"))
         return render_template("campeonatos/form.html", dados={}, acao="novo")
 
+    @app.route("/campeonatos/<camp_id>/editar", methods=["GET", "POST"], endpoint="editar_campeonato")
+    @login_required
+    @roles_required(ROLE_ADMIN)
+    def editar_campeonato(camp_id):
+        current_user = build_current_user()
+        oid = to_oid(camp_id)
+        if not oid:
+            flash("ID invalido.", "danger")
+            return redirect(url_for("listar_campeonatos"))
+
+        camp = services["championships"].get_championship_for_edit(current_user, oid)
+        if not camp:
+            flash("Campeonato nao encontrado.", "warning")
+            return redirect(url_for("listar_campeonatos"))
+
+        if request.method == "POST":
+            errors = services["championships"].update_championship_settings(current_user, oid, request.form.to_dict())
+            if errors:
+                for error in errors:
+                    flash(error, "danger")
+                return render_template("campeonatos/form.html", dados=request.form, acao="editar", camp=camp)
+            flash("Configuracoes do campeonato atualizadas com sucesso!", "success")
+            return redirect(url_for("ver_campeonato", camp_id=camp_id))
+
+        dados = {
+            "nome": camp.get("nome", ""),
+            "jogo": camp.get("jogo", ""),
+            "formato": camp.get("formato", ""),
+            "max_times": camp.get("max_times", ""),
+            "data_inicio": camp.get("datas", {}).get("inicio").strftime("%Y-%m-%d") if camp.get("datas", {}).get("inicio") else "",
+            "data_fim": camp.get("datas", {}).get("fim").strftime("%Y-%m-%d") if camp.get("datas", {}).get("fim") else "",
+            "premio_1": camp.get("premiacao", {}).get("1_lugar", ""),
+            "premio_2": camp.get("premiacao", {}).get("2_lugar", ""),
+            "premio_3": camp.get("premiacao", {}).get("3_lugar", ""),
+        }
+        return render_template("campeonatos/form.html", dados=dados, acao="editar", camp=camp)
+
     @app.route("/campeonatos/<camp_id>", endpoint="ver_campeonato")
     @login_required
     def ver_campeonato(camp_id):
