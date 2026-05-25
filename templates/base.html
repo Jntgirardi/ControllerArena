@@ -134,6 +134,9 @@
         <a class="user-trigger {% if session.role in ('SUPER_ADMIN', 'ADMIN') and (request.endpoint == 'relatorios' or (request.endpoint and 'usuario' in request.endpoint)) %}active{% endif %}" href="{{ url_for('dashboard') }}">
           <i class="bi bi-person-circle"></i>
           <span>{{ session.nome or session.login }}</span>
+          {% if notifications_unread_count > 0 %}
+          <span class="badge bg-danger rounded-pill"><i class="bi bi-bell-fill"></i> {{ notifications_unread_count }}</span>
+          {% endif %}
           <span class="badge bg-secondary">{{ session.role }}</span>
         </a>
         <div class="user-dropdown">

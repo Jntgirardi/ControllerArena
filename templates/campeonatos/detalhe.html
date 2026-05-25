@@ -100,6 +100,26 @@
             <span class="badge bg-info text-dark">{{ p.time_a.placar }} x {{ p.time_b.placar }}</span>
             <span class="small fw-bold">{{ p.time_b.nome }}</span>
           </div>
+          {% if p.arbitro_id %}
+          <div class="small mt-1 text-muted d-flex align-items-center gap-1" style="font-size:0.75rem;">
+            <i class="bi bi-person-check-fill text-info"></i> Árbitro:
+            {% set referee_found = false %}
+            {% for a in arbitros %}
+              {% if a._id|string == p.arbitro_id|string %}
+                <strong class="text-white">{{ a.nome }}</strong>
+                {% set referee_found = true %}
+              {% endif %}
+            {% endfor %}
+            {% if not referee_found %}
+              <span class="text-muted">Designado</span>
+            {% endif %}
+          </div>
+          {% endif %}
+          {% if p.get('checkin') and p.checkin.wo_aplicado %}
+          <div class="alert alert-danger py-1 px-2 small mb-1 mt-2 text-center" role="alert" style="font-size: 0.72rem;">
+            <i class="bi bi-exclamation-octagon-fill"></i> {{ p.checkin.mensagem_wo }}
+          </div>
+          {% endif %}
           {% if p.status != 'finalizada' and session.role == 'ADMIN' %}
           <form method="post" action="{{ url_for('registrar_resultado', partida_id=p._id) }}" class="d-grid gap-1 mt-2 d-sm-flex">
             <input type="number" name="placar_a" class="form-control form-control-sm" min="0" required>
@@ -180,6 +200,15 @@
                   <i class="bi bi-clock-history"></i> Configurar Check-in
                 </button>
               </div>
+              {% if p.get('checkin') and p.checkin.solicitado and (not p.checkin.time_a_confirmado or not p.checkin.time_b_confirmado) %}
+              <div class="d-grid mt-2">
+                <form method="post" action="{{ url_for('verificar_checkin', partida_id=p._id) }}" style="margin:0;">
+                  <button class="btn btn-xs btn-outline-danger w-100 py-1" type="submit" style="font-size:0.72rem; padding: 2px 4px;">
+                    <i class="bi bi-exclamation-triangle"></i> Verificar W.O. / Ausência
+                  </button>
+                </form>
+              </div>
+              {% endif %}
             {% endif %}
           </div>
           {% endif %}
@@ -223,6 +252,15 @@
             <div class="mb-2">
               <label>Mapa</label>
               <input type="text" name="mapa" class="form-control form-control-sm">
+            </div>
+            <div class="mb-2">
+              <label>Árbitro Designado</label>
+              <select name="arbitro_id" class="form-select form-select-sm">
+                <option value="">Nenhum árbitro (A definir)</option>
+                {% for a in arbitros %}
+                <option value="{{ a._id }}">{{ a.nome }}</option>
+                {% endfor %}
+              </select>
             </div>
             <div class="mb-3">
               <label>Data e hora</label>

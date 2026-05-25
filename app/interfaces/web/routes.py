@@ -236,6 +236,15 @@ def _public_match_by_id(partida_id: int):
 
 
 def register_routes(app, services):
+    @app.context_processor
+    def inject_notifications_count():
+        current_user = build_current_user()
+        if current_user:
+            count = services["notifications"].count_unread(current_user)
+        else:
+            count = 0
+        return {"notifications_unread_count": count}
+
     @app.after_request
     def register_audit_log(response):
         if request.endpoint not in {"static"} and session.get("user_id"):
@@ -581,7 +590,14 @@ def register_routes(app, services):
         if not details:
             flash("Campeonato nao encontrado.", "warning")
             return redirect(url_for("listar_campeonatos"))
-        return render_template("campeonatos/detalhe.html", **details)
+            
+        arbitros = []
+        if session.get("role") in (ROLE_SUPER_ADMIN, ROLE_ADMIN):
+            referees = services["arbitros"].list_referees(current_user)
+            # Filtrar arbitros vinculados ao campeonato (FA-27)
+            arbitros = [a for a in referees if not a.get("campeonatos_vinculados") or oid in a.get("campeonatos_vinculados")]
+            
+        return render_template("campeonatos/detalhe.html", arbitros=arbitros, **details)
 
     @app.route("/campeonatos/<camp_id>/inscrever", methods=["POST"], endpoint="inscrever_time")
     @login_required
@@ -825,6 +841,35 @@ def register_routes(app, services):
         services["users"].delete_user(oid)
         flash("Usuario removido.", "success")
         return redirect(url_for("listar_usuarios"))
+
+    @app.route("/partidas/<partida_id>/checkin/verificar", methods=["POST"], endpoint="verificar_checkin")
+    @login_required
+    @roles_required(ROLE_SUPER_ADMIN, ROLE_ADMIN)
+    def verificar_checkin(partida_id):
+        current_user = build_current_user()
+        oid = to_oid(partida_id)
+        if not oid:
+            flash("ID invalido.", "danger")
+            return redirect(url_for("listar_campeonatos"))
+        error, camp_id = services["matches"].verificar_limite_checkin(current_user, oid)
+        flash(error or "Verificacao de check-in / W.O. realizada com sucesso!", "danger" if error else "success")
+        redirect_id = str(camp_id) if camp_id else None
+        return redirect(url_for("ver_campeonato", camp_id=redirect_id) if redirect_id else url_for("listar_campeonatos"))
+
+    @app.route("/notificacoes/ler_todas", methods=["POST"], endpoint="marcar_todas_notificacoes_lidas")
+    @login_required
+    def marcar_todas_notificacoes_lidas():
+        current_user = build_current_user()
+        services["notifications"].mark_all_as_read(current_user)
+        flash("Todas as notificacoes foram marcadas como lidas.", "success")
+        return redirect(url_for("dashboard"))
+
+    @app.route("/notificacoes/<notif_id>/ler", methods=["POST"], endpoint="marcar_notificacao_lida")
+    @login_required
+    def marcar_notificacao_lida(notif_id):
+        current_user = build_current_user()
+        services["notifications"].mark_as_read(current_user, notif_id)
+        return {"status": "ok"}
 
     @app.route("/arbitros", endpoint="listar_arbitros")
     @login_required

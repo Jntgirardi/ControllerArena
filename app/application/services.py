@@ -93,6 +93,22 @@ class DashboardService:
             ultimos_camps = self.championship_repo.list_recent(limit=5)
             return {"stats": stats, "ultimos_camps": ultimos_camps}
 
+        if role == ROLE_REFEREE:
+            referee = self.user_repo.collection.find_one({"_id": current_user["_id"]})
+            referee_id = referee.get("referee_id") if referee else None
+            
+            matches = list(self.match_repo.collection.find({"arbitro_id": referee_id}).sort("data_partida", 1))
+            notifications = list(self.user_repo.collection.database["notificacoes"].find({"user_id": current_user["_id"], "lida": False}).sort("criado_em", -1))
+            
+            return {
+                "stats": {
+                    "referee_mode": True,
+                    "partidas": matches,
+                    "notificacoes": notifications
+                },
+                "ultimos_camps": []
+            }
+
         admin_id = get_scope_admin_id(current_user)
         scoped = {"admin_id": admin_id}
         stats = {
@@ -498,7 +514,14 @@ class MatchService:
             data_partida = datetime.strptime(data_str, "%Y-%m-%dT%H:%M") if data_str else utc_now_naive()
         except ValueError:
             data_partida = utc_now_naive()
-        self.match_repo.insert(
+            
+        arbitro_id = form_data.get("arbitro_id")
+        if arbitro_id:
+            arbitro_id = ObjectId(arbitro_id)
+        else:
+            arbitro_id = None
+
+        match_id = self.match_repo.insert(
             {
                 "admin_id": camp.get("admin_id"),
                 "campeonato_id": championship_id,
@@ -509,8 +532,22 @@ class MatchService:
                 "mapa": form_data.get("mapa", "").strip(),
                 "data_partida": data_partida,
                 "status": "agendada",
+                "arbitro_id": arbitro_id,
             }
         )
+        
+        # Enviar notificacao ao arbitro caso tenha sido designado
+        if arbitro_id:
+            db = self.match_repo.collection.database
+            user = db["usuarios"].find_one({"referee_id": arbitro_id})
+            if user:
+                db["notificacoes"].insert_one({
+                    "user_id": user["_id"],
+                    "mensagem": f"Voce foi designado como arbitro para a partida {time_a['nome']} x {time_b['nome']}.",
+                    "lida": False,
+                    "link": f"/campeonato/{championship_id}",
+                    "criado_em": utc_now_naive(),
+                })
         return None
 
     def register_result(self, current_user: dict[str, Any], match_id, placar_a: str, placar_b: str) -> tuple[str | None, ObjectId | None]:
@@ -576,6 +613,20 @@ class MatchService:
                 }
             }
         )
+        
+        # Notificar o arbitro se estiver designado
+        arbitro_id = match.get("arbitro_id")
+        if arbitro_id:
+            db = self.match_repo.collection.database
+            user = db["usuarios"].find_one({"referee_id": arbitro_id})
+            if user:
+                db["notificacoes"].insert_one({
+                    "user_id": user["_id"],
+                    "mensagem": f"O check-in para a partida {match['time_a']['nome']} x {match['time_b']['nome']} foi solicitado.",
+                    "lida": False,
+                    "link": f"/campeonato/{match['campeonato_id']}",
+                    "criado_em": utc_now_naive(),
+                })
         return None, match["campeonato_id"]
 
     def confirmar_presenca(self, current_user: dict[str, Any], match_id, team_id: ObjectId) -> tuple[str | None, ObjectId | None]:
@@ -626,6 +677,121 @@ class MatchService:
         # Update confirmation field
         field_to_update = "checkin.time_a_confirmado" if team_id == time_a_id else "checkin.time_b_confirmado"
         self.match_repo.update_fields(match_id, {field_to_update: True})
+        
+        # Notificar o arbitro do check-in realizado
+        arbitro_id = match.get("arbitro_id")
+        if arbitro_id:
+            db = self.match_repo.collection.database
+            user = db["usuarios"].find_one({"referee_id": arbitro_id})
+            if user:
+                team = self.team_repo.find_by_id(team_id)
+                team_name = team.get("nome", "Um time") if team else "Um time"
+                db["notificacoes"].insert_one({
+                    "user_id": user["_id"],
+                    "mensagem": f"O time '{team_name}' confirmou presenca na partida {match['time_a']['nome']} x {match['time_b']['nome']}.",
+                    "lida": False,
+                    "link": f"/campeonato/{match['campeonato_id']}",
+                    "criado_em": utc_now_naive(),
+                })
+        return None, match["campeonato_id"]
+
+    def verificar_limite_checkin(self, current_user: dict[str, Any], match_id) -> tuple[str | None, ObjectId | None]:
+        match = self.match_repo.find_by_id(match_id)
+        if not match or not can_access_admin_scope(current_user, match.get("admin_id")):
+            return "Partida nao encontrada.", None
+        if match.get("status") == "finalizada":
+            return "Esta partida ja foi finalizada.", match["campeonato_id"]
+            
+        checkin = match.get("checkin")
+        if not checkin or not checkin.get("solicitado"):
+            return "Check-in nao foi solicitado para esta partida.", match["campeonato_id"]
+            
+        agora = utc_now_naive()
+        data_partida = match.get("data_partida")
+        if data_partida and agora < data_partida:
+            return "O horario da partida ainda nao chegou. Aguarde o prazo limite.", match["campeonato_id"]
+            
+        confirm_a = checkin.get("time_a_confirmado", False)
+        confirm_b = checkin.get("time_b_confirmado", False)
+        
+        if confirm_a and confirm_b:
+            return "Ambos os times confirmaram presenca. A partida deve ser jogada normalmente.", match["campeonato_id"]
+            
+        placar_a = 0
+        placar_b = 0
+        vencedor_tid = None
+        perdedor_tid = None
+        
+        if confirm_a and not confirm_b:
+            placar_a = 13
+            placar_b = 0
+            vencedor_tid = match["time_a"]["time_id"]
+            perdedor_tid = match["time_b"]["time_id"]
+            mensagem = f"W.O. aplicado! O time {match['time_b']['nome']} faltou e o time {match['time_a']['nome']} venceu por 13x0."
+        elif confirm_b and not confirm_a:
+            placar_a = 0
+            placar_b = 13
+            vencedor_tid = match["time_b"]["time_id"]
+            perdedor_tid = match["time_a"]["time_id"]
+            mensagem = f"W.O. aplicado! O time {match['time_a']['nome']} faltou e o time {match['time_b']['nome']} venceu por 13x0."
+        else:
+            placar_a = 0
+            placar_b = 0
+            vencedor_tid = None
+            mensagem = f"Duplo W.O. aplicado! Ambos os times ({match['time_a']['nome']} e {match['time_b']['nome']}) faltaram a partida."
+            
+        self.match_repo.update_fields(
+            match_id,
+            {
+                "time_a.placar": placar_a,
+                "time_b.placar": placar_b,
+                "vencedor_id": vencedor_tid,
+                "status": "finalizada",
+                "checkin.wo_aplicado": True,
+                "checkin.mensagem_wo": mensagem
+            }
+        )
+        
+        db = self.match_repo.collection.database
+        
+        if vencedor_tid and perdedor_tid:
+            increments = [
+                (vencedor_tid, {"estatisticas.vitorias": 1, "estatisticas.partidas_jogadas": 1}),
+                (perdedor_tid, {"estatisticas.derrotas": 1, "estatisticas.partidas_jogadas": 1}),
+            ]
+            for team_id, increment in increments:
+                team = self.team_repo.find_by_id(team_id)
+                if team:
+                    for membro in team.get("jogadores", []):
+                        db["jogadores"].update_one({"_id": membro["jogador_id"]}, {"$inc": increment})
+                        
+        arbitro_id = match.get("arbitro_id")
+        if arbitro_id:
+            user = db["usuarios"].find_one({"referee_id": arbitro_id})
+            if user:
+                db["notificacoes"].insert_one({
+                    "user_id": user["_id"],
+                    "mensagem": f"ALERTA W.O. - {mensagem}",
+                    "lida": False,
+                    "link": f"/campeonato/{match['campeonato_id']}",
+                    "criado_em": utc_now_naive(),
+                })
+                
+        for side in ("time_a", "time_b"):
+            team = self.team_repo.find_by_id(match[side]["time_id"])
+            if team:
+                for member in team.get("jogadores", []):
+                    player_user = db["usuarios"].find_one({"player_id": member["jogador_id"]})
+                    if player_user:
+                        db["notificacoes"].insert_one({
+                            "user_id": player_user["_id"],
+                            "mensagem": f"Check-in Encerrado: {mensagem}",
+                            "lida": False,
+                            "link": f"/dashboard",
+                            "criado_em": utc_now_naive(),
+                        })
+
+        self.cache.delete_pattern("fps_arena:ranking:*")
         return None, match["campeonato_id"]
 
 
@@ -1315,6 +1481,27 @@ class ArbitroService:
         return deleted
 
 
+class NotificationService:
+    def __init__(self, notification_repo):
+        self.notification_repo = notification_repo
+
+    def list_notifications(self, current_user: dict[str, Any], limit: int = 50) -> list[dict[str, Any]]:
+        return self.notification_repo.list_by_user(current_user["_id"], limit)
+
+    def count_unread(self, current_user: dict[str, Any]) -> int:
+        if not current_user:
+            return 0
+        return self.notification_repo.count_unread(current_user["_id"])
+
+    def mark_as_read(self, current_user: dict[str, Any], object_id) -> bool:
+        self.notification_repo.mark_as_read(ObjectId(object_id))
+        return True
+
+    def mark_all_as_read(self, current_user: dict[str, Any]) -> bool:
+        self.notification_repo.mark_all_as_read(current_user["_id"])
+        return True
+
+
 def build_services(repositories: dict[str, Any], password_hasher, cache):
     return {
         "auth": AuthService(repositories["users"], password_hasher),
@@ -1360,4 +1547,5 @@ def build_services(repositories: dict[str, Any], password_hasher, cache):
             repositories["championships"],
         ),
         "arbitros": ArbitroService(repositories["arbitros"], repositories["users"], password_hasher),
+        "notifications": NotificationService(repositories["notifications"]),
     }

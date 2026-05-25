@@ -296,3 +296,29 @@ class MongoArbitroRepository:
         result = self.collection.delete_one({"_id": object_id})
         return result.deleted_count > 0
 
+
+class MongoNotificationRepository:
+    def __init__(self, collection):
+        self.collection = collection
+
+    def insert(self, document):
+        result = self.collection.insert_one(document)
+        return result.inserted_id
+
+    def list_by_user(self, user_id, limit=50):
+        return list(
+            self.collection.find({"user_id": user_id})
+            .sort("criado_em", DESCENDING)
+            .limit(limit)
+        )
+
+    def count_unread(self, user_id):
+        return self.collection.count_documents({"user_id": user_id, "lida": False})
+
+    def mark_as_read(self, object_id):
+        self.collection.update_one({"_id": object_id}, {"$set": {"lida": True}})
+
+    def mark_all_as_read(self, user_id):
+        self.collection.update_many({"user_id": user_id, "lida": False}, {"$set": {"lida": True}})
+
+

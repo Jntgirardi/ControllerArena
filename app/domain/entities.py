@@ -42,6 +42,7 @@ class Partida:
     campeonato_id: str
     fase: str
     status: str
+    arbitro_id: str | None = None
 
 
 @dataclass
@@ -51,4 +52,14 @@ class Arbitro:
     disponibilidade: str
     contato: str = ""
     campeonatos_vinculados: list[str] = field(default_factory=list)
+
+
+@dataclass
+class Notificacao:
+    user_id: str
+    mensagem: str
+    lida: bool = False
+    link: str = ""
+    criado_em: datetime | None = None
+
 

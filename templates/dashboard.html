@@ -136,6 +136,122 @@
 {% endif %}
 {% endif %}
 {% else %}
+{% if stats and stats.get('referee_mode') %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+  <div>
+    <h4 class="mb-1 page-title">Painel do Árbitro</h4>
+    <div class="text-muted small">Gerencie as partidas que você está mediando e acompanhe alertas de W.O.</div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-12 col-lg-8">
+    <div class="card h-100">
+      <div class="card-header">Minhas Partidas Designadas</div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table mb-0">
+            <thead>
+              <tr>
+                <th>Partida / Fase</th>
+                <th>Data e Hora</th>
+                <th>Check-in Status</th>
+                <th class="text-end">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for p in stats.partidas %}
+              <tr>
+                <td>
+                  <div class="fw-bold">{{ p.time_a.nome }} x {{ p.time_b.nome }}</div>
+                  <span class="badge bg-secondary" style="font-size:0.68rem;">{{ p.fase }}</span>
+                  <span class="small text-muted ms-1">{{ p.mapa or 'Sem mapa' }}</span>
+                </td>
+                <td class="small text-muted">{{ p.data_partida.strftime('%d/%m/%Y %H:%M') if p.get('data_partida') else 'A definir' }}</td>
+                <td>
+                  {% if p.get('checkin') and p.checkin.solicitado %}
+                    {% if p.checkin.wo_aplicado %}
+                      <span class="badge bg-danger">W.O. Aplicado</span>
+                    {% else %}
+                      <div class="d-flex flex-column gap-1">
+                        <span class="badge {{ 'bg-success' if p.checkin.time_a_confirmado else 'bg-warning text-dark' }}" style="font-size: 0.65rem;">
+                          {{ p.time_a.nome }}: {{ 'Confirmado' if p.checkin.time_a_confirmado else 'Pendente' }}
+                        </span>
+                        <span class="badge {{ 'bg-success' if p.checkin.time_b_confirmado else 'bg-warning text-dark' }}" style="font-size: 0.65rem;">
+                          {{ p.time_b.nome }}: {{ 'Confirmado' if p.checkin.time_b_confirmado else 'Pendente' }}
+                        </span>
+                      </div>
+                    {% endif %}
+                  {% else %}
+                    <span class="badge bg-secondary">Não Solicitado</span>
+                  {% endif %}
+                </td>
+                <td class="text-end">
+                  <div class="d-flex justify-content-end gap-1">
+                    <a href="{{ url_for('ver_campeonato', camp_id=p.campeonato_id) }}" class="btn btn-sm btn-outline-primary">Súmula / Sala</a>
+                  </div>
+                </td>
+              </tr>
+              {% else %}
+              <tr>
+                <td colspan="4" class="text-center text-muted py-4">Nenhuma partida atribuída a você no momento.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-4">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Notificações / Alertas</span>
+        {% if stats.notificacoes %}
+        <form method="post" action="{{ url_for('marcar_todas_notificacoes_lidas') }}" style="margin: 0;">
+          <button type="submit" class="btn btn-xs btn-outline-secondary py-0 px-2" style="font-size:0.68rem;">Limpar Tudo</button>
+        </form>
+        {% endif %}
+      </div>
+      <div class="card-body p-0">
+        <ul class="list-group list-group-flush mb-0">
+          {% for n in stats.notificacoes %}
+          <li class="list-group-item p-3 border-bottom border-secondary-subtle" style="background:transparent;" id="notif_{{ n._id }}">
+            <div class="d-flex justify-content-between align-items-start gap-2 mb-1">
+              <span class="small fw-semibold text-wrap">{{ n.mensagem }}</span>
+              <button onclick="marcarComoLida('{{ n._id }}')" class="btn btn-xs btn-outline-secondary border-0 p-0 text-muted" style="font-size:0.75rem;"><i class="bi bi-x-lg"></i></button>
+            </div>
+            <div class="small text-muted" style="font-size:0.68rem;">{{ n.criado_em.strftime('%d/%m %H:%M') if n.get('criado_em') else 'Agora' }}</div>
+          </li>
+          {% else %}
+          <li class="list-group-item text-center text-muted py-5" style="background:transparent;">
+            <i class="bi bi-bell-slash fs-3 d-block mb-2 text-muted"></i>
+            <span class="small">Nenhuma notificação pendente.</span>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function marcarComoLida(notifId) {
+  fetch(`/notificacoes/${notifId}/ler`, {
+    method: 'POST'
+  }).then(response => {
+    if (response.ok) {
+      const el = document.getElementById(`notif_${notifId}`);
+      if (el) {
+        el.style.opacity = '0';
+        setTimeout(() => el.remove(), 200);
+      }
+    }
+  });
+}
+</script>
+{% else %}
 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
   <h4 class="mb-0 page-title">Dashboard</h4>
 </div>
@@ -193,5 +309,6 @@
     </table>
   </div>
 </div>
+{% endif %}
 {% endif %}
 {% endblock %}

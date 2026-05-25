@@ -25,6 +25,7 @@ class MongoDatabase:
         self.tickets = self.db["ingressos"]
         self.logs = self.db["logs"]
         self.arbitros = self.db["arbitros"]
+        self.notifications = self.db["notificacoes"]
 
     def _ensure_index(self, collection, keys, name: str, **options):
         existing = collection.index_information().get(name)
@@ -108,3 +109,8 @@ class MongoDatabase:
         # arbitros
         self._ensure_index(self.arbitros, "email", "email_1", unique=True, sparse=True)
         self._ensure_index(self.arbitros, "admin_id", "admin_id_1")
+
+        # notificacoes
+        self._ensure_index(self.notifications, "user_id", "user_id_1")
+        self._ensure_index(self.notifications, "lida", "lida_1")
+        self._ensure_index(self.notifications, [("criado_em", DESCENDING)], "criado_em_-1")

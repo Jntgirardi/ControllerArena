@@ -885,5 +885,75 @@ def test_match_presence_checkin_flow(monkeypatch):
     assert match["checkin"]["time_b_confirmado"] is True
 
 
+def test_referee_crud_and_validation_flow(monkeypatch):
+    flask_app = build_test_app(monkeypatch)
+    mongo = flask_app.extensions["mongo"]
+    services = flask_app.extensions["services"]
 
+    admin_id = ObjectId()
+    current_user_admin = {"role": "ADMIN", "_id": admin_id}
+
+    # 1. Create a referee with invalid data (fails validation)
+    referee_data_invalid = {
+        "nome": "",
+        "email": "invalidemail",
+        "contato": "123456",
+        "disponibilidade": "",
+        "login": "ref1",
+        "senha": "123"
+    }
+    errors = services["arbitros"].create_referee(current_user_admin, referee_data_invalid)
+    assert len(errors) > 0
+    assert "Nome e obrigatorio." in errors
+    assert "E-mail invalido." in errors
+    assert "Disponibilidade e obrigatoria." in errors
+    assert "Senha deve ter ao menos 6 caracteres." in errors
+
+    # 2. Create a referee with valid data
+    referee_data_valid = {
+        "nome": "Arbitro Um",
+        "email": "arbitro.um@email.com",
+        "contato": "99999-9999",
+        "disponibilidade": "Finais de semana",
+        "login": "arbitro.um",
+        "senha": "password123",
+        "campeonatos_ids": []
+    }
+    errors = services["arbitros"].create_referee(current_user_admin, referee_data_valid)
+    assert not errors
+
+    # Verify referee document is created
+    referee = mongo.arbitros.find_one({"email": "arbitro.um@email.com"})
+    assert referee is not None
+    assert referee["nome"] == "Arbitro Um"
+    assert referee["admin_id"] == admin_id
+
+    # Verify associated user account is created with role REFEREE
+    user = mongo.users.find_one({"login": "arbitro.um"})
+    assert user is not None
+    assert user["role"] == "REFEREE"
+
+    # 3. Create a duplicate referee (by login)
+    referee_data_dup_login = {
+        "nome": "Arbitro Dois",
+        "email": "arbitro.dois@email.com",
+        "contato": "99999-9999",
+        "disponibilidade": "Finais de semana",
+        "login": "arbitro.um",
+        "senha": "password123"
+    }
+    errors = services["arbitros"].create_referee(current_user_admin, referee_data_dup_login)
+    assert "Login ja existe." in errors
+
+    # 4. Create a duplicate referee (by email, case insensitive)
+    referee_data_dup_email = {
+        "nome": "Arbitro Dois",
+        "email": "ARBITRO.UM@email.com",
+        "contato": "99999-9999",
+        "disponibilidade": "Finais de semana",
+        "login": "arbitro.dois",
+        "senha": "password123"
+    }
+    errors = services["arbitros"].create_referee(current_user_admin, referee_data_dup_email)
+    assert "Este e-mail ja esta cadastrado para este organizador." in errors
 
