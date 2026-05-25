@@ -36,9 +36,10 @@ def get_scope_admin_id(current_user: dict[str, Any]) -> ObjectId | None:
     role = current_user.get("role")
     if role == ROLE_ADMIN:
         return current_user["_id"]
-    if role == ROLE_PLAYER:
+    if role in (ROLE_PLAYER, ROLE_REFEREE):
         return current_user.get("admin_id")
     return None
+
 
 
 def can_access_admin_scope(current_user: dict[str, Any], admin_id: ObjectId | None) -> bool:
