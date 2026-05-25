@@ -258,3 +258,41 @@ class MongoLogRepository:
         if sort:
             cursor = cursor.sort(sort)
         return list(cursor)
+
+
+class MongoArbitroRepository:
+    def __init__(self, collection):
+        self.collection = collection
+
+    def count_all(self, filtro=None):
+        return self.collection.count_documents(filtro or {})
+
+    def list_filtered(self, filtro, busca: str):
+        query = dict(filtro or {})
+        if busca:
+            query["$or"] = [
+                {"nome": {"$regex": busca, "$options": "i"}},
+                {"email": {"$regex": busca, "$options": "i"}},
+            ]
+        return list(self.collection.find(query).sort("nome", 1))
+
+    def find_by_id(self, object_id):
+        return self.collection.find_one({"_id": object_id})
+
+    def find_by_email_case_insensitive(self, email: str, admin_id=None):
+        filtro = {"email": {"$regex": f"^{email}$", "$options": "i"}}
+        if admin_id:
+            filtro["admin_id"] = admin_id
+        return self.collection.find_one(filtro)
+
+    def insert(self, document):
+        result = self.collection.insert_one(document)
+        return result.inserted_id
+
+    def update_fields(self, object_id, fields):
+        self.collection.update_one({"_id": object_id}, {"$set": fields})
+
+    def delete_by_id(self, object_id):
+        result = self.collection.delete_one({"_id": object_id})
+        return result.deleted_count > 0
+

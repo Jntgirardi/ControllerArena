@@ -11,6 +11,7 @@ from pymongo import DESCENDING
 ROLE_SUPER_ADMIN = "SUPER_ADMIN"
 ROLE_ADMIN = "ADMIN"
 ROLE_PLAYER = "PLAYER"
+ROLE_REFEREE = "REFEREE"
 
 STATUS_INSCRICAO = "INSCRICAO"
 STATUS_EM_ANDAMENTO = "EM_ANDAMENTO"
@@ -1181,6 +1182,139 @@ class UserService:
         self.user_repo.delete_by_id(object_id)
 
 
+class ArbitroService:
+    def __init__(self, arbitro_repo, user_repo, password_hasher):
+        self.arbitro_repo = arbitro_repo
+        self.user_repo = user_repo
+        self.password_hasher = password_hasher
+
+    def _base_filter(self, current_user: dict[str, Any]) -> dict[str, Any]:
+        filtro = {}
+        if current_user["role"] != ROLE_SUPER_ADMIN:
+            filtro["admin_id"] = get_scope_admin_id(current_user)
+        return filtro
+
+    def validate(self, data: dict[str, Any], creating: bool = True) -> list[str]:
+        errors = []
+        if not data.get("nome", "").strip():
+            errors.append("Nome e obrigatorio.")
+        
+        email = data.get("email", "").strip()
+        if not email:
+            errors.append("E-mail e obrigatorio.")
+        elif "@" not in email:
+            errors.append("E-mail invalido.")
+            
+        if not data.get("disponibilidade", "").strip():
+            errors.append("Disponibilidade e obrigatoria.")
+
+        if creating:
+            if not data.get("login", "").strip():
+                errors.append("Login e obrigatorio.")
+            if len(data.get("senha", "")) < 6:
+                errors.append("Senha deve ter ao menos 6 caracteres.")
+        return errors
+
+    def list_referees(self, current_user: dict[str, Any], busca: str = "") -> list[dict[str, Any]]:
+        return self.arbitro_repo.list_filtered(self._base_filter(current_user), busca)
+
+    def create_referee(self, current_user: dict[str, Any], data: dict[str, Any]) -> list[str]:
+        errors = self.validate(data, creating=True)
+        if errors:
+            return errors
+        admin_id = get_scope_admin_id(current_user)
+        login = data["login"].strip()
+        email = data["email"].strip()
+        
+        if self.user_repo.find_by_login(login):
+            return ["Login ja existe."]
+        if self.arbitro_repo.find_by_email_case_insensitive(email, admin_id):
+            return ["Este e-mail ja esta cadastrado para este organizador."]
+
+        camp_ids = []
+        if "campeonatos_ids" in data:
+            ids = data.getlist("campeonatos_ids") if hasattr(data, "getlist") else data.get("campeonatos_ids", [])
+            for cid in ids:
+                if cid:
+                    camp_ids.append(ObjectId(cid))
+
+        referee_document = {
+            "nome": data["nome"].strip(),
+            "email": email,
+            "contato": data.get("contato", "").strip(),
+            "disponibilidade": data["disponibilidade"].strip(),
+            "admin_id": admin_id,
+            "campeonatos_vinculados": camp_ids,
+            "criado_em": utc_now_naive(),
+        }
+        referee_id = self.arbitro_repo.insert(referee_document)
+        
+        self.user_repo.insert(
+            {
+                "nome": data["nome"].strip(),
+                "login": login,
+                "senha_hash": self.password_hasher.hash(data["senha"]),
+                "role": ROLE_REFEREE,
+                "admin_id": admin_id,
+                "referee_id": referee_id,
+                "ativo": True,
+                "must_change_password": False,
+                "criado_em": utc_now_naive(),
+            }
+        )
+        return []
+
+    def get_referee_details(self, current_user: dict[str, Any], object_id):
+        referee = self.arbitro_repo.find_by_id(object_id)
+        if not referee or not can_access_admin_scope(current_user, referee.get("admin_id")):
+            return None, None
+        user = self.user_repo.collection.find_one({"referee_id": object_id})
+        return referee, user
+
+    def update_referee(self, current_user: dict[str, Any], object_id, data: dict[str, Any]) -> list[str]:
+        referee = self.arbitro_repo.find_by_id(object_id)
+        if not referee or not can_access_admin_scope(current_user, referee.get("admin_id")):
+            return ["Arbitro nao encontrado."]
+
+        errors = self.validate(data, creating=False)
+        if errors:
+            return errors
+            
+        email = data["email"].strip()
+        admin_id = referee.get("admin_id")
+        
+        existing = self.arbitro_repo.find_by_email_case_insensitive(email, admin_id)
+        if existing and existing["_id"] != object_id:
+            return ["Este e-mail ja esta cadastrado para este organizador."]
+
+        camp_ids = []
+        if "campeonatos_ids" in data:
+            ids = data.getlist("campeonatos_ids") if hasattr(data, "getlist") else data.get("campeonatos_ids", [])
+            for cid in ids:
+                if cid:
+                    camp_ids.append(ObjectId(cid))
+
+        update = {
+            "nome": data["nome"].strip(),
+            "email": email,
+            "contato": data.get("contato", "").strip(),
+            "disponibilidade": data["disponibilidade"].strip(),
+            "campeonatos_vinculados": camp_ids,
+        }
+        self.arbitro_repo.update_fields(object_id, update)
+        self.user_repo.collection.update_one({"referee_id": object_id}, {"$set": {"nome": data["nome"].strip()}})
+        return []
+
+    def delete_referee(self, current_user: dict[str, Any], object_id) -> bool:
+        referee = self.arbitro_repo.find_by_id(object_id)
+        if not referee or not can_access_admin_scope(current_user, referee.get("admin_id")):
+            return False
+        deleted = self.arbitro_repo.delete_by_id(object_id)
+        if deleted:
+            self.user_repo.collection.delete_many({"referee_id": object_id})
+        return deleted
+
+
 def build_services(repositories: dict[str, Any], password_hasher, cache):
     return {
         "auth": AuthService(repositories["users"], password_hasher),
@@ -1225,4 +1359,5 @@ def build_services(repositories: dict[str, Any], password_hasher, cache):
             repositories["teams"],
             repositories["championships"],
         ),
+        "arbitros": ArbitroService(repositories["arbitros"], repositories["users"], password_hasher),
     }

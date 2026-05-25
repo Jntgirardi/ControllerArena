@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from flask import Response, abort, flash, redirect, render_template, request, session, url_for
 
-from ...application.services import ROLE_ADMIN, ROLE_PLAYER, ROLE_SUPER_ADMIN
+from ...application.services import ROLE_ADMIN, ROLE_PLAYER, ROLE_REFEREE, ROLE_SUPER_ADMIN
 from .common import build_current_user, login_required, roles_required, to_oid
 from .report_exports import build_csv_bytes, build_pdf_bytes
 
@@ -825,3 +825,92 @@ def register_routes(app, services):
         services["users"].delete_user(oid)
         flash("Usuario removido.", "success")
         return redirect(url_for("listar_usuarios"))
+
+    @app.route("/arbitros", endpoint="listar_arbitros")
+    @login_required
+    @roles_required(ROLE_SUPER_ADMIN, ROLE_ADMIN)
+    def listar_arbitros():
+        current_user = build_current_user()
+        busca = request.args.get("busca", "").strip()
+        arbitros = services["arbitros"].list_referees(current_user, busca)
+        return render_template("arbitros/lista.html", arbitros=arbitros, busca=busca)
+
+    @app.route("/arbitros/novo", methods=["GET", "POST"], endpoint="novo_arbitro")
+    @login_required
+    @roles_required(ROLE_ADMIN)
+    def novo_arbitro():
+        current_user = build_current_user()
+        campeonatos = services["championships"].list_championships(current_user, "", "")
+        if request.method == "POST":
+            errors = services["arbitros"].create_referee(current_user, request.form)
+            if errors:
+                for error in errors:
+                    flash(error, "danger")
+                return render_template(
+                    "arbitros/form.html",
+                    dados=request.form,
+                    campeonatos=campeonatos,
+                    acao="novo",
+                )
+            flash("Arbitro cadastrado com sucesso!", "success")
+            return redirect(url_for("listar_arbitros"))
+        return render_template("arbitros/form.html", dados={}, campeonatos=campeonatos, acao="novo")
+
+    @app.route("/arbitros/<arbitro_id>/editar", methods=["GET", "POST"], endpoint="editar_arbitro")
+    @login_required
+    @roles_required(ROLE_ADMIN)
+    def editar_arbitro(arbitro_id):
+        current_user = build_current_user()
+        oid = to_oid(arbitro_id)
+        if not oid:
+            flash("ID invalido.", "danger")
+            return redirect(url_for("listar_arbitros"))
+        arbitro, user = services["arbitros"].get_referee_details(current_user, oid)
+        if not arbitro:
+            flash("Arbitro nao encontrado.", "warning")
+            return redirect(url_for("listar_arbitros"))
+        
+        campeonatos = services["championships"].list_championships(current_user, "", "")
+        ids_vinculados = {str(cid) for cid in arbitro.get("campeonatos_vinculados", [])}
+        
+        if request.method == "POST":
+            errors = services["arbitros"].update_referee(current_user, oid, request.form)
+            if errors:
+                for error in errors:
+                    flash(error, "danger")
+                return render_template(
+                    "arbitros/form.html",
+                    dados=request.form,
+                    acao="editar",
+                    arbitro=arbitro,
+                    campeonatos=campeonatos,
+                    ids_vinculados=ids_vinculados,
+                )
+            flash("Arbitro atualizado com sucesso!", "success")
+            return redirect(url_for("listar_arbitros"))
+            
+        dados = dict(arbitro)
+        if user:
+            dados["login"] = user.get("login", "")
+        return render_template(
+            "arbitros/form.html",
+            dados=dados,
+            acao="editar",
+            arbitro=arbitro,
+            campeonatos=campeonatos,
+            ids_vinculados=ids_vinculados,
+        )
+
+    @app.route("/arbitros/<arbitro_id>/remover", methods=["POST"], endpoint="remover_arbitro")
+    @login_required
+    @roles_required(ROLE_ADMIN)
+    def remover_arbitro(arbitro_id):
+        current_user = build_current_user()
+        oid = to_oid(arbitro_id)
+        if not oid:
+            flash("ID invalido.", "danger")
+        elif services["arbitros"].delete_referee(current_user, oid):
+            flash("Arbitro removido com sucesso.", "success")
+        else:
+            flash("Arbitro nao encontrado.", "warning")
+        return redirect(url_for("listar_arbitros"))

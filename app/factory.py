@@ -14,6 +14,7 @@ from .infrastructure.repositories import (
     MongoTicketRepository,
     MongoTeamRepository,
     MongoUserRepository,
+    MongoArbitroRepository,
 )
 from .infrastructure.security.password_hasher import PasswordHasher
 from .interfaces.web import register_routes
@@ -43,6 +44,7 @@ def create_app():
         "events": MongoEventRepository(mongo.events),
         "tickets": MongoTicketRepository(mongo.tickets),
         "logs": MongoLogRepository(mongo.logs),
+        "arbitros": MongoArbitroRepository(mongo.arbitros),
     }
     services = build_services(repositories, PasswordHasher(), cache)
 

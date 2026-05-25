@@ -123,6 +123,7 @@
         {% if session.role == 'ADMIN' %}
         <li class="nav-item"><a class="nav-link {% if request.endpoint in ('listar_jogadores','novo_jogador','ver_jogador','editar_jogador') %}active{% endif %}" href="{{ url_for('listar_jogadores') }}"><i class="bi bi-person-badge"></i> Jogadores</a></li>
         <li class="nav-item"><a class="nav-link {% if request.endpoint in ('listar_times','novo_time','editar_time') %}active{% endif %}" href="{{ url_for('listar_times') }}"><i class="bi bi-people-fill"></i> Times</a></li>
+        <li class="nav-item"><a class="nav-link {% if request.endpoint in ('listar_arbitros','novo_arbitro','editar_arbitro') %}active{% endif %}" href="{{ url_for('listar_arbitros') }}"><i class="bi bi-person-check"></i> Árbitros</a></li>
         {% endif %}
         {% if session.role in ('SUPER_ADMIN', 'ADMIN') %}
         <li class="nav-item"><a class="nav-link {% if request.endpoint and 'campeonato' in request.endpoint %}active{% endif %}" href="{{ url_for('listar_campeonatos') }}"><i class="bi bi-trophy-fill"></i> Campeonatos</a></li>

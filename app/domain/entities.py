@@ -42,3 +42,13 @@ class Partida:
     campeonato_id: str
     fase: str
     status: str
+
+
+@dataclass
+class Arbitro:
+    nome: str
+    email: str
+    disponibilidade: str
+    contato: str = ""
+    campeonatos_vinculados: list[str] = field(default_factory=list)
+

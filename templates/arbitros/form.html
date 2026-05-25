@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Editar' if acao == 'editar' else 'Novo' }} Árbitro - FPS Arena{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center mb-3">
+  <a href="{{ url_for('listar_arbitros') }}" class="btn btn-outline-secondary btn-sm me-3">Voltar</a>
+  <h4 class="mb-0 page-title">{{ 'Editar Árbitro' if acao == 'editar' else 'Cadastrar Árbitro' }}</h4>
+</div>
+
+<div class="card" style="max-width:720px">
+  <div class="card-body">
+    <form method="post">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label">Nome Completo</label>
+          <input type="text" name="nome" class="form-control" value="{{ dados.get('nome', '') }}" required>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">E-mail</label>
+          <input type="email" name="email" class="form-control" value="{{ dados.get('email', '') }}" required>
+        </div>
+        
+        {% if acao != 'editar' %}
+        <div class="col-md-6">
+          <label class="form-label">Login do Árbitro</label>
+          <input type="text" name="login" class="form-control" value="{{ dados.get('login', '') }}" required>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Senha Inicial</label>
+          <input type="password" name="senha" class="form-control" minlength="6" required>
+        </div>
+        {% endif %}
+        
+        <div class="col-md-6">
+          <label class="form-label">Telefone / Contato</label>
+          <input type="text" name="contato" class="form-control" value="{{ dados.get('contato', '') }}">
+        </div>
+
+        <div class="col-md-12">
+          <label class="form-label">Disponibilidade</label>
+          <textarea name="disponibilidade" class="form-control" rows="3" placeholder="Ex: Finais de semana a tarde, Noites de segunda a sexta..." required>{{ dados.get('disponibilidade', '') }}</textarea>
+        </div>
+
+        <div class="col-md-12">
+          <label class="form-label d-block mb-2">Vincular a Campeonatos</label>
+          <div class="border rounded p-3" style="max-height: 180px; overflow-y: auto; background: var(--bg-card-hd);">
+            {% for camp in campeonatos %}
+            <div class="form-check mb-2">
+              <input class="form-check-input" type="checkbox" name="campeonatos_ids" value="{{ camp._id }}" id="camp_{{ camp._id }}"
+                {% if acao == 'editar' and camp._id|string in ids_vinculados %}checked{% endif %}>
+              <label class="form-check-label small" for="camp_{{ camp._id }}">
+                {{ camp.nome }} <span class="badge {{ 'badge-cs2' if camp.jogo == 'CS2' else 'badge-valorant' }} ms-1" style="font-size:0.65rem;">{{ camp.jogo }}</span>
+              </label>
+            </div>
+            {% else %}
+            <div class="text-muted small">Nenhum campeonato cadastrado ainda.</div>
+            {% endfor %}
+          </div>
+          <span class="text-muted small mt-1 d-block">Marque todos os campeonatos que este árbitro poderá mediar.</span>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary w-100 mt-4">
+        {{ 'Salvar Alterações' if acao == 'editar' else 'Cadastrar Árbitro' }}
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}
