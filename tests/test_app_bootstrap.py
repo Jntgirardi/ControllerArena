@@ -804,6 +804,162 @@ def test_player_ranking_report_filters_by_date(monkeypatch):
     assert report["rows"][0]["Posicao"] == 1
 
 
+def test_championship_discord_webhook_configuration(monkeypatch):
+    flask_app = build_test_app(monkeypatch)
+    mongo = flask_app.extensions["mongo"]
+    services = flask_app.extensions["services"]
+
+    admin_id = ObjectId()
+    current_user = {"role": "ADMIN", "_id": admin_id}
+    webhook_url = "https://discord.com/api/webhooks/123/token"
+
+    errors = services["championships"].create_championship(
+        current_user,
+        {
+            "nome": "Discord Cup",
+            "jogo": "CS2",
+            "formato": "mata-mata",
+            "max_times": "8",
+            "data_inicio": "2026-05-25",
+            "data_fim": "2026-05-30",
+            "discord_webhook_url": webhook_url,
+        },
+    )
+
+    assert not errors
+    camp = mongo.championships.find_one({"nome": "Discord Cup"})
+    assert camp["discord_webhook_url"] == webhook_url
+
+    errors = services["championships"].update_championship_settings(
+        current_user,
+        camp["_id"],
+        {
+            "nome": "Discord Cup Atualizada",
+            "jogo": "Valorant",
+            "formato": "grupos",
+            "max_times": "10",
+            "data_inicio": "2026-06-01",
+            "data_fim": "2026-06-10",
+            "discord_webhook_url": "",
+        },
+    )
+
+    assert not errors
+    updated = mongo.championships.find_one({"_id": camp["_id"]})
+    assert updated["discord_webhook_url"] == ""
+
+
+def test_discord_notifications_are_sent_on_match_start_and_result(monkeypatch):
+    flask_app = build_test_app(monkeypatch)
+    mongo = flask_app.extensions["mongo"]
+    services = flask_app.extensions["services"]
+
+    class FakeNotifier:
+        def __init__(self):
+            self.messages = []
+
+        def send_message(self, webhook_url, content):
+            self.messages.append((webhook_url, content))
+            return True
+
+    notifier = FakeNotifier()
+    services["matches"].discord_notifier = notifier
+
+    admin_id = ObjectId()
+    current_user = {"role": "ADMIN", "_id": admin_id}
+    webhook_url = "https://discord.com/api/webhooks/123/token"
+    time_a_id = mongo.teams.insert_one({"nome": "Team A", "tag": "A", "jogo": "CS2", "admin_id": admin_id, "jogadores": []}).inserted_id
+    time_b_id = mongo.teams.insert_one({"nome": "Team B", "tag": "B", "jogo": "CS2", "admin_id": admin_id, "jogadores": []}).inserted_id
+    camp_id = mongo.championships.insert_one(
+        {
+            "nome": "Arena Discord",
+            "jogo": "CS2",
+            "status": "EM_ANDAMENTO",
+            "admin_id": admin_id,
+            "discord_webhook_url": webhook_url,
+            "datas": {"inicio": datetime.now(UTC), "fim": datetime.now(UTC) + timedelta(days=1)},
+        }
+    ).inserted_id
+    match_id = mongo.matches.insert_one(
+        {
+            "admin_id": admin_id,
+            "campeonato_id": camp_id,
+            "fase": "Final",
+            "time_a": {"time_id": time_a_id, "nome": "Team A", "placar": 0},
+            "time_b": {"time_id": time_b_id, "nome": "Team B", "placar": 0},
+            "mapa": "Mirage",
+            "status": "agendada",
+            "data_partida": datetime.now(UTC).replace(tzinfo=None),
+            "rounds": [],
+        }
+    ).inserted_id
+
+    error, updated_match = services["matches"].add_round(current_user, match_id, time_a_id, "elimination")
+    assert not error
+    assert updated_match["status"] == "em_andamento"
+    assert len(notifier.messages) == 1
+    assert notifier.messages[0][0] == webhook_url
+    assert "Partida iniciada" in notifier.messages[0][1]
+
+    error, _ = services["matches"].add_round(current_user, match_id, time_b_id, "objective")
+    assert not error
+    assert len(notifier.messages) == 1
+
+    error, returned_camp_id = services["matches"].register_result(current_user, match_id, "2", "1")
+    assert not error
+    assert returned_camp_id == camp_id
+    assert len(notifier.messages) == 2
+    assert "Resultado registrado" in notifier.messages[1][1]
+
+
+def test_discord_notification_failure_does_not_interrupt_match_flow(monkeypatch):
+    flask_app = build_test_app(monkeypatch)
+    mongo = flask_app.extensions["mongo"]
+    services = flask_app.extensions["services"]
+
+    class FailingNotifier:
+        def send_message(self, webhook_url, content):
+            raise RuntimeError("discord offline")
+
+    services["matches"].discord_notifier = FailingNotifier()
+
+    admin_id = ObjectId()
+    current_user = {"role": "ADMIN", "_id": admin_id}
+    time_a_id = mongo.teams.insert_one({"nome": "Team A", "tag": "A", "jogo": "CS2", "admin_id": admin_id, "jogadores": []}).inserted_id
+    time_b_id = mongo.teams.insert_one({"nome": "Team B", "tag": "B", "jogo": "CS2", "admin_id": admin_id, "jogadores": []}).inserted_id
+    camp_id = mongo.championships.insert_one(
+        {
+            "nome": "Arena Discord",
+            "jogo": "CS2",
+            "status": "EM_ANDAMENTO",
+            "admin_id": admin_id,
+            "discord_webhook_url": "https://discord.com/api/webhooks/123/token",
+            "datas": {"inicio": datetime.now(UTC), "fim": datetime.now(UTC) + timedelta(days=1)},
+        }
+    ).inserted_id
+    match_id = mongo.matches.insert_one(
+        {
+            "admin_id": admin_id,
+            "campeonato_id": camp_id,
+            "fase": "Final",
+            "time_a": {"time_id": time_a_id, "nome": "Team A", "placar": 0},
+            "time_b": {"time_id": time_b_id, "nome": "Team B", "placar": 0},
+            "status": "agendada",
+            "data_partida": datetime.now(UTC).replace(tzinfo=None),
+            "rounds": [],
+        }
+    ).inserted_id
+
+    error, updated_match = services["matches"].add_round(current_user, match_id, time_a_id, "elimination")
+    assert not error
+    assert updated_match["status"] == "em_andamento"
+
+    error, returned_camp_id = services["matches"].register_result(current_user, match_id, "1", "0")
+    assert not error
+    assert returned_camp_id == camp_id
+    assert mongo.matches.find_one({"_id": match_id})["status"] == "finalizada"
+
+
 def test_match_presence_checkin_flow(monkeypatch):
     flask_app = build_test_app(monkeypatch)
     mongo = flask_app.extensions["mongo"]

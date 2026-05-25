@@ -20,6 +20,7 @@
         <div><strong>Times:</strong> {{ times_inscritos|length }} / {{ camp.max_times }}</div>
         <div><strong>Inicio:</strong> {{ camp.datas.inicio.strftime('%d/%m/%Y') }}</div>
         <div><strong>Fim:</strong> {{ camp.datas.fim.strftime('%d/%m/%Y') }}</div>
+        <div><strong>Discord:</strong> {{ 'configurado' if camp.get('discord_webhook_url') else 'nao configurado' }}</div>
       </div>
     </div>
 

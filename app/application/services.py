@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+import json
+import logging
+from urllib import error as urllib_error
+from urllib import request as urllib_request
 from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import uuid4
@@ -20,6 +24,12 @@ STATUS_ARQUIVADO = "ARQUIVADO"
 VALID_STATUSES = (STATUS_INSCRICAO, STATUS_EM_ANDAMENTO, STATUS_FINALIZADO, STATUS_ARQUIVADO)
 
 RANKING_CACHE_PREFIX = "fps_arena:ranking"
+DISCORD_WEBHOOK_PREFIXES = (
+    "https://discord.com/api/webhooks/",
+    "https://discordapp.com/api/webhooks/",
+)
+
+logger = logging.getLogger(__name__)
 
 
 def utc_now_naive() -> datetime:
@@ -50,6 +60,39 @@ def can_access_admin_scope(current_user: dict[str, Any], admin_id: ObjectId | No
 
 def invalidate_ranking_cache(cache) -> None:
     cache.delete_pattern(f"{RANKING_CACHE_PREFIX}:*")
+
+
+class DiscordWebhookNotifier:
+    def __init__(self, timeout_seconds: int = 5):
+        self.timeout_seconds = timeout_seconds
+
+    def send_message(self, webhook_url: str | None, content: str) -> bool:
+        webhook_url = (webhook_url or "").strip()
+        if not webhook_url:
+            return False
+
+        payload = json.dumps(
+            {
+                "username": "FPS Arena",
+                "content": content[:2000],
+            }
+        ).encode("utf-8")
+        req = urllib_request.Request(
+            webhook_url,
+            data=payload,
+            headers={
+                "Content-Type": "application/json",
+                "User-Agent": "FPS-Arena/1.0",
+            },
+            method="POST",
+        )
+
+        try:
+            with urllib_request.urlopen(req, timeout=self.timeout_seconds) as response:
+                return 200 <= response.status < 300
+        except (urllib_error.URLError, TimeoutError, OSError) as exc:
+            logger.warning("Falha ao enviar notificacao para o Discord: %s", exc)
+            return False
 
 
 class AuthService:
@@ -405,6 +448,9 @@ class ChampionshipService:
                 errors.append("O campeonato deve ter ao menos 2 times.")
         except ValueError:
             errors.append("Maximo de times deve ser um numero inteiro.")
+        webhook_url = data.get("discord_webhook_url", "").strip()
+        if webhook_url and not webhook_url.startswith(DISCORD_WEBHOOK_PREFIXES):
+            errors.append("Webhook do Discord deve ser uma URL valida de webhook do Discord.")
         return errors
 
     def list_championships(self, current_user: dict[str, Any], status: str, jogo: str):
@@ -438,6 +484,7 @@ class ChampionshipService:
                     "2_lugar": data.get("premio_2", "").strip(),
                     "3_lugar": data.get("premio_3", "").strip(),
                 },
+                "discord_webhook_url": data.get("discord_webhook_url", "").strip(),
                 "datas": {
                     "inicio": datetime.strptime(data["data_inicio"], "%Y-%m-%d"),
                     "fim": datetime.strptime(data["data_fim"], "%Y-%m-%d"),
@@ -478,6 +525,7 @@ class ChampionshipService:
                 "premiacao.1_lugar": data.get("premio_1", "").strip(),
                 "premiacao.2_lugar": data.get("premio_2", "").strip(),
                 "premiacao.3_lugar": data.get("premio_3", "").strip(),
+                "discord_webhook_url": data.get("discord_webhook_url", "").strip(),
                 "datas.inicio": datetime.strptime(data["data_inicio"], "%Y-%m-%d"),
                 "datas.fim": datetime.strptime(data["data_fim"], "%Y-%m-%d"),
             },
@@ -542,12 +590,52 @@ class ChampionshipService:
 
 
 class MatchService:
-    def __init__(self, match_repo, championship_repo, team_repo, player_repo, cache):
+    def __init__(self, match_repo, championship_repo, team_repo, player_repo, cache, discord_notifier=None):
         self.match_repo = match_repo
         self.championship_repo = championship_repo
         self.team_repo = team_repo
         self.player_repo = player_repo
         self.cache = cache
+        self.discord_notifier = discord_notifier or DiscordWebhookNotifier()
+
+    def _match_label(self, match: dict[str, Any]) -> str:
+        return f"{match['time_a']['nome']} x {match['time_b']['nome']}"
+
+    def _send_discord_notification(self, camp: dict[str, Any] | None, message: str) -> None:
+        if not camp:
+            return
+        try:
+            self.discord_notifier.send_message(camp.get("discord_webhook_url"), message)
+        except Exception as exc:
+            logger.warning("Falha inesperada ao notificar Discord: %s", exc)
+
+    def _format_match_datetime(self, match: dict[str, Any]) -> str:
+        data_partida = match.get("data_partida")
+        if not data_partida:
+            return "horario a confirmar"
+        return data_partida.strftime("%d/%m/%Y %H:%M")
+
+    def _notify_match_started(self, camp: dict[str, Any] | None, match: dict[str, Any]) -> None:
+        mapa = f" - {match.get('mapa')}" if match.get("mapa") else ""
+        self._send_discord_notification(
+            camp,
+            (
+                f"Partida iniciada em {camp.get('nome', 'campeonato')}: "
+                f"{self._match_label(match)}{mapa}. "
+                f"Horario previsto: {self._format_match_datetime(match)}."
+            ),
+        )
+
+    def _notify_match_result(self, camp: dict[str, Any] | None, match: dict[str, Any], score_a: int, score_b: int) -> None:
+        winner = match["time_a"]["nome"] if score_a > score_b else match["time_b"]["nome"]
+        self._send_discord_notification(
+            camp,
+            (
+                f"Resultado registrado em {camp.get('nome', 'campeonato')}: "
+                f"{match['time_a']['nome']} {score_a} x {score_b} {match['time_b']['nome']}. "
+                f"Vencedor: {winner}."
+            ),
+        )
 
     def create_match(self, current_user: dict[str, Any], championship_id, form_data) -> str | None:
         camp = self.championship_repo.find_by_id(championship_id)
@@ -656,6 +744,7 @@ class MatchService:
                 for membro in team.get("jogadores", []):
                     self.player_repo.increment_stats(membro["jogador_id"], increment)
         invalidate_ranking_cache(self.cache)
+        self._notify_match_result(camp, match, score_a, score_b)
         return None, match["campeonato_id"]
 
     def solicitar_checkin(self, current_user: dict[str, Any], match_id, antecedencia_minutos: str) -> tuple[str | None, ObjectId | None]:
@@ -906,23 +995,29 @@ class MatchService:
         # Append round log
         rounds = match.get("rounds", [])
         round_num = len(rounds) + 1
+        round_started_match = len(rounds) == 0
         new_round = {
             "round": round_num,
             "vencedor_id": vencedor_id,
             "metodo": metodo,
             "timestamp": utc_now_naive()
         }
+        update_doc = {
+            "$inc": {side_to_inc: 1},
+            "$push": {"rounds": new_round}
+        }
+        if round_started_match:
+            update_doc["$set"] = {"status": "em_andamento", "iniciada_em": new_round["timestamp"]}
         
         self.match_repo.collection.update_one(
             {"_id": match_id},
-            {
-                "$inc": {side_to_inc: 1},
-                "$push": {"rounds": new_round}
-            }
+            update_doc
         )
         
         # Reload and return updated match
         updated_match = self.match_repo.find_by_id(match_id)
+        if round_started_match:
+            self._notify_match_started(camp, updated_match or match)
         return None, updated_match
 
     def undo_round(self, current_user: dict[str, Any], match_id) -> tuple[str | None, dict[str, Any] | None]:
@@ -1129,6 +1224,7 @@ class ReportService:
             STATUS_FINALIZADO: "Finalizado",
             STATUS_ARQUIVADO: "Arquivado",
             "agendada": "Agendada",
+            "em_andamento": "Em andamento",
             "finalizada": "Finalizada",
             "cancelado": "Cancelado",
             "pago": "Pago",

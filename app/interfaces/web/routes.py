@@ -626,6 +626,7 @@ def register_routes(app, services):
             "premio_1": camp.get("premiacao", {}).get("1_lugar", ""),
             "premio_2": camp.get("premiacao", {}).get("2_lugar", ""),
             "premio_3": camp.get("premiacao", {}).get("3_lugar", ""),
+            "discord_webhook_url": camp.get("discord_webhook_url", ""),
         }
         return render_template("campeonatos/form.html", dados=dados, acao="editar", camp=camp)
 
