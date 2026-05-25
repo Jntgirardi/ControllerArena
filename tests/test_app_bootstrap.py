@@ -957,3 +957,80 @@ def test_referee_crud_and_validation_flow(monkeypatch):
     errors = services["arbitros"].create_referee(current_user_admin, referee_data_dup_email)
     assert "Este e-mail ja esta cadastrado para este organizador." in errors
 
+
+def test_championship_archiving_blocks_mutations(monkeypatch):
+    flask_app = build_test_app(monkeypatch)
+    mongo = flask_app.extensions["mongo"]
+    services = flask_app.extensions["services"]
+
+    admin_id = ObjectId()
+    current_user_admin = {"role": "ADMIN", "_id": admin_id}
+
+    # 1. Create a championship
+    camp_id = mongo.championships.insert_one({
+        "nome": "Copa Master",
+        "jogo": "CS2",
+        "formato": "mata-mata",
+        "max_times": 8,
+        "status": "INSCRICAO",
+        "admin_id": admin_id,
+        "times_inscritos": [],
+        "datas": {"inicio": datetime.now(UTC), "fim": datetime.now(UTC) + timedelta(days=5)},
+        "criado_em": datetime.now(UTC)
+    }).inserted_id
+
+    # 2. Archive the championship
+    err = services["championships"].update_status(current_user_admin, camp_id, "ARQUIVADO")
+    assert not err
+
+    # Verify status is updated in db
+    camp = mongo.championships.find_one({"_id": camp_id})
+    assert camp["status"] == "ARQUIVADO"
+
+    # 3. Try to enroll a team (should be blocked because status is not INSCRICAO)
+    time_id = ObjectId()
+    mongo.teams.insert_one({"_id": time_id, "nome": "Team A", "tag": "TMA", "jogo": "CS2", "admin_id": admin_id})
+    err = services["championships"].enroll_team(current_user_admin, camp_id, time_id)
+    assert err == "Este campeonato nao esta aceitando inscricoes."
+
+    # 4. Try to unenroll a team (should be blocked)
+    err = services["championships"].unenroll_team(current_user_admin, camp_id, time_id)
+    assert "Nao e possivel alterar times de um campeonato finalizado ou arquivado." in err
+
+    # 5. Try to delete the championship (should be blocked)
+    deleted = services["championships"].delete_championship(current_user_admin, camp_id)
+    assert deleted is False
+
+    # 6. Try to create a match (should be blocked)
+    form_data = {
+        "time_a_id": str(time_id),
+        "time_b_id": str(ObjectId()),
+        "fase": "Final",
+        "mapa": "Mirage",
+        "data_partida": "2026-05-25T12:00"
+    }
+    err = services["matches"].create_match(current_user_admin, camp_id, form_data)
+    assert "Nao e possivel adicionar partidas a um campeonato finalizado ou arquivado." in err
+
+    # 7. Try match operations (register result, check-in)
+    match_id = mongo.matches.insert_one({
+        "admin_id": admin_id,
+        "campeonato_id": camp_id,
+        "time_a": {"time_id": time_id, "nome": "Team A", "placar": 0},
+        "time_b": {"time_id": ObjectId(), "nome": "Team B", "placar": 0},
+        "status": "agendada"
+    }).inserted_id
+
+    # Register result
+    err, _ = services["matches"].register_result(current_user_admin, match_id, "13", "10")
+    assert err == "Nao e possivel alterar partidas de um campeonato arquivado."
+
+    # Solicitar check-in
+    err, _ = services["matches"].solicitar_checkin(current_user_admin, match_id, "30")
+    assert err == "Nao e possivel gerenciar check-in de partidas em campeonatos arquivados."
+
+    # Confirmar presenca
+    err, _ = services["matches"].confirmar_presenca(current_user_admin, match_id, time_id)
+    assert err == "O check-in nao e permitido para campeonatos arquivados."
+
+

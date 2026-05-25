@@ -29,8 +29,10 @@
             <option value="INSCRICAO" {% if camp.status == 'INSCRICAO' %}selected{% endif %}>Inscricao</option>
             <option value="EM_ANDAMENTO" {% if camp.status == 'EM_ANDAMENTO' %}selected{% endif %}>Em andamento</option>
             <option value="FINALIZADO" {% if camp.status == 'FINALIZADO' %}selected{% endif %}>Finalizado</option>
+            <option value="ARQUIVADO" {% if camp.status == 'ARQUIVADO' %}selected{% endif %}>Arquivado</option>
           </select>
           <button type="submit" class="btn btn-sm btn-warning w-100">Atualizar</button>
+
         </form>
       </div>
     </div>
@@ -48,12 +50,13 @@
         <div class="d-flex align-items-center gap-2 p-2 mb-2 rounded" style="background:var(--bg-card-hd);border:1px solid var(--border)">
           <span class="badge {{ 'badge-cs2' if t.jogo == 'CS2' else 'badge-valorant' }}">{{ t.tag }}</span>
           <span class="small fw-bold flex-fill">{{ t.nome }}</span>
-          {% if session.role == 'ADMIN' and camp.status != 'FINALIZADO' %}
+          {% if session.role == 'ADMIN' and camp.status != 'FINALIZADO' and camp.status != 'ARQUIVADO' %}
           <form method="post" action="{{ url_for('desinscrever_time', camp_id=camp._id) }}" style="margin:0">
             <input type="hidden" name="time_id" value="{{ t._id }}">
             <button type="submit" class="btn btn-sm btn-outline-danger">X</button>
           </form>
           {% endif %}
+
         </div>
         {% else %}
         <div class="text-muted">Nenhum time inscrito ainda.</div>
@@ -120,7 +123,7 @@
             <i class="bi bi-exclamation-octagon-fill"></i> {{ p.checkin.mensagem_wo }}
           </div>
           {% endif %}
-          {% if p.status != 'finalizada' and session.role == 'ADMIN' %}
+          {% if p.status != 'finalizada' and session.role == 'ADMIN' and camp.status != 'ARQUIVADO' %}
           <form method="post" action="{{ url_for('registrar_resultado', partida_id=p._id) }}" class="d-grid gap-1 mt-2 d-sm-flex">
             <input type="number" name="placar_a" class="form-control form-control-sm" min="0" required>
             <input type="number" name="placar_b" class="form-control form-control-sm" min="0" required>
@@ -128,7 +131,8 @@
           </form>
           {% endif %}
 
-          {% if p.status != 'finalizada' %}
+          {% if p.status != 'finalizada' and camp.status != 'ARQUIVADO' %}
+
           <div class="mt-2 pt-2 border-top border-secondary-subtle" style="border-top-style: dashed !important;">
             {% if p.get('checkin') and p.checkin.solicitado %}
               <div class="small mb-1 d-flex align-items-center justify-content-between flex-wrap gap-1">

@@ -16,7 +16,9 @@ ROLE_REFEREE = "REFEREE"
 STATUS_INSCRICAO = "INSCRICAO"
 STATUS_EM_ANDAMENTO = "EM_ANDAMENTO"
 STATUS_FINALIZADO = "FINALIZADO"
-VALID_STATUSES = (STATUS_INSCRICAO, STATUS_EM_ANDAMENTO, STATUS_FINALIZADO)
+STATUS_ARQUIVADO = "ARQUIVADO"
+VALID_STATUSES = (STATUS_INSCRICAO, STATUS_EM_ANDAMENTO, STATUS_FINALIZADO, STATUS_ARQUIVADO)
+
 RANKING_CACHE_PREFIX = "fps_arena:ranking"
 
 
@@ -464,8 +466,8 @@ class ChampionshipService:
         camp = self.championship_repo.find_by_id(championship_id)
         if not camp or not can_access_admin_scope(current_user, camp.get("admin_id")):
             return "Campeonato nao encontrado."
-        if camp["status"] == STATUS_FINALIZADO:
-            return "Nao e possivel alterar times de um campeonato finalizado."
+        if camp["status"] in (STATUS_FINALIZADO, STATUS_ARQUIVADO):
+            return "Nao e possivel alterar times de um campeonato finalizado ou arquivado."
         if team_id not in camp.get("times_inscritos", []):
             return "Time nao esta inscrito neste campeonato."
         self.championship_repo.pull_team(championship_id, team_id)
@@ -484,9 +486,12 @@ class ChampionshipService:
         camp = self.championship_repo.find_by_id(championship_id)
         if not camp or not can_access_admin_scope(current_user, camp.get("admin_id")):
             return False
+        if camp.get("status") == STATUS_ARQUIVADO:
+            return False
         self.championship_repo.delete_by_id(championship_id)
         self.match_repo.delete_by_championship(championship_id)
         return True
+
 
 
 class MatchService:
@@ -501,7 +506,10 @@ class MatchService:
         camp = self.championship_repo.find_by_id(championship_id)
         if not camp or not can_access_admin_scope(current_user, camp.get("admin_id")):
             return "Campeonato nao encontrado."
+        if camp.get("status") in (STATUS_FINALIZADO, STATUS_ARQUIVADO):
+            return "Nao e possivel adicionar partidas a um campeonato finalizado ou arquivado."
         time_a_id = ObjectId(form_data.get("time_a_id", ""))
+
         time_b_id = ObjectId(form_data.get("time_b_id", ""))
         if time_a_id == time_b_id:
             return "Os dois times devem ser diferentes."
@@ -554,8 +562,12 @@ class MatchService:
         match = self.match_repo.find_by_id(match_id)
         if not match or not can_access_admin_scope(current_user, match.get("admin_id")):
             return "Partida nao encontrada.", None
+        camp = self.championship_repo.find_by_id(match["campeonato_id"])
+        if camp and camp.get("status") == STATUS_ARQUIVADO:
+            return "Nao e possivel alterar partidas de um campeonato arquivado.", match["campeonato_id"]
         if match["status"] == "finalizada":
             return "Esta partida ja foi finalizada.", match["campeonato_id"]
+
         try:
             score_a = int(placar_a)
             score_b = int(placar_b)
@@ -592,6 +604,9 @@ class MatchService:
         match = self.match_repo.find_by_id(match_id)
         if not match or not can_access_admin_scope(current_user, match.get("admin_id")):
             return "Partida nao encontrada.", None
+        camp = self.championship_repo.find_by_id(match["campeonato_id"])
+        if camp and camp.get("status") == STATUS_ARQUIVADO:
+            return "Nao e possivel gerenciar check-in de partidas em campeonatos arquivados.", match["campeonato_id"]
         if match.get("status") == "finalizada":
             return "Esta partida ja foi finalizada.", match["campeonato_id"]
         try:
@@ -633,8 +648,12 @@ class MatchService:
         match = self.match_repo.find_by_id(match_id)
         if not match:
             return "Partida nao encontrada.", None
+        camp = self.championship_repo.find_by_id(match["campeonato_id"])
+        if camp and camp.get("status") == STATUS_ARQUIVADO:
+            return "O check-in nao e permitido para campeonatos arquivados.", match["campeonato_id"]
         if match.get("status") == "finalizada":
             return "Esta partida ja foi finalizada.", match["campeonato_id"]
+
 
         checkin = match.get("checkin")
         if not checkin or not checkin.get("solicitado"):
@@ -947,12 +966,14 @@ class ReportService:
             STATUS_INSCRICAO: "Inscricoes",
             STATUS_EM_ANDAMENTO: "Em andamento",
             STATUS_FINALIZADO: "Finalizado",
+            STATUS_ARQUIVADO: "Arquivado",
             "agendada": "Agendada",
             "finalizada": "Finalizada",
             "cancelado": "Cancelado",
             "pago": "Pago",
             "reservado": "Reservado",
         }
+
         return mapping.get(status, status.replace("_", " ").title() if status else "-")
 
     def _build_summary(self, rows: list[dict[str, Any]]) -> list[dict[str, Any]]:

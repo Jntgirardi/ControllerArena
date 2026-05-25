@@ -14,6 +14,7 @@
       <option value="INSCRICAO" {% if filtro_status == 'INSCRICAO' %}selected{% endif %}>Inscricao</option>
       <option value="EM_ANDAMENTO" {% if filtro_status == 'EM_ANDAMENTO' %}selected{% endif %}>Em andamento</option>
       <option value="FINALIZADO" {% if filtro_status == 'FINALIZADO' %}selected{% endif %}>Finalizado</option>
+      <option value="ARQUIVADO" {% if filtro_status == 'ARQUIVADO' %}selected{% endif %}>Arquivado</option>
     </select>
   </div>
   <div class="col-12 col-sm-6 col-md-3">
@@ -47,7 +48,34 @@
     </div>
   </div>
   {% else %}
-  <div class="col-12 text-muted text-center py-4">Nenhum campeonato encontrado.</div>
+  <div class="col-12 text-muted text-center py-4">Nenhum campeonato ativo encontrado.</div>
   {% endfor %}
 </div>
+
+{% if campeonatos_arquivados %}
+<hr class="my-4" style="border-color: var(--border);">
+<h5 class="mb-3 text-muted"><i class="bi bi-archive-fill me-1"></i> Campeonatos Arquivados</h5>
+<div class="row g-3">
+  {% for c in campeonatos_arquivados %}
+  <div class="col-12 col-md-6">
+    <div class="card h-100 border-secondary" style="opacity: 0.72;">
+      <div class="card-header d-flex justify-content-between align-items-start flex-wrap" style="background: rgba(0,0,0,0.15);">
+        <strong class="text-muted">{{ c.nome }}</strong>
+        <span class="badge {{ 'badge-cs2' if c.jogo == 'CS2' else 'badge-valorant' }}">{{ c.jogo }}</span>
+      </div>
+      <div class="card-body">
+        <div class="mb-2"><span class="badge bg-dark text-muted">Arquivado</span></div>
+        <div class="small text-muted">Formato: {{ c.formato }}</div>
+        <div class="small text-muted">Times: {{ c.times_inscritos|length }} / {{ c.max_times }}</div>
+        <div class="small text-muted">{{ c.datas.inicio.strftime('%d/%m/%Y') }} ate {{ c.datas.fim.strftime('%d/%m/%Y') }}</div>
+      </div>
+      <div class="card-footer">
+        <a href="{{ url_for('ver_campeonato', camp_id=c._id) }}" class="btn btn-sm btn-outline-secondary w-100">Consultar histórico</a>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
 {% endblock %}
+

@@ -554,8 +554,23 @@ def register_routes(app, services):
             return redirect(url_for("meu_perfil"))
         status = request.args.get("status", "").strip()
         jogo = request.args.get("jogo", "").strip()
-        campeonatos = services["championships"].list_championships(current_user, status, jogo)
-        return render_template("campeonatos/lista.html", campeonatos=campeonatos, filtro_status=status, filtro_jogo=jogo)
+        
+        if status:
+            campeonatos = services["championships"].list_championships(current_user, status, jogo)
+            campeonatos_arquivados = []
+        else:
+            all_camps = services["championships"].list_championships(current_user, "", jogo)
+            campeonatos = [c for c in all_camps if c.get("status") != "ARQUIVADO"]
+            campeonatos_arquivados = [c for c in all_camps if c.get("status") == "ARQUIVADO"]
+            
+        return render_template(
+            "campeonatos/lista.html",
+            campeonatos=campeonatos,
+            campeonatos_arquivados=campeonatos_arquivados,
+            filtro_status=status,
+            filtro_jogo=jogo,
+        )
+
 
     @app.route("/campeonatos/novo", methods=["GET", "POST"], endpoint="novo_campeonato")
     @login_required
