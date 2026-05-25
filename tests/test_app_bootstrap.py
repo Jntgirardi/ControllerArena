@@ -1034,3 +1034,158 @@ def test_championship_archiving_blocks_mutations(monkeypatch):
     assert err == "O check-in nao e permitido para campeonatos arquivados."
 
 
+def test_match_rounds_referee_workflow(monkeypatch):
+    flask_app = build_test_app(monkeypatch)
+    mongo = flask_app.extensions["mongo"]
+    password_hasher = PasswordHasher()
+
+    # Create admin, referee, players, championship, teams, and match
+    admin_id = mongo.users.insert_one({
+        "nome": "Organizador",
+        "login": "organizador",
+        "role": "ADMIN",
+        "senha_hash": password_hasher.hash("admin123"),
+        "ativo": True,
+        "must_change_password": False,
+        "criado_em": datetime.now(UTC),
+    }).inserted_id
+
+    # Create referee
+    referee_db_id = ObjectId()
+    referee_user_id = mongo.users.insert_one({
+        "nome": "Arbitro Julio",
+        "login": "julio.ref",
+        "role": "REFEREE",
+        "admin_id": admin_id,
+        "referee_id": referee_db_id,
+        "senha_hash": password_hasher.hash("julio123"),
+        "ativo": True,
+        "must_change_password": False,
+        "criado_em": datetime.now(UTC),
+    }).inserted_id
+
+    # Create an unauthorized referee user
+    unauthorized_ref_db_id = ObjectId()
+    mongo.users.insert_one({
+        "nome": "Arbitro Pedro",
+        "login": "pedro.ref",
+        "role": "REFEREE",
+        "admin_id": admin_id,
+        "referee_id": unauthorized_ref_db_id,
+        "senha_hash": password_hasher.hash("pedro123"),
+        "ativo": True,
+        "must_change_password": False,
+        "criado_em": datetime.now(UTC),
+    })
+
+    # Create championship
+    camp_id = mongo.championships.insert_one({
+        "nome": "Masters CS2",
+        "jogo": "CS2",
+        "status": "EM_ANDAMENTO",
+        "admin_id": admin_id,
+        "datas": {"inicio": datetime.now(UTC), "fim": datetime.now(UTC)},
+    }).inserted_id
+
+    # Create teams
+    time_a_id = mongo.teams.insert_one({
+        "nome": "Team Red",
+        "tag": "RED",
+        "jogo": "CS2",
+        "admin_id": admin_id,
+        "jogadores": []
+    }).inserted_id
+
+    time_b_id = mongo.teams.insert_one({
+        "nome": "Team Blue",
+        "tag": "BLU",
+        "jogo": "CS2",
+        "admin_id": admin_id,
+        "jogadores": []
+    }).inserted_id
+
+    # Create match with Julio as the designated referee
+    match_id = mongo.matches.insert_one({
+        "admin_id": admin_id,
+        "campeonato_id": camp_id,
+        "time_a": {"time_id": time_a_id, "nome": "Team Red", "placar": 0},
+        "time_b": {"time_id": time_b_id, "nome": "Team Blue", "placar": 0},
+        "status": "agendada",
+        "arbitro_id": referee_db_id,
+        "rounds": []
+    }).inserted_id
+
+    client = flask_app.test_client()
+
+    # 1. Try accessing rounds control without logging in (should redirect)
+    resp = client.get(f"/partidas/{match_id}/rounds")
+    assert resp.status_code == 302
+
+    # 2. Login as unauthorized referee and try to access (should redirect with flash/permission denied)
+    client.post("/login", data={"modo": "login", "identificador": "pedro.ref", "senha": "pedro123"})
+    resp = client.get(f"/partidas/{match_id}/rounds")
+    assert resp.status_code == 302
+    
+    # 3. Login as authorized referee (Julio)
+    client.get("/logout")
+    client.post("/login", data={"modo": "login", "identificador": "julio.ref", "senha": "julio123"})
+    
+    # Access the HTML page (should succeed)
+    resp = client.get(f"/partidas/{match_id}/rounds")
+    assert resp.status_code == 200
+    assert b"Controle de Rounds" in resp.data
+    assert b"Team Red" in resp.data
+    assert b"Team Blue" in resp.data
+
+    # 4. Add round via API vencer
+    resp = client.post(f"/partidas/{match_id}/rounds/vencer", json={
+        "vencedor_id": str(time_a_id),
+        "metodo": "elimination"
+    })
+    assert resp.status_code == 200
+    data = resp.get_json()
+    assert data["success"] is True
+    assert data["score_a"] == 1
+    assert data["score_b"] == 0
+    assert len(data["rounds"]) == 1
+    assert data["rounds"][0]["metodo"] == "elimination"
+    assert data["rounds"][0]["vencedor_id"] == str(time_a_id)
+
+    # 5. Add second round via API vencer (objective for Team B)
+    resp = client.post(f"/partidas/{match_id}/rounds/vencer", json={
+        "vencedor_id": str(time_b_id),
+        "metodo": "objective"
+    })
+    assert resp.status_code == 200
+    data = resp.get_json()
+    assert data["success"] is True
+    assert data["score_a"] == 1
+    assert data["score_b"] == 1
+    assert len(data["rounds"]) == 2
+    assert data["rounds"][1]["metodo"] == "objective"
+    assert data["rounds"][1]["vencedor_id"] == str(time_b_id)
+
+    # 6. Undo the last round via API desfazer
+    resp = client.post(f"/partidas/{match_id}/rounds/desfazer")
+    assert resp.status_code == 200
+    data = resp.get_json()
+    assert data["success"] is True
+    assert data["score_a"] == 1
+    assert data["score_b"] == 0
+    assert len(data["rounds"]) == 1
+
+    # 7. Finalize the match via API finalizar
+    resp = client.post(f"/partidas/{match_id}/rounds/finalizar")
+    assert resp.status_code == 200
+    data = resp.get_json()
+    assert data["success"] is True
+    assert "redirect_url" in data
+
+    # Verify match status is updated to finalizada in DB
+    updated_match = mongo.matches.find_one({"_id": match_id})
+    assert updated_match["status"] == "finalizada"
+    assert updated_match["time_a"]["placar"] == 1
+    assert updated_match["time_b"]["placar"] == 0
+
+
+

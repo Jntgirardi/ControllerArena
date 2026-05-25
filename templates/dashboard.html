@@ -189,6 +189,9 @@
                 <td class="text-end">
                   <div class="d-flex justify-content-end gap-1">
                     <a href="{{ url_for('ver_campeonato', camp_id=p.campeonato_id) }}" class="btn btn-sm btn-outline-primary">Súmula / Sala</a>
+                    {% if p.status != 'finalizada' %}
+                    <a href="{{ url_for('rounds_control', partida_id=p._id) }}" class="btn btn-sm btn-primary"><i class="bi bi-controller"></i> Controlar Rounds</a>
+                    {% endif %}
                   </div>
                 </td>
               </tr>

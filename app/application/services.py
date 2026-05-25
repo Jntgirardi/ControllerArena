@@ -561,7 +561,18 @@ class MatchService:
 
     def register_result(self, current_user: dict[str, Any], match_id, placar_a: str, placar_b: str) -> tuple[str | None, ObjectId | None]:
         match = self.match_repo.find_by_id(match_id)
-        if not match or not can_access_admin_scope(current_user, match.get("admin_id")):
+        if not match:
+            return "Partida nao encontrada.", None
+
+        is_admin = current_user.get("role") in (ROLE_ADMIN, ROLE_SUPER_ADMIN) and can_access_admin_scope(current_user, match.get("admin_id"))
+        is_designated_referee = False
+        if current_user.get("role") == ROLE_REFEREE:
+            referee = self.match_repo.collection.database["usuarios"].find_one({"_id": current_user["_id"]})
+            referee_id = referee.get("referee_id") if referee else None
+            if referee_id and match.get("arbitro_id") and str(match["arbitro_id"]) == str(referee_id):
+                is_designated_referee = True
+
+        if not is_admin and not is_designated_referee:
             return "Partida nao encontrada.", None
         camp = self.championship_repo.find_by_id(match["campeonato_id"])
         if camp and camp.get("status") == STATUS_ARQUIVADO:
@@ -813,6 +824,109 @@ class MatchService:
 
         self.cache.delete_pattern("fps_arena:ranking:*")
         return None, match["campeonato_id"]
+
+    def add_round(self, current_user: dict[str, Any], match_id, vencedor_id: ObjectId, metodo: str) -> tuple[str | None, dict[str, Any] | None]:
+        match = self.match_repo.find_by_id(match_id)
+        if not match:
+            return "Partida nao encontrada.", None
+        
+        # Check permissions: must be designated referee or admin
+        is_admin = current_user.get("role") in (ROLE_ADMIN, ROLE_SUPER_ADMIN) and can_access_admin_scope(current_user, match.get("admin_id"))
+        is_designated_referee = False
+        if current_user.get("role") == ROLE_REFEREE:
+            referee = self.match_repo.collection.database["usuarios"].find_one({"_id": current_user["_id"]})
+            referee_id = referee.get("referee_id") if referee else None
+            if referee_id and match.get("arbitro_id") and str(match["arbitro_id"]) == str(referee_id):
+                is_designated_referee = True
+                
+        if not is_admin and not is_designated_referee:
+            return "Acesso negado para arbitrar esta partida.", None
+            
+        if match.get("status") == "finalizada":
+            return "Esta partida ja foi finalizada.", None
+
+        camp = self.championship_repo.find_by_id(match["campeonato_id"])
+        if camp and camp.get("status") == STATUS_ARQUIVADO:
+            return "O campeonato esta arquivado.", None
+
+        # Determine side (time_a or time_b)
+        time_a_id = match["time_a"]["time_id"]
+        time_b_id = match["time_b"]["time_id"]
+        if vencedor_id not in (time_a_id, time_b_id):
+            return "Time invalido para esta partida.", None
+
+        side_to_inc = "time_a.placar" if vencedor_id == time_a_id else "time_b.placar"
+        
+        # Append round log
+        rounds = match.get("rounds", [])
+        round_num = len(rounds) + 1
+        new_round = {
+            "round": round_num,
+            "vencedor_id": vencedor_id,
+            "metodo": metodo,
+            "timestamp": utc_now_naive()
+        }
+        
+        self.match_repo.collection.update_one(
+            {"_id": match_id},
+            {
+                "$inc": {side_to_inc: 1},
+                "$push": {"rounds": new_round}
+            }
+        )
+        
+        # Reload and return updated match
+        updated_match = self.match_repo.find_by_id(match_id)
+        return None, updated_match
+
+    def undo_round(self, current_user: dict[str, Any], match_id) -> tuple[str | None, dict[str, Any] | None]:
+        match = self.match_repo.find_by_id(match_id)
+        if not match:
+            return "Partida nao encontrada.", None
+            
+        # Check permissions: must be designated referee or admin
+        is_admin = current_user.get("role") in (ROLE_ADMIN, ROLE_SUPER_ADMIN) and can_access_admin_scope(current_user, match.get("admin_id"))
+        is_designated_referee = False
+        if current_user.get("role") == ROLE_REFEREE:
+            referee = self.match_repo.collection.database["usuarios"].find_one({"_id": current_user["_id"]})
+            referee_id = referee.get("referee_id") if referee else None
+            if referee_id and match.get("arbitro_id") and str(match["arbitro_id"]) == str(referee_id):
+                is_designated_referee = True
+                
+        if not is_admin and not is_designated_referee:
+            return "Acesso negado para arbitrar esta partida.", None
+            
+        if match.get("status") == "finalizada":
+            return "Esta partida ja foi finalizada.", None
+
+        camp = self.championship_repo.find_by_id(match["campeonato_id"])
+        if camp and camp.get("status") == STATUS_ARQUIVADO:
+            return "O campeonato esta arquivado.", None
+
+        rounds = match.get("rounds", [])
+        if not rounds:
+            return "Nao ha rounds para desfazer.", None
+            
+        # Get last round
+        last_round = rounds[-1]
+        vencedor_id = last_round["vencedor_id"]
+        
+        # Determine side to decrement
+        time_a_id = match["time_a"]["time_id"]
+        side_to_dec = "time_a.placar" if vencedor_id == time_a_id else "time_b.placar"
+        
+        self.match_repo.collection.update_one(
+            {"_id": match_id},
+            {
+                "$inc": {side_to_dec: -1},
+                "$pop": {"rounds": 1}
+            }
+        )
+        
+        # Reload and return updated match
+        updated_match = self.match_repo.find_by_id(match_id)
+        return None, updated_match
+
 
 
 class RankingService:

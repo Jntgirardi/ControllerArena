@@ -1,0 +1,411 @@
+{% extends "base.html" %}
+{% block title %}Controle de Rounds - FPS Arena{% endblock %}
+{% block content %}
+<div class="container-fluid py-4 px-md-5" style="max-width: 1400px;">
+  <!-- Cabeçalho Principal -->
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+    <div>
+      <a href="{{ url_for('ver_campeonato', camp_id=partida.campeonato_id) }}" class="btn btn-sm btn-outline-secondary mb-2">
+        <i class="bi bi-arrow-left-short"></i> Voltar ao Campeonato
+      </a>
+      <h3 class="fw-bold mb-1 text-white"><i class="bi bi-controller text-info"></i> Controle de Rounds em Tempo Real</h3>
+      <div class="text-muted small">Arbitragem Oficial • {{ partida.fase }} {% if partida.mapa %}• Mapa: <strong>{{ partida.mapa }}</strong>{% endif %}</div>
+    </div>
+    
+    <div class="d-flex gap-2">
+      <button id="btn-undo" class="btn btn-outline-warning" {% if not partida.get('rounds') %}disabled{% endif %} onclick="undoLastRound()">
+        <i class="bi bi-arrow-counterclockwise"></i> Desfazer Último Round
+      </button>
+      <button class="btn btn-danger px-4" data-bs-toggle="modal" data-bs-target="#confirmFinalizarModal">
+        <i class="bi bi-flag-fill"></i> Finalizar Partida
+      </button>
+    </div>
+  </div>
+
+  <!-- Scoreboard Gigante -->
+  <div class="card mb-4 border-0 shadow-lg" style="background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-card-hd) 100%);">
+    <div class="card-body py-4 text-center">
+      <div class="row align-items-center">
+        <!-- Time A Info -->
+        <div class="col-12 col-md-4 text-md-end text-center">
+          <h2 class="fw-extrabold mb-1 text-white text-truncate">{{ partida.time_a.nome }}</h2>
+          <span class="badge bg-primary px-3 py-1 text-uppercase tracking-wider" style="font-size: 0.75rem;">Time A</span>
+        </div>
+        <!-- Placar Central -->
+        <div class="col-12 col-md-4 my-3 my-md-0 d-flex justify-content-center align-items-center gap-4">
+          <span id="score-a" class="display-1 fw-extrabold text-info font-monospace">{{ partida.time_a.placar }}</span>
+          <span class="fs-1 fw-bold text-muted">:</span>
+          <span id="score-b" class="display-1 fw-extrabold text-danger font-monospace">{{ partida.time_b.placar }}</span>
+        </div>
+        <!-- Time B Info -->
+        <div class="col-12 col-md-4 text-md-start text-center">
+          <h2 class="fw-extrabold mb-1 text-white text-truncate">{{ partida.time_b.nome }}</h2>
+          <span class="badge bg-danger px-3 py-1 text-uppercase tracking-wider" style="font-size: 0.75rem;">Time B</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Painéis de Ação (Lado a Lado) -->
+  <div class="row g-4 mb-4">
+    <!-- Painel Time A (Esquerda) -->
+    <div class="col-12 col-lg-6">
+      <div class="card h-100 border-0 shadow" style="background: rgba(78, 168, 245, 0.05); border: 1px solid rgba(78, 168, 245, 0.15) !important;">
+        <div class="card-header text-center border-0 py-3" style="background: rgba(78, 168, 245, 0.1);">
+          <h5 class="mb-0 fw-bold text-info"><i class="bi bi-shield-fill"></i> Registrar Ponto: {{ partida.time_a.nome }}</h5>
+        </div>
+        <div class="card-body p-4 d-flex flex-column gap-3 justify-content-center">
+          <button class="btn-action btn-action-a py-4 px-3" onclick="recordRound('{{ partida.time_a.time_id }}', 'elimination')">
+            <div class="fs-2 mb-2">⚔️</div>
+            <div class="fw-bold fs-5 text-white">Ganhou por Eliminação</div>
+            <div class="text-muted small mt-1">Eliminou todos os jogadores adversários</div>
+          </button>
+          
+          <button class="btn-action btn-action-a py-4 px-3" onclick="recordRound('{{ partida.time_a.time_id }}', 'objective')">
+            <div class="fs-2 mb-2">💣</div>
+            <div class="fw-bold fs-5 text-white">Ganhou por Objetivo</div>
+            <div class="text-muted small mt-1">Detonou/Desativou a bomba ou cumpriu o objetivo do mapa</div>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Painel Time B (Direita) -->
+    <div class="col-12 col-lg-6">
+      <div class="card h-100 border-0 shadow" style="background: rgba(255, 92, 108, 0.05); border: 1px solid rgba(255, 92, 108, 0.15) !important;">
+        <div class="card-header text-center border-0 py-3" style="background: rgba(255, 92, 108, 0.1);">
+          <h5 class="mb-0 fw-bold text-danger"><i class="bi bi-shield-fill-x"></i> Registrar Ponto: {{ partida.time_b.nome }}</h5>
+        </div>
+        <div class="card-body p-4 d-flex flex-column gap-3 justify-content-center">
+          <button class="btn-action btn-action-b py-4 px-3" onclick="recordRound('{{ partida.time_b.time_id }}', 'elimination')">
+            <div class="fs-2 mb-2">⚔️</div>
+            <div class="fw-bold fs-5 text-white">Ganhou por Eliminação</div>
+            <div class="text-muted small mt-1">Eliminou todos os jogadores adversários</div>
+          </button>
+          
+          <button class="btn-action btn-action-b py-4 px-3" onclick="recordRound('{{ partida.time_b.time_id }}', 'objective')">
+            <div class="fs-2 mb-2">💣</div>
+            <div class="fw-bold fs-5 text-white">Ganhou por Objetivo</div>
+            <div class="text-muted small mt-1">Detonou/Desativou a bomba ou cumpriu o objetivo do mapa</div>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Painel do Feed / Histórico de Rounds -->
+  <div class="card border-0 shadow mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h5 class="mb-0 fw-bold"><i class="bi bi-list-task text-warning"></i> Histórico de Rounds do Match</h5>
+      <span class="badge bg-secondary font-monospace" id="rounds-count">0 rounds registrados</span>
+    </div>
+    <div class="card-body p-0">
+      <div id="rounds-empty-state" class="text-center py-5 d-none">
+        <i class="bi bi-info-circle text-muted fs-2 d-block mb-2"></i>
+        <div class="text-muted">Nenhum round registrado nesta partida ainda. Use os botões acima para iniciar a arbitragem.</div>
+      </div>
+      <div class="table-responsive">
+        <table class="table mb-0 align-middle text-center" id="rounds-table">
+          <thead>
+            <tr>
+              <th style="width: 15%;">Round</th>
+              <th style="width: 45%;">Vencedor</th>
+              <th style="width: 25%;">Método de Vitória</th>
+              <th style="width: 15%;">Horário</th>
+            </tr>
+          </thead>
+          <tbody id="rounds-feed">
+            <!-- Dinâmico -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de Confirmação para Finalizar Partida -->
+<div class="modal fade" id="confirmFinalizarModal" tabindex="-1" aria-labelledby="confirmFinalizarModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="background: var(--bg-card); border: 1px solid var(--border); color: var(--text-main);">
+      <div class="modal-header" style="border-bottom: 1px solid var(--border); background: var(--bg-card-hd);">
+        <h5 class="modal-title text-white" id="confirmFinalizarModalLabel"><i class="bi bi-exclamation-triangle-fill text-warning"></i> Finalizar Partida?</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body py-4 text-center">
+        <p class="fs-5 mb-3 text-white">Tem certeza que deseja finalizar e registrar o placar atual?</p>
+        <div class="d-flex justify-content-center align-items-center gap-4 bg-dark py-3 rounded mb-3">
+          <span class="fw-bold fs-4 text-info">{{ partida.time_a.nome }}</span>
+          <span id="modal-score-a" class="fs-2 fw-extrabold text-info font-monospace">{{ partida.time_a.placar }}</span>
+          <span class="fs-4 text-muted">x</span>
+          <span id="modal-score-b" class="fs-2 fw-extrabold text-danger font-monospace">{{ partida.time_b.placar }}</span>
+          <span class="fw-bold fs-4 text-danger">{{ partida.time_b.nome }}</span>
+        </div>
+        <p class="text-danger small mb-0"><i class="bi bi-info-circle"></i> Após finalizar, o placar não poderá mais ser editado e as estatísticas serão atualizadas permanentemente.</p>
+      </div>
+      <div class="modal-footer" style="border-top: 1px solid var(--border);">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-danger px-4" onclick="finalizeMatch()">Sim, Finalizar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+/* Estilos Customizados para a Tela Premium de Controle de Rounds */
+.btn-action {
+  background: var(--bg-input);
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+}
+
+.btn-action::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle, rgba(255,255,255,0.06) 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.btn-action:hover::before {
+  opacity: 1;
+}
+
+/* Efeitos Específicos para os Botões do Time A (Azul) */
+.btn-action-a {
+  border-color: rgba(78, 168, 245, 0.25);
+}
+.btn-action-a:hover {
+  border-color: var(--accent);
+  background: rgba(78, 168, 245, 0.1);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(78, 168, 245, 0.15);
+}
+.btn-action-a:active {
+  transform: translateY(-1px);
+}
+
+/* Efeitos Específicos para os Botões do Time B (Vermelho) */
+.btn-action-b {
+  border-color: rgba(255, 92, 108, 0.25);
+}
+.btn-action-b:hover {
+  border-color: var(--badge-val);
+  background: rgba(255, 92, 108, 0.1);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(255, 92, 108, 0.15);
+}
+.btn-action-b:active {
+  transform: translateY(-1px);
+}
+
+/* Animações e Estilos de Tabela */
+.table th {
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  letter-spacing: 0.5px;
+}
+
+.round-row {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.font-monospace {
+  font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
+}
+
+.fw-extrabold {
+  font-weight: 800 !important;
+}
+.tracking-wider {
+  letter-spacing: 0.08em;
+}
+</style>
+
+<script>
+// IDs das Equipes no Backend
+const teamAId = "{{ partida.time_a.time_id }}";
+const teamBId = "{{ partida.time_b.time_id }}";
+const teamAName = "{{ partida.time_a.nome }}";
+const teamBName = "{{ partida.time_b.nome }}";
+const matchId = "{{ partida._id }}";
+
+// Estado Inicial dos Rounds carregado do Backend
+let matchRounds = [];
+{% for r in partida.get('rounds', []) %}
+matchRounds.push({
+  round: {{ r.round }},
+  vencedor_id: "{{ r.vencedor_id }}",
+  metodo: "{{ r.metodo }}",
+  timestamp: "{{ r.timestamp.isoformat() if hasattr(r.timestamp, 'isoformat') else r.timestamp }}"
+});
+{% endfor %}
+
+// Inicializa a UI com dados atuais
+document.addEventListener("DOMContentLoaded", () => {
+  renderRounds();
+});
+
+// Registra um Novo Round
+async function recordRound(vencedorId, metodo) {
+  try {
+    const response = await fetch(`/partidas/${matchId}/rounds/vencer`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ vencedor_id: vencedorId, metodo: metodo })
+    });
+    const data = await response.json();
+    if (!response.ok || !data.success) {
+      alert(data.error || "Erro ao registrar round.");
+      return;
+    }
+    
+    // Atualiza placar na tela
+    updateScoreboard(data.score_a, data.score_b);
+    
+    // Atualiza lista de rounds e re-renderiza
+    matchRounds = data.rounds;
+    renderRounds();
+  } catch (error) {
+    console.error("Error recording round:", error);
+    alert("Erro na comunicação com o servidor.");
+  }
+}
+
+// Desfaz o último round
+async function undoLastRound() {
+  if (matchRounds.length === 0) return;
+  
+  try {
+    const response = await fetch(`/partidas/${matchId}/rounds/desfazer`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" }
+    });
+    const data = await response.json();
+    if (!response.ok || !data.success) {
+      alert(data.error || "Erro ao desfazer round.");
+      return;
+    }
+    
+    // Atualiza placar na tela
+    updateScoreboard(data.score_a, data.score_b);
+    
+    // Atualiza lista de rounds e re-renderiza
+    matchRounds = data.rounds;
+    renderRounds();
+  } catch (error) {
+    console.error("Error undoing round:", error);
+    alert("Erro na comunicação com o servidor.");
+  }
+}
+
+// Finaliza a Partida no DB
+async function finalizeMatch() {
+  try {
+    // Fecha o modal de confirmação primeiro
+    const modalEl = document.getElementById('confirmFinalizarModal');
+    const modal = bootstrap.Modal.getInstance(modalEl);
+    if (modal) modal.hide();
+    
+    const response = await fetch(`/partidas/${matchId}/rounds/finalizar`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" }
+    });
+    const data = await response.json();
+    if (!response.ok || !data.success) {
+      alert(data.error || "Erro ao finalizar partida.");
+      return;
+    }
+    
+    // Redireciona para o campeonato ou dashboard conforme backend informou
+    window.location.href = data.redirect_url;
+  } catch (error) {
+    console.error("Error finalizing match:", error);
+    alert("Erro na comunicação com o servidor.");
+  }
+}
+
+// Auxiliar para atualizar placares
+function updateScoreboard(scoreA, scoreB) {
+  document.getElementById("score-a").textContent = scoreA;
+  document.getElementById("score-b").textContent = scoreB;
+  document.getElementById("modal-score-a").textContent = scoreA;
+  document.getElementById("modal-score-b").textContent = scoreB;
+}
+
+// Renderiza a lista de rounds dinamicamente
+function renderRounds() {
+  const feed = document.getElementById("rounds-feed");
+  const emptyState = document.getElementById("rounds-empty-state");
+  const table = document.getElementById("rounds-table");
+  const undoBtn = document.getElementById("btn-undo");
+  const countBadge = document.getElementById("rounds-count");
+  
+  feed.innerHTML = "";
+  countBadge.textContent = `${matchRounds.length} round${matchRounds.length === 1 ? '' : 's'} registrado${matchRounds.length === 1 ? '' : 's'}`;
+  
+  if (matchRounds.length === 0) {
+    emptyState.classList.remove("d-none");
+    table.classList.add("d-none");
+    undoBtn.disabled = true;
+    return;
+  }
+  
+  emptyState.classList.add("d-none");
+  table.classList.remove("d-none");
+  undoBtn.disabled = false;
+  
+  // Renderiza do mais recente para o mais antigo
+  const sortedRounds = [...matchRounds].reverse();
+  
+  sortedRounds.forEach(r => {
+    const isTeamA = r.vencedor_id === teamAId;
+    const teamName = isTeamA ? teamAName : teamBName;
+    const badgeClass = isTeamA ? "bg-info-subtle text-info border border-info" : "bg-danger-subtle text-danger border border-danger";
+    
+    const methodText = r.metodo === "elimination" ? "⚔️ Eliminação Completa" : "💣 Objetivo / Detonação";
+    const methodBadge = r.metodo === "elimination" ? "bg-secondary text-white" : "bg-warning text-dark";
+    
+    // Parse timestamp para formato legível local
+    let timeStr = "Agora";
+    if (r.timestamp) {
+      try {
+        const d = new Date(r.timestamp);
+        timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      } catch (e) {
+        timeStr = r.timestamp;
+      }
+    }
+    
+    const row = document.createElement("tr");
+    row.className = "round-row";
+    row.innerHTML = `
+      <td class="font-monospace fw-bold">#${r.round}</td>
+      <td>
+        <span class="badge ${badgeClass} px-3 py-1 fs-6">${teamName}</span>
+      </td>
+      <td>
+        <span class="badge ${methodBadge} px-2 py-1">${methodText}</span>
+      </td>
+      <td class="small text-muted font-monospace">${timeStr}</td>
+    `;
+    feed.appendChild(row);
+  });
+}
+</script>
+{% endblock %}

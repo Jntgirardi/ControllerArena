@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from flask import Response, abort, flash, redirect, render_template, request, session, url_for
 
-from ...application.services import ROLE_ADMIN, ROLE_PLAYER, ROLE_REFEREE, ROLE_SUPER_ADMIN
+from ...application.services import ROLE_ADMIN, ROLE_PLAYER, ROLE_REFEREE, ROLE_SUPER_ADMIN, can_access_admin_scope
 from .common import build_current_user, login_required, roles_required, to_oid
 from .report_exports import build_csv_bytes, build_pdf_bytes
 
@@ -612,7 +612,13 @@ def register_routes(app, services):
             # Filtrar arbitros vinculados ao campeonato (FA-27)
             arbitros = [a for a in referees if not a.get("campeonatos_vinculados") or oid in a.get("campeonatos_vinculados")]
             
-        return render_template("campeonatos/detalhe.html", arbitros=arbitros, **details)
+        current_referee_id = None
+        if session.get("role") == ROLE_REFEREE:
+            referee = services["championships"].championship_repo.collection.database["usuarios"].find_one({"_id": current_user["_id"]})
+            if referee:
+                current_referee_id = str(referee.get("referee_id") or "")
+            
+        return render_template("campeonatos/detalhe.html", arbitros=arbitros, current_referee_id=current_referee_id, **details)
 
     @app.route("/campeonatos/<camp_id>/inscrever", methods=["POST"], endpoint="inscrever_time")
     @login_required
@@ -704,6 +710,130 @@ def register_routes(app, services):
         flash(error or "Resultado registrado com sucesso!", "warning" if error else "success")
         redirect_id = str(camp_id) if camp_id else None
         return redirect(url_for("ver_campeonato", camp_id=redirect_id) if redirect_id else url_for("listar_campeonatos"))
+
+    @app.route("/partidas/<partida_id>/rounds", methods=["GET"], endpoint="rounds_control")
+    @login_required
+    def rounds_control(partida_id):
+        current_user = build_current_user()
+        oid = to_oid(partida_id)
+        if not oid:
+            flash("ID invalido.", "danger")
+            return redirect(url_for("dashboard"))
+            
+        match = services["matches"].match_repo.find_by_id(oid)
+        if not match:
+            flash("Partida nao encontrada.", "warning")
+            return redirect(url_for("dashboard"))
+
+        # Verify permissions: admin or designated referee
+        is_admin = current_user.get("role") in (ROLE_ADMIN, ROLE_SUPER_ADMIN) and can_access_admin_scope(current_user, match.get("admin_id"))
+        is_designated_referee = False
+        if current_user.get("role") == ROLE_REFEREE:
+            referee = services["matches"].match_repo.collection.database["usuarios"].find_one({"_id": current_user["_id"]})
+            referee_id = referee.get("referee_id") if referee else None
+            if referee_id and match.get("arbitro_id") and str(match["arbitro_id"]) == str(referee_id):
+                is_designated_referee = True
+
+        if not is_admin and not is_designated_referee:
+            flash("Acesso negado para arbitrar esta partida.", "danger")
+            return redirect(url_for("dashboard"))
+
+        if match.get("status") == "finalizada":
+            flash("Esta partida ja foi finalizada.", "info")
+            return redirect(url_for("ver_campeonato", camp_id=str(match["campeonato_id"])))
+
+        return render_template("partidas/rounds.html", partida=match)
+
+    @app.route("/partidas/<partida_id>/rounds/vencer", methods=["POST"], endpoint="rounds_vencer")
+    @login_required
+    def rounds_vencer(partida_id):
+        current_user = build_current_user()
+        oid = to_oid(partida_id)
+        if not oid:
+            return {"success": False, "error": "ID invalido."}, 400
+
+        vencedor_id_str = request.json.get("vencedor_id")
+        metodo = request.json.get("metodo") # "elimination" or "objective"
+        if not vencedor_id_str or not metodo:
+            return {"success": False, "error": "Dados insuficientes."}, 400
+
+        vencedor_id = to_oid(vencedor_id_str)
+        if not vencedor_id:
+            return {"success": False, "error": "ID de time invalido."}, 400
+
+        error, updated_match = services["matches"].add_round(current_user, oid, vencedor_id, metodo)
+        if error:
+            return {"success": False, "error": error}, 400
+
+        # Build serialized rounds list to send back to JS
+        rounds_list = []
+        for r in updated_match.get("rounds", []):
+            rounds_list.append({
+                "round": r["round"],
+                "vencedor_id": str(r["vencedor_id"]),
+                "metodo": r["metodo"],
+                "timestamp": r["timestamp"].isoformat() if hasattr(r["timestamp"], "isoformat") else str(r["timestamp"])
+            })
+
+        return {
+            "success": True,
+            "score_a": updated_match["time_a"]["placar"],
+            "score_b": updated_match["time_b"]["placar"],
+            "rounds": rounds_list
+        }
+
+    @app.route("/partidas/<partida_id>/rounds/desfazer", methods=["POST"], endpoint="rounds_desfazer")
+    @login_required
+    def rounds_desfazer(partida_id):
+        current_user = build_current_user()
+        oid = to_oid(partida_id)
+        if not oid:
+            return {"success": False, "error": "ID invalido."}, 400
+
+        error, updated_match = services["matches"].undo_round(current_user, oid)
+        if error:
+            return {"success": False, "error": error}, 400
+
+        rounds_list = []
+        for r in updated_match.get("rounds", []):
+            rounds_list.append({
+                "round": r["round"],
+                "vencedor_id": str(r["vencedor_id"]),
+                "metodo": r["metodo"],
+                "timestamp": r["timestamp"].isoformat() if hasattr(r["timestamp"], "isoformat") else str(r["timestamp"])
+            })
+
+        return {
+            "success": True,
+            "score_a": updated_match["time_a"]["placar"],
+            "score_b": updated_match["time_b"]["placar"],
+            "rounds": rounds_list
+        }
+
+    @app.route("/partidas/<partida_id>/rounds/finalizar", methods=["POST"], endpoint="rounds_finalizar")
+    @login_required
+    def rounds_finalizar(partida_id):
+        current_user = build_current_user()
+        oid = to_oid(partida_id)
+        if not oid:
+            return {"success": False, "error": "ID invalido."}, 400
+
+        match = services["matches"].match_repo.find_by_id(oid)
+        if not match:
+            return {"success": False, "error": "Partida nao encontrada."}, 404
+
+        score_a = str(match["time_a"]["placar"])
+        score_b = str(match["time_b"]["placar"])
+
+        error, camp_id = services["matches"].register_result(current_user, oid, score_a, score_b)
+        if error:
+            return {"success": False, "error": error}, 400
+
+        flash("Partida finalizada com sucesso!", "success")
+        return {
+            "success": True,
+            "redirect_url": url_for("ver_campeonato", camp_id=str(camp_id)) if camp_id else "/dashboard"
+        }
 
     @app.route("/partidas/<partida_id>/checkin/solicitar", methods=["POST"], endpoint="solicitar_checkin")
     @login_required

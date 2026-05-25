@@ -131,6 +131,14 @@
           </form>
           {% endif %}
 
+          {% if p.status != 'finalizada' and camp.status != 'ARQUIVADO' and (session.role in ('ADMIN', 'SUPER_ADMIN') or (session.role == 'REFEREE' and current_referee_id and p.arbitro_id|string == current_referee_id|string)) %}
+          <div class="d-grid mt-2">
+            <a href="{{ url_for('rounds_control', partida_id=p._id) }}" class="btn btn-sm btn-primary py-1" style="font-size:0.72rem; padding: 2px 4px;">
+              <i class="bi bi-controller"></i> Controlar Rounds
+            </a>
+          </div>
+          {% endif %}
+
           {% if p.status != 'finalizada' and camp.status != 'ARQUIVADO' %}
 
           <div class="mt-2 pt-2 border-top border-secondary-subtle" style="border-top-style: dashed !important;">
