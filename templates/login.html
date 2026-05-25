@@ -317,6 +317,27 @@
       margin-top: 2px;
     }
 
+    .public-return {
+      margin-top: 12px;
+      text-align: center;
+    }
+
+    .public-return a {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--accent);
+      font-size: .88rem;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .public-return a:hover,
+    .public-return a:focus {
+      color: #7fc4fb;
+      text-decoration: underline;
+    }
+
     .alert {
       border-radius: 8px;
       border: 1px solid transparent;
@@ -481,6 +502,13 @@
             <div class="security-note">
               <i class="bi bi-info-circle"></i>
               <span>Admins convidados usam o primeiro acesso apenas para entrar com codigo e senha inicial.</span>
+            </div>
+
+            <div class="public-return">
+              <a href="{{ url_for('index') }}">
+                <i class="bi bi-arrow-left"></i>
+                <span>Retornar ao perfil publico</span>
+              </a>
             </div>
           </form>
         </div>
