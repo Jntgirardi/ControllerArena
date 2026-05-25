@@ -5,6 +5,7 @@ from .config import Config
 from .infrastructure.cache import build_cache
 from .infrastructure.db.mongo import MongoDatabase
 from .infrastructure.db.migrations import migrate_legacy_data
+from .infrastructure.discord_service import DiscordService
 from .infrastructure.repositories import (
     MongoChampionshipRepository,
     MongoEventRepository,
@@ -48,7 +49,8 @@ def create_app():
         "arbitros": MongoArbitroRepository(mongo.arbitros),
         "notifications": MongoNotificationRepository(mongo.notifications),
     }
-    services = build_services(repositories, PasswordHasher(), cache)
+    discord_service = DiscordService(timeout=app.config["DISCORD_WEBHOOK_TIMEOUT"])
+    services = build_services(repositories, PasswordHasher(), cache, discord_service)
 
     app.extensions["cache"] = cache
     app.extensions["mongo"] = mongo

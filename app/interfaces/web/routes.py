@@ -667,6 +667,23 @@ def register_routes(app, services):
         flash(error or f"Status atualizado para '{status}'.", "danger" if error else "success")
         return redirect(url_for("ver_campeonato", camp_id=camp_id))
 
+    @app.route("/campeonatos/<camp_id>/discord", methods=["POST"], endpoint="configurar_discord_campeonato")
+    @login_required
+    @roles_required(ROLE_ADMIN)
+    def configurar_discord_campeonato(camp_id):
+        current_user = build_current_user()
+        oid = to_oid(camp_id)
+        if not oid:
+            flash("ID invalido.", "danger")
+            return redirect(url_for("listar_campeonatos"))
+        error = services["championships"].update_discord_webhook(
+            current_user,
+            oid,
+            request.form.get("discord_webhook_url", ""),
+        )
+        flash(error or "Webhook do Discord atualizado.", "danger" if error else "success")
+        return redirect(url_for("ver_campeonato", camp_id=camp_id))
+
     @app.route("/campeonatos/<camp_id>/remover", methods=["POST"], endpoint="remover_campeonato")
     @login_required
     @roles_required(ROLE_ADMIN)

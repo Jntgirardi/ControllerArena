@@ -36,6 +36,17 @@
         </form>
       </div>
     </div>
+
+    <div class="card mb-2">
+      <div class="card-header">Discord</div>
+      <div class="card-body">
+        <form method="post" action="{{ url_for('configurar_discord_campeonato', camp_id=camp._id) }}">
+          <label class="form-label small">Webhook do canal</label>
+          <input type="url" name="discord_webhook_url" class="form-control form-control-sm mb-2" value="{{ camp.get('discord_webhook_url', '') }}" placeholder="https://discord.com/api/webhooks/...">
+          <button type="submit" class="btn btn-sm btn-primary w-100">Salvar webhook</button>
+        </form>
+      </div>
+    </div>
     {% endif %}
   </div>
 

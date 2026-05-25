@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import uuid4
@@ -20,6 +21,7 @@ STATUS_ARQUIVADO = "ARQUIVADO"
 VALID_STATUSES = (STATUS_INSCRICAO, STATUS_EM_ANDAMENTO, STATUS_FINALIZADO, STATUS_ARQUIVADO)
 
 RANKING_CACHE_PREFIX = "fps_arena:ranking"
+logger = logging.getLogger(__name__)
 
 
 def utc_now_naive() -> datetime:
@@ -430,6 +432,7 @@ class ChampionshipService:
                     "fim": datetime.strptime(data["data_fim"], "%Y-%m-%d"),
                 },
                 "status": STATUS_INSCRICAO,
+                "discord_webhook_url": data.get("discord_webhook_url", "").strip(),
                 "admin_id": get_scope_admin_id(current_user),
                 "times_inscritos": [],
                 "criado_por": current_user["_id"],
@@ -437,6 +440,13 @@ class ChampionshipService:
             }
         )
         return []
+
+    def update_discord_webhook(self, current_user: dict[str, Any], championship_id, webhook_url: str) -> str | None:
+        camp = self.championship_repo.find_by_id(championship_id)
+        if not camp or not can_access_admin_scope(current_user, camp.get("admin_id")):
+            return "Campeonato nao encontrado."
+        self.championship_repo.update_fields(championship_id, {"discord_webhook_url": webhook_url.strip()})
+        return None
 
     def get_details(self, current_user: dict[str, Any], object_id):
         camp = self.championship_repo.find_by_id(object_id)
@@ -496,12 +506,35 @@ class ChampionshipService:
 
 
 class MatchService:
-    def __init__(self, match_repo, championship_repo, team_repo, player_repo, cache):
+    def __init__(self, match_repo, championship_repo, team_repo, player_repo, cache, discord_service=None):
         self.match_repo = match_repo
         self.championship_repo = championship_repo
         self.team_repo = team_repo
         self.player_repo = player_repo
         self.cache = cache
+        self.discord_service = discord_service
+
+    def _notify_discord_match_started(self, camp: dict | None, match: dict[str, Any]) -> None:
+        if not self.discord_service or not camp:
+            return
+        try:
+            self.discord_service.notify_match_started(camp, match)
+        except Exception:
+            logger.exception("Erro inesperado ao notificar inicio de partida no Discord.")
+
+    def _notify_discord_result_registered(
+        self,
+        camp: dict | None,
+        match: dict[str, Any],
+        score_a: int,
+        score_b: int,
+    ) -> None:
+        if not self.discord_service or not camp:
+            return
+        try:
+            self.discord_service.notify_result_registered(camp, match, score_a, score_b)
+        except Exception:
+            logger.exception("Erro inesperado ao notificar resultado de partida no Discord.")
 
     def create_match(self, current_user: dict[str, Any], championship_id, form_data) -> str | None:
         camp = self.championship_repo.find_by_id(championship_id)
@@ -610,6 +643,7 @@ class MatchService:
                 for membro in team.get("jogadores", []):
                     self.player_repo.increment_stats(membro["jogador_id"], increment)
         invalidate_ranking_cache(self.cache)
+        self._notify_discord_result_registered(camp, match, score_a, score_b)
         return None, match["campeonato_id"]
 
     def solicitar_checkin(self, current_user: dict[str, Any], match_id, antecedencia_minutos: str) -> tuple[str | None, ObjectId | None]:
@@ -784,6 +818,7 @@ class MatchService:
         )
         
         db = self.match_repo.collection.database
+        camp = self.championship_repo.find_by_id(match["campeonato_id"])
         
         if vencedor_tid and perdedor_tid:
             increments = [
@@ -823,6 +858,7 @@ class MatchService:
                         })
 
         self.cache.delete_pattern("fps_arena:ranking:*")
+        self._notify_discord_result_registered(camp, match, placar_a, placar_b)
         return None, match["campeonato_id"]
 
     def add_round(self, current_user: dict[str, Any], match_id, vencedor_id: ObjectId, metodo: str) -> tuple[str | None, dict[str, Any] | None]:
@@ -867,13 +903,16 @@ class MatchService:
             "timestamp": utc_now_naive()
         }
         
-        self.match_repo.collection.update_one(
-            {"_id": match_id},
-            {
-                "$inc": {side_to_inc: 1},
-                "$push": {"rounds": new_round}
-            }
-        )
+        update_query = {
+            "$inc": {side_to_inc: 1},
+            "$push": {"rounds": new_round},
+        }
+        if not rounds:
+            update_query["$set"] = {"status": "em_andamento"}
+
+        self.match_repo.collection.update_one({"_id": match_id}, update_query)
+        if not rounds:
+            self._notify_discord_match_started(camp, match)
         
         # Reload and return updated match
         updated_match = self.match_repo.find_by_id(match_id)
@@ -1724,7 +1763,7 @@ class NotificationService:
         return True
 
 
-def build_services(repositories: dict[str, Any], password_hasher, cache):
+def build_services(repositories: dict[str, Any], password_hasher, cache, discord_service=None):
     return {
         "auth": AuthService(repositories["users"], password_hasher),
         "dashboard": DashboardService(
@@ -1749,6 +1788,7 @@ def build_services(repositories: dict[str, Any], password_hasher, cache):
             repositories["teams"],
             repositories["players"],
             cache,
+            discord_service,
         ),
         "ranking": RankingService(repositories["players"], repositories["teams"], cache),
         "audit_logs": AuditLogService(repositories["logs"]),

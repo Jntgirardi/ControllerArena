@@ -49,6 +49,11 @@
         <div class="col-12 col-sm-4"><input type="text" name="premio_2" class="form-control" placeholder="2º lugar" value="{{ dados.get('premio_2','') }}"></div>
         <div class="col-12 col-sm-4"><input type="text" name="premio_3" class="form-control" placeholder="3º lugar" value="{{ dados.get('premio_3','') }}"></div>
       </div>
+      <hr class="border-secondary">
+      <div class="mb-3">
+        <label class="form-label">Webhook Discord</label>
+        <input type="url" name="discord_webhook_url" class="form-control" value="{{ dados.get('discord_webhook_url','') }}" placeholder="https://discord.com/api/webhooks/...">
+      </div>
       <button type="submit" class="btn btn-primary w-100">Criar Campeonato</button>
     </form>
   </div>

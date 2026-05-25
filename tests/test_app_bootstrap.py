@@ -2,10 +2,12 @@ from datetime import UTC, datetime, timedelta
 
 import mongomock
 import fakeredis
+import requests
 from bson import ObjectId
 
 import app.infrastructure.cache.redis_cache as cache_module
 import app.infrastructure.db.mongo as mongo_module
+from app.infrastructure.discord_service import DiscordService
 from app.infrastructure.security.password_hasher import PasswordHasher
 
 
@@ -1186,6 +1188,115 @@ def test_match_rounds_referee_workflow(monkeypatch):
     assert updated_match["status"] == "finalizada"
     assert updated_match["time_a"]["placar"] == 1
     assert updated_match["time_b"]["placar"] == 0
+
+
+def test_discord_notifications_for_match_start_and_result(monkeypatch):
+    flask_app = build_test_app(monkeypatch)
+    mongo = flask_app.extensions["mongo"]
+    services = flask_app.extensions["services"]
+
+    class FakeDiscordService:
+        def __init__(self):
+            self.started = []
+            self.results = []
+
+        def notify_match_started(self, championship, match):
+            self.started.append((championship["nome"], match["time_a"]["nome"], match["time_b"]["nome"]))
+            return True
+
+        def notify_result_registered(self, championship, match, score_a, score_b):
+            self.results.append((championship["nome"], match["time_a"]["nome"], score_a, score_b, match["time_b"]["nome"]))
+            return True
+
+    fake_discord = FakeDiscordService()
+    services["matches"].discord_service = fake_discord
+
+    admin_id = ObjectId()
+    current_user_admin = {"role": "ADMIN", "_id": admin_id}
+    camp_id = mongo.championships.insert_one({
+        "nome": "Copa Discord",
+        "jogo": "CS2",
+        "status": "EM_ANDAMENTO",
+        "admin_id": admin_id,
+        "discord_webhook_url": "https://discord.com/api/webhooks/test",
+        "datas": {"inicio": datetime.now(UTC), "fim": datetime.now(UTC)},
+    }).inserted_id
+    time_a_id = mongo.teams.insert_one({"nome": "Alpha", "tag": "ALP", "jogo": "CS2", "admin_id": admin_id, "jogadores": []}).inserted_id
+    time_b_id = mongo.teams.insert_one({"nome": "Beta", "tag": "BET", "jogo": "CS2", "admin_id": admin_id, "jogadores": []}).inserted_id
+    match_id = mongo.matches.insert_one({
+        "admin_id": admin_id,
+        "campeonato_id": camp_id,
+        "time_a": {"time_id": time_a_id, "nome": "Alpha", "placar": 0},
+        "time_b": {"time_id": time_b_id, "nome": "Beta", "placar": 0},
+        "status": "agendada",
+        "rounds": [],
+    }).inserted_id
+
+    error, updated_match = services["matches"].add_round(current_user_admin, match_id, time_a_id, "elimination")
+    assert error is None
+    assert updated_match["status"] == "em_andamento"
+    assert fake_discord.started == [("Copa Discord", "Alpha", "Beta")]
+
+    error, camp_id_result = services["matches"].register_result(current_user_admin, match_id, "1", "0")
+    assert error is None
+    assert camp_id_result == camp_id
+    assert fake_discord.results == [("Copa Discord", "Alpha", 1, 0, "Beta")]
+
+
+def test_discord_failure_does_not_break_match_flow(monkeypatch):
+    flask_app = build_test_app(monkeypatch)
+    mongo = flask_app.extensions["mongo"]
+    services = flask_app.extensions["services"]
+
+    class FailingDiscordService:
+        def notify_match_started(self, championship, match):
+            raise RuntimeError("discord unavailable")
+
+        def notify_result_registered(self, championship, match, score_a, score_b):
+            raise RuntimeError("discord unavailable")
+
+    services["matches"].discord_service = FailingDiscordService()
+
+    admin_id = ObjectId()
+    current_user_admin = {"role": "ADMIN", "_id": admin_id}
+    camp_id = mongo.championships.insert_one({
+        "nome": "Copa Resiliente",
+        "jogo": "CS2",
+        "status": "EM_ANDAMENTO",
+        "admin_id": admin_id,
+        "discord_webhook_url": "https://discord.com/api/webhooks/test",
+        "datas": {"inicio": datetime.now(UTC), "fim": datetime.now(UTC)},
+    }).inserted_id
+    time_a_id = mongo.teams.insert_one({"nome": "Alpha", "tag": "ALP", "jogo": "CS2", "admin_id": admin_id, "jogadores": []}).inserted_id
+    time_b_id = mongo.teams.insert_one({"nome": "Beta", "tag": "BET", "jogo": "CS2", "admin_id": admin_id, "jogadores": []}).inserted_id
+    match_id = mongo.matches.insert_one({
+        "admin_id": admin_id,
+        "campeonato_id": camp_id,
+        "time_a": {"time_id": time_a_id, "nome": "Alpha", "placar": 0},
+        "time_b": {"time_id": time_b_id, "nome": "Beta", "placar": 0},
+        "status": "agendada",
+        "rounds": [],
+    }).inserted_id
+
+    error, updated_match = services["matches"].add_round(current_user_admin, match_id, time_a_id, "elimination")
+    assert error is None
+    assert updated_match["time_a"]["placar"] == 1
+
+    error, _ = services["matches"].register_result(current_user_admin, match_id, "1", "0")
+    assert error is None
+    updated_match = mongo.matches.find_one({"_id": match_id})
+    assert updated_match["status"] == "finalizada"
+
+
+def test_discord_service_logs_http_failures(monkeypatch, caplog):
+    def raise_timeout(*args, **kwargs):
+        raise requests.Timeout("timeout")
+
+    monkeypatch.setattr("app.infrastructure.discord_service.requests.post", raise_timeout)
+    service = DiscordService(timeout=0.01)
+
+    assert service.send_message("https://discord.com/api/webhooks/test", "mensagem") is False
+    assert "Falha ao enviar notificacao para o Discord" in caplog.text
 
 
 

@@ -12,3 +12,6 @@ class Config:
     REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
     REDIS_TTL = int(os.environ.get("REDIS_TTL", 120))
     REDIS_ENABLED = os.environ.get("REDIS_ENABLED", "true").lower() == "true"
+
+    # Discord
+    DISCORD_WEBHOOK_TIMEOUT = float(os.environ.get("DISCORD_WEBHOOK_TIMEOUT", 5))
