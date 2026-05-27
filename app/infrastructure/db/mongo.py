@@ -54,6 +54,8 @@ class MongoDatabase:
         self._ensure_index(self.users, "role", "role_1")
         self._ensure_index(self.users, "admin_id", "admin_id_1")
         self._ensure_index(self.users, "access_code", "access_code_1", unique=True, sparse=True)
+        self._ensure_index(self.users, "password_reset_token", "password_reset_token_1", unique=True, sparse=True)
+        self._ensure_index(self.users, "password_reset_expires_at", "password_reset_expires_at_1")
         self._ensure_index(self.users, [("criado_em", DESCENDING)], "criado_em_-1")
 
         # jogadores

@@ -281,6 +281,27 @@
       line-height: 1.45;
     }
 
+    .forgot-password {
+      margin-top: 10px;
+      text-align: right;
+    }
+
+    .forgot-password a {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--accent);
+      font-size: .86rem;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .forgot-password a:hover,
+    .forgot-password a:focus {
+      color: #7fc4fb;
+      text-decoration: underline;
+    }
+
     .btn-login {
       width: 100%;
       min-height: 52px;
@@ -488,6 +509,13 @@
                 <span class="input-group-text"><i class="bi bi-shield-lock"></i></span>
                 <input id="senhaInput" type="password" name="senha" class="form-control" placeholder="Digite sua senha" autocomplete="current-password" required>
               </div>
+            </div>
+
+            <div class="forgot-password">
+              <a href="{{ url_for('esqueci_senha') }}">
+                <i class="bi bi-question-circle"></i>
+                <span>Esqueci minha senha</span>
+              </a>
             </div>
 
             <div class="login-help" id="loginHelp">

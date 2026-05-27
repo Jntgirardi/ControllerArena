@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Recuperar Senha - FPS Arena{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-5 col-xl-4">
+    <div class="card">
+      <div class="card-header d-flex align-items-center">
+        <i class="bi bi-key"></i>
+        Recuperar senha
+      </div>
+      <div class="card-body">
+        <p class="text-muted">Informe o login da sua conta para gerar um link de redefinicao de senha.</p>
+        <form method="post">
+          <div class="mb-3">
+            <label class="form-label" for="identificador">Login</label>
+            <input id="identificador" type="text" name="identificador" class="form-control" autocomplete="username" required autofocus>
+          </div>
+          <button type="submit" class="btn btn-primary w-100">
+            <i class="bi bi-send"></i>
+            Solicitar recuperacao
+          </button>
+        </form>
+
+        {% if reset_link %}
+        <div class="alert alert-info mt-4 mb-0" role="alert">
+          <div class="fw-bold mb-2">Link de recuperacao gerado</div>
+          <p class="mb-2">Use este link para definir uma nova senha. Ele expira em 1 hora.</p>
+          <a href="{{ reset_link }}" class="alert-link">{{ reset_link }}</a>
+        </div>
+        {% endif %}
+      </div>
+      <div class="card-footer text-center">
+        <a href="{{ url_for('login') }}" class="text-decoration-none">
+          <i class="bi bi-arrow-left"></i>
+          Voltar para o login
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

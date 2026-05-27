@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Redefinir Senha - FPS Arena{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-5 col-xl-4">
+    <div class="card">
+      <div class="card-header d-flex align-items-center">
+        <i class="bi bi-shield-lock"></i>
+        Redefinir senha
+      </div>
+      <div class="card-body">
+        <p class="text-muted">
+          Defina uma nova senha para <strong>{{ usuario.login or usuario.username }}</strong>.
+        </p>
+        <form method="post">
+          <div class="mb-3">
+            <label class="form-label" for="novaSenha">Nova senha</label>
+            <input id="novaSenha" type="password" name="nova_senha" class="form-control" minlength="6" autocomplete="new-password" required autofocus>
+          </div>
+          <div class="mb-4">
+            <label class="form-label" for="confirmacaoSenha">Confirmar nova senha</label>
+            <input id="confirmacaoSenha" type="password" name="confirmacao_senha" class="form-control" minlength="6" autocomplete="new-password" required>
+          </div>
+          <button type="submit" class="btn btn-primary w-100">
+            <i class="bi bi-check2-circle"></i>
+            Salvar nova senha
+          </button>
+        </form>
+      </div>
+      <div class="card-footer text-center">
+        <a href="{{ url_for('login') }}" class="text-decoration-none">
+          <i class="bi bi-arrow-left"></i>
+          Voltar para o login
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

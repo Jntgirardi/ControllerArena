@@ -19,6 +19,9 @@ class MongoUserRepository:
     def find_by_id(self, object_id):
         return self.collection.find_one({"_id": object_id})
 
+    def find_by_password_reset_token(self, token: str):
+        return self.collection.find_one({"password_reset_token": token})
+
     def list_all(self, filtro=None, projection=None):
         filtro = filtro or {}
         projection = projection or {"senha_hash": 0}
@@ -30,6 +33,9 @@ class MongoUserRepository:
 
     def update_fields(self, object_id, fields):
         self.collection.update_one({"_id": object_id}, {"$set": fields})
+
+    def unset_fields(self, object_id, fields):
+        self.collection.update_one({"_id": object_id}, {"$unset": fields})
 
     def delete_by_id(self, object_id):
         self.collection.delete_one({"_id": object_id})
@@ -323,4 +329,3 @@ class MongoNotificationRepository:
 
     def mark_all_as_read(self, user_id):
         self.collection.update_many({"user_id": user_id, "lida": False}, {"$set": {"lida": True}})
-
