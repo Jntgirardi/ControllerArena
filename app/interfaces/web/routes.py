@@ -318,6 +318,51 @@ def register_routes(app, services):
             flash("Credenciais invalidas ou convite expirado.", "danger")
         return render_template("login.html")
 
+    @app.route("/esqueci-senha", methods=["GET", "POST"], endpoint="esqueci_senha")
+    def esqueci_senha():
+        if "user_id" in session:
+            return redirect(url_for("dashboard"))
+
+        reset_link = None
+        reset_info = None
+        if request.method == "POST":
+            errors, reset_info = services["users"].request_password_reset(
+                request.form.get("identificador", "")
+            )
+            if errors:
+                for error in errors:
+                    flash(error, "danger")
+            else:
+                if reset_info:
+                    reset_link = url_for("redefinir_senha", token=reset_info["token"])
+                flash(
+                    "Solicitacao registrada. Se o login existir, siga as instrucoes de recuperacao.",
+                    "success",
+                )
+        return render_template("usuarios/esqueci_senha.html", reset_link=reset_link, reset_info=reset_info)
+
+    @app.route("/redefinir-senha/<token>", methods=["GET", "POST"], endpoint="redefinir_senha")
+    def redefinir_senha(token):
+        user = services["users"].get_user_by_password_reset_token(token)
+        if not user:
+            flash("Link de recuperacao invalido ou expirado.", "danger")
+            return redirect(url_for("esqueci_senha"))
+
+        if request.method == "POST":
+            errors = services["users"].reset_password(
+                token,
+                request.form.get("nova_senha", ""),
+                request.form.get("confirmacao_senha", ""),
+            )
+            if errors:
+                for error in errors:
+                    flash(error, "danger")
+            else:
+                session.clear()
+                flash("Senha redefinida com sucesso. Faca login com a nova senha.", "success")
+                return redirect(url_for("login"))
+        return render_template("usuarios/redefinir_senha.html", token=token, usuario=user)
+
     @app.route("/primeiro-acesso/senha", methods=["GET", "POST"], endpoint="alterar_senha_inicial")
     @login_required
     def alterar_senha_inicial():

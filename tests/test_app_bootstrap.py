@@ -107,6 +107,109 @@ def test_admin_first_access_accepts_timezone_aware_expiration(monkeypatch):
     assert response.headers["Location"] == "/primeiro-acesso/senha"
 
 
+def test_password_reset_flow_updates_password_and_invalidates_token(monkeypatch):
+    flask_app = build_test_app(monkeypatch)
+    mongo = flask_app.extensions["mongo"]
+    password_hasher = PasswordHasher()
+
+    mongo.users.insert_one(
+        {
+            "nome": "Player Reset",
+            "login": "player.reset",
+            "role": "PLAYER",
+            "senha_hash": password_hasher.hash("oldpass123"),
+            "ativo": True,
+            "must_change_password": False,
+            "criado_em": datetime.now(UTC),
+        }
+    )
+
+    client = flask_app.test_client()
+    login_page = client.get("/login")
+    assert login_page.status_code == 200
+    assert b"Esqueci minha senha" in login_page.data
+
+    request_page = client.get("/esqueci-senha")
+    assert request_page.status_code == 200
+
+    request_response = client.post("/esqueci-senha", data={"identificador": "player.reset"})
+    assert request_response.status_code == 200
+    assert b"/redefinir-senha/" in request_response.data
+
+    user = mongo.users.find_one({"login": "player.reset"})
+    token = user["password_reset_token"]
+    assert user["password_reset_expires_at"] > datetime.now(UTC).replace(tzinfo=None)
+
+    reset_page = client.get(f"/redefinir-senha/{token}")
+    assert reset_page.status_code == 200
+    assert b"player.reset" in reset_page.data
+
+    mismatch_response = client.post(
+        f"/redefinir-senha/{token}",
+        data={"nova_senha": "newpass123", "confirmacao_senha": "diferente"},
+    )
+    assert mismatch_response.status_code == 200
+    assert b"A confirmacao de senha nao confere." in mismatch_response.data
+
+    success_response = client.post(
+        f"/redefinir-senha/{token}",
+        data={"nova_senha": "newpass123", "confirmacao_senha": "newpass123"},
+        follow_redirects=False,
+    )
+    assert success_response.status_code == 302
+    assert success_response.headers["Location"] == "/login"
+
+    updated_user = mongo.users.find_one({"login": "player.reset"})
+    assert "password_reset_token" not in updated_user
+    assert password_hasher.verify("newpass123", updated_user["senha_hash"])
+    assert not password_hasher.verify("oldpass123", updated_user["senha_hash"])
+
+    reused_token_response = client.get(f"/redefinir-senha/{token}", follow_redirects=False)
+    assert reused_token_response.status_code == 302
+    assert reused_token_response.headers["Location"] == "/esqueci-senha"
+
+    old_login_response = client.post(
+        "/login",
+        data={"modo": "login", "identificador": "player.reset", "senha": "oldpass123"},
+    )
+    assert old_login_response.status_code == 200
+    assert b"Credenciais invalidas" in old_login_response.data
+
+    new_login_response = client.post(
+        "/login",
+        data={"modo": "login", "identificador": "player.reset", "senha": "newpass123"},
+        follow_redirects=False,
+    )
+    assert new_login_response.status_code == 302
+    assert new_login_response.headers["Location"] == "/dashboard"
+
+
+def test_expired_password_reset_token_is_rejected(monkeypatch):
+    flask_app = build_test_app(monkeypatch)
+    mongo = flask_app.extensions["mongo"]
+    password_hasher = PasswordHasher()
+
+    mongo.users.insert_one(
+        {
+            "nome": "Expired User",
+            "login": "expired.user",
+            "role": "ADMIN",
+            "senha_hash": password_hasher.hash("admin123"),
+            "ativo": True,
+            "must_change_password": False,
+            "password_reset_token": "expired-token",
+            "password_reset_expires_at": datetime.now(UTC).replace(tzinfo=None) - timedelta(minutes=1),
+            "criado_em": datetime.now(UTC),
+        }
+    )
+
+    client = flask_app.test_client()
+    response = client.get("/redefinir-senha/expired-token", follow_redirects=False)
+
+    assert response.status_code == 302
+    assert response.headers["Location"] == "/esqueci-senha"
+
+
 def test_player_login_opens_dashboard_profile(monkeypatch):
     flask_app = build_test_app(monkeypatch)
     mongo = flask_app.extensions["mongo"]
@@ -1342,6 +1445,5 @@ def test_match_rounds_referee_workflow(monkeypatch):
     assert updated_match["status"] == "finalizada"
     assert updated_match["time_a"]["placar"] == 1
     assert updated_match["time_b"]["placar"] == 0
-
 
 

@@ -1560,6 +1560,8 @@ class PlayerProfileService:
 
 
 class UserService:
+    PASSWORD_RESET_TOKEN_HOURS = 1
+
     def __init__(self, user_repo, password_hasher):
         self.user_repo = user_repo
         self.password_hasher = password_hasher
@@ -1619,6 +1621,67 @@ class UserService:
         self.user_repo.update_fields(
             ObjectId(user_id),
             {"senha_hash": self.password_hasher.hash(new_password), "must_change_password": False},
+        )
+        return []
+
+    def request_password_reset(self, identity: str) -> tuple[list[str], dict[str, Any] | None]:
+        identity = identity.strip()
+        if not identity:
+            return ["Informe o login para recuperar a senha."], None
+
+        user = self.user_repo.find_by_login(identity)
+        if not user:
+            user = self.user_repo.find_by_username(identity)
+        if not user or not user.get("ativo", True):
+            return [], None
+
+        token = uuid4().hex
+        expires_at = utc_now_naive() + timedelta(hours=self.PASSWORD_RESET_TOKEN_HOURS)
+        self.user_repo.update_fields(
+            user["_id"],
+            {
+                "password_reset_token": token,
+                "password_reset_expires_at": expires_at,
+                "password_reset_requested_at": utc_now_naive(),
+            },
+        )
+        return [], {"token": token, "expires_at": expires_at, "login": user.get("login") or user.get("username")}
+
+    def get_user_by_password_reset_token(self, token: str) -> dict[str, Any] | None:
+        token = (token or "").strip()
+        if not token:
+            return None
+        user = self.user_repo.find_by_password_reset_token(token)
+        if not user or not user.get("ativo", True):
+            return None
+        expires_at = user.get("password_reset_expires_at")
+        if not expires_at or normalize_utc_naive(expires_at) < utc_now_naive():
+            return None
+        return user
+
+    def reset_password(self, token: str, new_password: str, confirm_password: str) -> list[str]:
+        user = self.get_user_by_password_reset_token(token)
+        errors = []
+        if not user:
+            errors.append("Link de recuperacao invalido ou expirado.")
+        if len(new_password) < 6:
+            errors.append("A nova senha deve ter ao menos 6 caracteres.")
+        if new_password != confirm_password:
+            errors.append("A confirmacao de senha nao confere.")
+        if errors:
+            return errors
+
+        self.user_repo.update_fields(
+            user["_id"],
+            {"senha_hash": self.password_hasher.hash(new_password), "must_change_password": False},
+        )
+        self.user_repo.unset_fields(
+            user["_id"],
+            {
+                "password_reset_token": "",
+                "password_reset_expires_at": "",
+                "password_reset_requested_at": "",
+            },
         )
         return []
 
