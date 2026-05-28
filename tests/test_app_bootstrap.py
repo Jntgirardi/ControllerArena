@@ -1447,3 +1447,101 @@ def test_match_rounds_referee_workflow(monkeypatch):
     assert updated_match["time_b"]["placar"] == 0
 
 
+def test_automatic_matchup_generation_mata_mata_and_grupos(monkeypatch):
+    flask_app = build_test_app(monkeypatch)
+    mongo = flask_app.extensions["mongo"]
+    password_hasher = PasswordHasher()
+
+    # 1. Setup Admin scope
+    admin_id = mongo.users.insert_one(
+        {
+            "nome": "Organizador Gen",
+            "login": "organizador.gen",
+            "role": "ADMIN",
+            "senha_hash": password_hasher.hash("admin123"),
+            "ativo": True,
+            "must_change_password": False,
+            "criado_em": datetime.now(UTC),
+        }
+    ).inserted_id
+
+    # 2. Setup 4 Teams
+    t1_id = mongo.teams.insert_one({"nome": "Team One", "tag": "T1", "jogo": "CS2", "admin_id": admin_id, "jogadores": [], "criado_em": datetime.now(UTC)}).inserted_id
+    t2_id = mongo.teams.insert_one({"nome": "Team Two", "tag": "T2", "jogo": "CS2", "admin_id": admin_id, "jogadores": [], "criado_em": datetime.now(UTC)}).inserted_id
+    t3_id = mongo.teams.insert_one({"nome": "Team Three", "tag": "T3", "jogo": "CS2", "admin_id": admin_id, "jogadores": [], "criado_em": datetime.now(UTC)}).inserted_id
+    t4_id = mongo.teams.insert_one({"nome": "Team Four", "tag": "T4", "jogo": "CS2", "admin_id": admin_id, "jogadores": [], "criado_em": datetime.now(UTC)}).inserted_id
+
+    # 3. Create Mata-Mata Championship
+    camp_mata_id = mongo.championships.insert_one(
+        {
+            "nome": "Mata-Mata Champ",
+            "jogo": "CS2",
+            "formato": "mata-mata",
+            "max_times": 8,
+            "status": "INSCRICAO",
+            "admin_id": admin_id,
+            "times_inscritos": [t1_id, t2_id, t3_id, t4_id],
+            "datas": {"inicio": datetime.now(UTC), "fim": datetime.now(UTC) + timedelta(days=7)},
+            "criado_em": datetime.now(UTC),
+        }
+    ).inserted_id
+
+    # 4. Create Grupos Championship
+    camp_grupos_id = mongo.championships.insert_one(
+        {
+            "nome": "Grupos Champ",
+            "jogo": "CS2",
+            "formato": "grupos",
+            "max_times": 8,
+            "status": "INSCRICAO",
+            "admin_id": admin_id,
+            "times_inscritos": [t1_id, t2_id, t3_id, t4_id],
+            "datas": {"inicio": datetime.now(UTC), "fim": datetime.now(UTC) + timedelta(days=7)},
+            "criado_em": datetime.now(UTC),
+        }
+    ).inserted_id
+
+    client = flask_app.test_client()
+    client.post("/login", data={"modo": "login", "identificador": "organizador.gen", "senha": "admin123"})
+
+    # 5. Generate Mata-Mata Matchups
+    response = client.post(f"/campeonatos/{camp_mata_id}/gerar-partidas", follow_redirects=False)
+    assert response.status_code == 302
+    assert response.headers["Location"] == f"/campeonatos/{camp_mata_id}"
+
+    # Verify Mata-Mata generated matches
+    mata_matches = list(mongo.matches.find({"campeonato_id": camp_mata_id}))
+    assert len(mata_matches) == 2
+    assert mata_matches[0]["fase"] == "Semifinal"
+    assert mata_matches[1]["fase"] == "Semifinal"
+    
+    # Check if first-round pairs are: (t1 vs t2) and (t3 vs t4)
+    assert mata_matches[0]["time_a"]["time_id"] == t1_id
+    assert mata_matches[0]["time_b"]["time_id"] == t2_id
+    assert mata_matches[1]["time_a"]["time_id"] == t3_id
+    assert mata_matches[1]["time_b"]["time_id"] == t4_id
+
+    # Verify Championship status changed to EM_ANDAMENTO
+    camp_mata = mongo.championships.find_one({"_id": camp_mata_id})
+    assert camp_mata["status"] == "EM_ANDAMENTO"
+
+    # 6. Generate Grupos Matchups
+    response = client.post(f"/campeonatos/{camp_grupos_id}/gerar-partidas", follow_redirects=False)
+    assert response.status_code == 302
+    assert response.headers["Location"] == f"/campeonatos/{camp_grupos_id}"
+
+    # Verify Grupos generated matches
+    grupos_matches = list(mongo.matches.find({"campeonato_id": camp_grupos_id}))
+    assert len(grupos_matches) == 2 # 2 matches total: 1 in Grupo A, 1 in Grupo B
+    
+    # Verify group phases are correct
+    phases = {m["fase"] for m in grupos_matches}
+    assert "Grupo A" in phases
+    assert "Grupo B" in phases
+
+    # Verify Championship status changed to EM_ANDAMENTO
+    camp_grupos = mongo.championships.find_one({"_id": camp_grupos_id})
+    assert camp_grupos["status"] == "EM_ANDAMENTO"
+
+
+

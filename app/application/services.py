@@ -587,6 +587,126 @@ class ChampionshipService:
         self.match_repo.delete_by_championship(championship_id)
         return True
 
+    def generate_matches(self, current_user: dict[str, Any], championship_id) -> list[str]:
+        camp = self.championship_repo.find_by_id(championship_id)
+        if not camp or not can_access_admin_scope(current_user, camp.get("admin_id")):
+            return ["Campeonato nao encontrado."]
+        if camp.get("status") == STATUS_ARQUIVADO:
+            return ["Nao e possivel gerar partidas para um campeonato arquivado."]
+        if camp.get("status") != STATUS_INSCRICAO:
+            return ["A geracao automatica so e permitida para campeonatos em fase de inscricao."]
+        
+        # Check if matches already exist
+        existing_matches = self.match_repo.list_by_championship(championship_id)
+        if existing_matches:
+            return ["Este campeonato ja possui partidas geradas. Remova-as ou finalize-as primeiro."]
+
+        times_inscritos_ids = camp.get("times_inscritos", [])
+        if len(times_inscritos_ids) < 2:
+            return ["E necessario ter pelo menos 2 times inscritos para gerar as partidas."]
+
+        # Load team documents
+        times = []
+        for tid in times_inscritos_ids:
+            t = self.team_repo.find_by_id(tid)
+            if t:
+                times.append(t)
+        
+        if len(times) != len(times_inscritos_ids):
+            return ["Erro ao carregar informacoes de alguns times inscritos."]
+
+        formato = camp.get("formato", "mata-mata")
+        matches_to_insert = []
+        base_date = camp.get("datas", {}).get("inicio") or utc_now_naive()
+        
+        if formato == "mata-mata":
+            n = len(times)
+            # perfect brackets are powers of 2 (2, 4, 8, 16, 32)
+            if n not in (2, 4, 8, 16, 32):
+                return ["Para o formato Mata-Mata, a quantidade de times inscritos deve ser uma potencia de 2 (2, 4, 8 ou 16)."]
+            
+            # Determine Phase Name
+            if n == 2:
+                fase = "Grande Final"
+            elif n == 4:
+                fase = "Semifinal"
+            elif n == 8:
+                fase = "Quartas de Final"
+            elif n == 16:
+                fase = "Oitavas de Final"
+            else:
+                fase = "Primeira Rodada"
+
+            # Pair sequentially
+            for i in range(0, n, 2):
+                time_a = times[i]
+                time_b = times[i+1]
+                data_partida = base_date + timedelta(hours=i)
+                matches_to_insert.append({
+                    "admin_id": camp.get("admin_id"),
+                    "campeonato_id": championship_id,
+                    "fase": fase,
+                    "time_a": {"time_id": time_a["_id"], "nome": time_a["nome"], "placar": 0},
+                    "time_b": {"time_id": time_b["_id"], "nome": time_b["nome"], "placar": 0},
+                    "vencedor_id": None,
+                    "mapa": "",
+                    "data_partida": data_partida,
+                    "status": "agendada",
+                    "arbitro_id": None,
+                })
+        
+        elif formato == "grupos":
+            n = len(times)
+            if n < 4:
+                # 1 Group: Grupo A
+                grupos = {"Grupo A": times}
+            else:
+                # 2 Groups: Grupo A and Grupo B
+                grupo_a = []
+                grupo_b = []
+                for idx, t in enumerate(times):
+                    if idx % 2 == 0:
+                        grupo_a.append(t)
+                    else:
+                        grupo_b.append(t)
+                grupos = {"Grupo A": grupo_a, "Grupo B": grupo_b}
+
+            match_count = 0
+            for nome_grupo, membros in grupos.items():
+                m_len = len(membros)
+                # Generate Round-Robin within the group
+                for i in range(m_len):
+                    for j in range(i + 1, m_len):
+                        time_a = membros[i]
+                        time_b = membros[j]
+                        data_partida = base_date + timedelta(hours=match_count * 2)
+                        matches_to_insert.append({
+                            "admin_id": camp.get("admin_id"),
+                            "campeonato_id": championship_id,
+                            "fase": nome_grupo,
+                            "time_a": {"time_id": time_a["_id"], "nome": time_a["nome"], "placar": 0},
+                            "time_b": {"time_id": time_b["_id"], "nome": time_b["nome"], "placar": 0},
+                            "vencedor_id": None,
+                            "mapa": "",
+                            "data_partida": data_partida,
+                            "status": "agendada",
+                            "arbitro_id": None,
+                        })
+                        match_count += 1
+        
+        else:
+            return ["Formato de campeonato nao suportado para geracao automatica."]
+
+        # Insert matches
+        for m in matches_to_insert:
+            self.match_repo.insert(m)
+        
+        # Update championship status to EM_ANDAMENTO
+        self.championship_repo.update_fields(championship_id, {"status": STATUS_EM_ANDAMENTO})
+        
+        return []
+
+
 
 
 class MatchService:

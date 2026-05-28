@@ -764,6 +764,25 @@ def register_routes(app, services):
             flash("Campeonato nao encontrado.", "warning")
         return redirect(url_for("listar_campeonatos"))
 
+    @app.route("/campeonatos/<camp_id>/gerar-partidas", methods=["POST"], endpoint="gerar_partidas_campeonato")
+    @login_required
+    @roles_required(ROLE_ADMIN)
+    def gerar_partidas_campeonato(camp_id):
+        current_user = build_current_user()
+        oid = to_oid(camp_id)
+        if not oid:
+            flash("ID invalido.", "danger")
+            return redirect(url_for("listar_campeonatos"))
+            
+        errors = services["championships"].generate_matches(current_user, oid)
+        if errors:
+            for error in errors:
+                flash(error, "danger")
+        else:
+            flash("Partidas e chaves geradas automaticamente com sucesso!", "success")
+        return redirect(url_for("ver_campeonato", camp_id=camp_id))
+
+
     @app.route("/campeonatos/<camp_id>/partidas/nova", methods=["POST"], endpoint="nova_partida")
     @login_required
     @roles_required(ROLE_ADMIN)
