@@ -577,7 +577,7 @@ def register_routes(app, services):
             flash("Time nao encontrado.", "warning")
             return redirect(url_for("listar_times"))
         time, ids_atuais, funcoes_atuais = team_data
-        todos_jogadores = services["teams"].list_available_players(current_user)
+        todos_jogadores = services["teams"].list_available_players(current_user, oid)
         if request.method == "POST":
             errors = services["teams"].update_team(
                 current_user,

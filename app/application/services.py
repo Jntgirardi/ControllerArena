@@ -318,9 +318,15 @@ class TeamService:
     def list_teams(self, current_user: dict[str, Any]):
         return self.team_repo.list_all(self._scope_filter(current_user))
 
-    def list_available_players(self, current_user: dict[str, Any]):
+    def list_available_players(self, current_user: dict[str, Any], include_team_id: Any = None):
         filtro = self._scope_filter(current_user)
-        filtro["time_id"] = {"$exists": False}
+        if include_team_id:
+            filtro["$or"] = [
+                {"time_id": {"$exists": False}},
+                {"time_id": include_team_id}
+            ]
+        else:
+            filtro["time_id"] = {"$exists": False}
         return self.player_repo.list_for_team_selector(filtro)
 
     def validate(self, nome: str, tag: str, jogo: str, ids_selecionados: list[str]) -> list[str]:
