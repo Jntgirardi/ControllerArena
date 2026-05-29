@@ -125,26 +125,86 @@
 
 <!-- Modal de Confirmação para Finalizar Partida -->
 <div class="modal fade" id="confirmFinalizarModal" tabindex="-1" aria-labelledby="confirmFinalizarModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
     <div class="modal-content" style="background: var(--bg-card); border: 1px solid var(--border); color: var(--text-main);">
       <div class="modal-header" style="border-bottom: 1px solid var(--border); background: var(--bg-card-hd);">
-        <h5 class="modal-title text-white" id="confirmFinalizarModalLabel"><i class="bi bi-exclamation-triangle-fill text-warning"></i> Finalizar Partida?</h5>
+        <h5 class="modal-title text-white" id="confirmFinalizarModalLabel"><i class="bi bi-flag-fill text-danger"></i> Finalizar Partida e Registrar KDA</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      <div class="modal-body py-4 text-center">
-        <p class="fs-5 mb-3 text-white">Tem certeza que deseja finalizar e registrar o placar atual?</p>
-        <div class="d-flex justify-content-center align-items-center gap-4 bg-dark py-3 rounded mb-3">
-          <span class="fw-bold fs-4 text-info">{{ partida.time_a.nome }}</span>
-          <span id="modal-score-a" class="fs-2 fw-extrabold text-info font-monospace">{{ partida.time_a.placar }}</span>
+      <div class="modal-body py-3">
+        <p class="fs-6 text-center text-white mb-3">Preencha o KDA de cada jogador para registrar na súmula oficial e atualizar o ranking global.</p>
+        <div class="d-flex justify-content-center align-items-center gap-4 bg-dark py-2 rounded mb-4" style="max-width: 500px; margin: 0 auto;">
+          <span class="fw-bold fs-5 text-info text-truncate" style="max-width: 150px;">{{ partida.time_a.nome }}</span>
+          <span id="modal-score-a" class="fs-3 fw-extrabold text-info font-monospace">{{ partida.time_a.placar }}</span>
           <span class="fs-4 text-muted">x</span>
-          <span id="modal-score-b" class="fs-2 fw-extrabold text-danger font-monospace">{{ partida.time_b.placar }}</span>
-          <span class="fw-bold fs-4 text-danger">{{ partida.time_b.nome }}</span>
+          <span id="modal-score-b" class="fs-3 fw-extrabold text-danger font-monospace">{{ partida.time_b.placar }}</span>
+          <span class="fw-bold fs-5 text-danger text-truncate" style="max-width: 150px;">{{ partida.time_b.nome }}</span>
         </div>
-        <p class="text-danger small mb-0"><i class="bi bi-info-circle"></i> Após finalizar, o placar não poderá mais ser editado e as estatísticas serão atualizadas permanentemente.</p>
+        
+        <form id="kda-form">
+          <div class="row g-3">
+            <!-- Time A Players -->
+            <div class="col-12 col-md-6 border-end border-secondary border-opacity-25">
+              <h6 class="fw-bold text-info border-bottom border-info border-opacity-25 pb-2 mb-3"><i class="bi bi-shield-fill"></i> {{ partida.time_a.nome }}</h6>
+              <div class="d-flex flex-column gap-3">
+                {% for p in players_a %}
+                <div class="p-2 rounded bg-dark bg-opacity-25 border border-secondary border-opacity-25">
+                  <div class="fw-bold text-white mb-2 small">{{ p.nick }}</div>
+                  <div class="row g-2">
+                    <div class="col-4">
+                      <label class="form-label text-muted" style="font-size: 0.68rem; margin-bottom: 2px;">Kills (K)</label>
+                      <input type="number" class="form-control form-control-sm bg-dark text-white border-secondary font-monospace kda-input-a" data-player-id="{{ p.jogador_id }}" data-nick="{{ p.nick }}" data-stat="kills" min="0" value="0">
+                    </div>
+                    <div class="col-4">
+                      <label class="form-label text-muted" style="font-size: 0.68rem; margin-bottom: 2px;">Deaths (D)</label>
+                      <input type="number" class="form-control form-control-sm bg-dark text-white border-secondary font-monospace kda-input-a" data-player-id="{{ p.jogador_id }}" data-nick="{{ p.nick }}" data-stat="deaths" min="0" value="0">
+                    </div>
+                    <div class="col-4">
+                      <label class="form-label text-muted" style="font-size: 0.68rem; margin-bottom: 2px;">Assists (A)</label>
+                      <input type="number" class="form-control form-control-sm bg-dark text-white border-secondary font-monospace kda-input-a" data-player-id="{{ p.jogador_id }}" data-nick="{{ p.nick }}" data-stat="assists" min="0" value="0">
+                    </div>
+                  </div>
+                </div>
+                {% else %}
+                <p class="text-muted small">Nenhum jogador registrado no time.</p>
+                {% endfor %}
+              </div>
+            </div>
+            
+            <!-- Time B Players -->
+            <div class="col-12 col-md-6">
+              <h6 class="fw-bold text-danger border-bottom border-danger border-opacity-25 pb-2 mb-3"><i class="bi bi-shield-fill-x"></i> {{ partida.time_b.nome }}</h6>
+              <div class="d-flex flex-column gap-3">
+                {% for p in players_b %}
+                <div class="p-2 rounded bg-dark bg-opacity-25 border border-secondary border-opacity-25">
+                  <div class="fw-bold text-white mb-2 small">{{ p.nick }}</div>
+                  <div class="row g-2">
+                    <div class="col-4">
+                      <label class="form-label text-muted" style="font-size: 0.68rem; margin-bottom: 2px;">Kills (K)</label>
+                      <input type="number" class="form-control form-control-sm bg-dark text-white border-secondary font-monospace kda-input-b" data-player-id="{{ p.jogador_id }}" data-nick="{{ p.nick }}" data-stat="kills" min="0" value="0">
+                    </div>
+                    <div class="col-4">
+                      <label class="form-label text-muted" style="font-size: 0.68rem; margin-bottom: 2px;">Deaths (D)</label>
+                      <input type="number" class="form-control form-control-sm bg-dark text-white border-secondary font-monospace kda-input-b" data-player-id="{{ p.jogador_id }}" data-nick="{{ p.nick }}" data-stat="deaths" min="0" value="0">
+                    </div>
+                    <div class="col-4">
+                      <label class="form-label text-muted" style="font-size: 0.68rem; margin-bottom: 2px;">Assists (A)</label>
+                      <input type="number" class="form-control form-control-sm bg-dark text-white border-secondary font-monospace kda-input-b" data-player-id="{{ p.jogador_id }}" data-nick="{{ p.nick }}" data-stat="assists" min="0" value="0">
+                    </div>
+                  </div>
+                </div>
+                {% else %}
+                <p class="text-muted small">Nenhum jogador registrado no time.</p>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+        </form>
+        <p class="text-danger small mb-0 mt-3 text-center"><i class="bi bi-info-circle"></i> Após finalizar, o placar e as estatísticas não poderão mais ser alterados.</p>
       </div>
       <div class="modal-footer" style="border-top: 1px solid var(--border);">
         <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
-        <button type="button" class="btn btn-danger px-4" onclick="finalizeMatch()">Sim, Finalizar</button>
+        <button type="button" class="btn btn-danger px-4" onclick="finalizeMatch()">Confirmar e Finalizar</button>
       </div>
     </div>
   </div>
@@ -317,6 +377,46 @@ async function undoLastRound() {
 // Finaliza a Partida no DB
 async function finalizeMatch() {
   try {
+    // Collect KDA values for Team A players
+    const kda_a = [];
+    const inputsA = document.querySelectorAll(".kda-input-a");
+    const playersMapA = {};
+    
+    inputsA.forEach(input => {
+      const pId = input.dataset.playerId;
+      const nick = input.dataset.nick;
+      const stat = input.dataset.stat;
+      const val = parseInt(input.value) || 0;
+      
+      if (!playersMapA[pId]) {
+        playersMapA[pId] = { jogador_id: pId, nick: nick, kills: 0, deaths: 0, assists: 0 };
+      }
+      playersMapA[pId][stat] = val;
+    });
+    for (const pId in playersMapA) {
+      kda_a.push(playersMapA[pId]);
+    }
+
+    // Collect KDA values for Team B players
+    const kda_b = [];
+    const inputsB = document.querySelectorAll(".kda-input-b");
+    const playersMapB = {};
+    
+    inputsB.forEach(input => {
+      const pId = input.dataset.playerId;
+      const nick = input.dataset.nick;
+      const stat = input.dataset.stat;
+      const val = parseInt(input.value) || 0;
+      
+      if (!playersMapB[pId]) {
+        playersMapB[pId] = { jogador_id: pId, nick: nick, kills: 0, deaths: 0, assists: 0 };
+      }
+      playersMapB[pId][stat] = val;
+    });
+    for (const pId in playersMapB) {
+      kda_b.push(playersMapB[pId]);
+    }
+
     // Fecha o modal de confirmação primeiro
     const modalEl = document.getElementById('confirmFinalizarModal');
     const modal = bootstrap.Modal.getInstance(modalEl);
@@ -324,7 +424,8 @@ async function finalizeMatch() {
     
     const response = await fetch(`/partidas/${matchId}/rounds/finalizar`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" }
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ kda_a: kda_a, kda_b: kda_b })
     });
     const data = await response.json();
     if (!response.ok || !data.success) {

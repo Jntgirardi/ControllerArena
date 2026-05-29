@@ -819,7 +819,9 @@ class MatchService:
                 })
         return None
 
-    def register_result(self, current_user: dict[str, Any], match_id, placar_a: str, placar_b: str) -> tuple[str | None, ObjectId | None]:
+    def register_result(
+        self, current_user: dict[str, Any], match_id, placar_a: str, placar_b: str, kda_a: list = None, kda_b: list = None
+    ) -> tuple[str | None, ObjectId | None]:
         match = self.match_repo.find_by_id(match_id)
         if not match:
             return "Partida nao encontrada.", None
@@ -850,15 +852,40 @@ class MatchService:
 
         vencedor_tid = match["time_a"]["time_id"] if score_a > score_b else match["time_b"]["time_id"]
         perdedor_tid = match["time_b"]["time_id"] if score_a > score_b else match["time_a"]["time_id"]
-        self.match_repo.update_fields(
-            match_id,
-            {
-                "time_a.placar": score_a,
-                "time_b.placar": score_b,
-                "vencedor_id": vencedor_tid,
-                "status": "finalizada",
-            },
-        )
+        
+        update_fields = {
+            "time_a.placar": score_a,
+            "time_b.placar": score_b,
+            "vencedor_id": vencedor_tid,
+            "status": "finalizada",
+        }
+        
+        # Save KDA lists into the match document if provided
+        if kda_a is not None:
+            mapped_kda_a = []
+            for item in kda_a:
+                mapped_kda_a.append({
+                    "jogador_id": ObjectId(item["jogador_id"]) if isinstance(item.get("jogador_id"), str) else item.get("jogador_id"),
+                    "nick": item.get("nick", "Jogador"),
+                    "kills": int(item.get("kills") or 0),
+                    "deaths": int(item.get("deaths") or 0),
+                    "assists": int(item.get("assists") or 0),
+                })
+            update_fields["kda_a"] = mapped_kda_a
+            
+        if kda_b is not None:
+            mapped_kda_b = []
+            for item in kda_b:
+                mapped_kda_b.append({
+                    "jogador_id": ObjectId(item["jogador_id"]) if isinstance(item.get("jogador_id"), str) else item.get("jogador_id"),
+                    "nick": item.get("nick", "Jogador"),
+                    "kills": int(item.get("kills") or 0),
+                    "deaths": int(item.get("deaths") or 0),
+                    "assists": int(item.get("assists") or 0),
+                })
+            update_fields["kda_b"] = mapped_kda_b
+
+        self.match_repo.update_fields(match_id, update_fields)
 
         increments = [
             (vencedor_tid, {"estatisticas.vitorias": 1, "estatisticas.partidas_jogadas": 1}),
@@ -869,6 +896,54 @@ class MatchService:
             if team:
                 for membro in team.get("jogadores", []):
                     self.player_repo.increment_stats(membro["jogador_id"], increment)
+                    
+        # Update player KDA global stats in the player profiles
+        for item in (kda_a or []):
+            try:
+                pid = ObjectId(item["jogador_id"]) if isinstance(item.get("jogador_id"), str) else item.get("jogador_id")
+                if pid:
+                    kills = int(item.get("kills") or 0)
+                    deaths = int(item.get("deaths") or 0)
+                    assists = int(item.get("assists") or 0)
+                    player = self.player_repo.find_by_id(pid)
+                    if player:
+                        old_stats = player.get("estatisticas", {})
+                        new_kills = old_stats.get("total_kills", 0) + kills
+                        new_deaths = old_stats.get("total_deaths", 0) + deaths
+                        new_assists = old_stats.get("total_assists", 0) + assists
+                        kd = round(float(new_kills) / float(new_deaths), 2) if new_deaths > 0 else float(new_kills)
+                        self.player_repo.update_fields(pid, {
+                            "estatisticas.total_kills": new_kills,
+                            "estatisticas.total_deaths": new_deaths,
+                            "estatisticas.total_assists": new_assists,
+                            "estatisticas.kd_ratio": kd
+                        })
+            except Exception as e:
+                logger.warning("Falha ao salvar estatistica KDA para o jogador: %s", e)
+
+        for item in (kda_b or []):
+            try:
+                pid = ObjectId(item["jogador_id"]) if isinstance(item.get("jogador_id"), str) else item.get("jogador_id")
+                if pid:
+                    kills = int(item.get("kills") or 0)
+                    deaths = int(item.get("deaths") or 0)
+                    assists = int(item.get("assists") or 0)
+                    player = self.player_repo.find_by_id(pid)
+                    if player:
+                        old_stats = player.get("estatisticas", {})
+                        new_kills = old_stats.get("total_kills", 0) + kills
+                        new_deaths = old_stats.get("total_deaths", 0) + deaths
+                        new_assists = old_stats.get("total_assists", 0) + assists
+                        kd = round(float(new_kills) / float(new_deaths), 2) if new_deaths > 0 else float(new_kills)
+                        self.player_repo.update_fields(pid, {
+                            "estatisticas.total_kills": new_kills,
+                            "estatisticas.total_deaths": new_deaths,
+                            "estatisticas.total_assists": new_assists,
+                            "estatisticas.kd_ratio": kd
+                        })
+            except Exception as e:
+                logger.warning("Falha ao salvar estatistica KDA para o jogador: %s", e)
+
         invalidate_ranking_cache(self.cache)
         self._notify_match_result(camp, match, score_a, score_b)
         return None, match["campeonato_id"]

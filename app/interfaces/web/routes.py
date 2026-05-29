@@ -272,48 +272,59 @@ def map_championship_to_public(camp_doc, services):
             hora = "A confirmar"
 
         # Map KDA (empty/default if live or finished)
-        kda_a = []
-        kda_b = []
+        kda_a = m.get("kda_a", [])
+        kda_b = m.get("kda_b", [])
         
         # Fetch the actual players of the teams to make it beautiful!
         time_a_doc = services["teams"].team_repo.find_by_id(m["time_a"]["time_id"])
         time_b_doc = services["teams"].team_repo.find_by_id(m["time_b"]["time_id"])
         
-        # Build KDA lists using players of each team
-        if time_a_doc:
-            for j in time_a_doc.get("jogadores", []):
-                kills = 0
-                deaths = 0
-                assists = 0
-                if status == "finalizado":
-                    # Generate some realistic numbers deterministically using hash or basic math
-                    seed_val = hash(str(m["_id"]) + str(j["jogador_id"])) % 10
-                    kills = 12 + seed_val
-                    deaths = 10 + (seed_val % 7)
-                    assists = 3 + (seed_val % 5)
-                kda_a.append({
-                    "nick": j.get("nick", "Jogador"),
-                    "kills": kills,
-                    "deaths": deaths,
-                    "assists": assists
-                })
+        # If not present in database, build KDA lists using players of each team
+        if not kda_a:
+            if time_a_doc:
+                for j in time_a_doc.get("jogadores", []):
+                    kills = 0
+                    deaths = 0
+                    assists = 0
+                    if status == "finalizado":
+                        # Generate some realistic numbers deterministically using hash or basic math
+                        seed_val = hash(str(m["_id"]) + str(j["jogador_id"])) % 10
+                        kills = 12 + seed_val
+                        deaths = 10 + (seed_val % 7)
+                        assists = 3 + (seed_val % 5)
+                    kda_a.append({
+                        "nick": j.get("nick", "Jogador"),
+                        "kills": kills,
+                        "deaths": deaths,
+                        "assists": assists
+                    })
+        else:
+            # Ensure nick field is mapped properly for frontend
+            for item in kda_a:
+                if "nick" not in item:
+                    item["nick"] = item.get("jogador_id") # Fallback
         
-        if time_b_doc:
-            for j in time_b_doc.get("jogadores", []):
-                kills = 0
-                deaths = 0
-                assists = 0
-                if status == "finalizado":
-                    seed_val = hash(str(m["_id"]) + str(j["jogador_id"]) + "b") % 10
-                    kills = 11 + seed_val
-                    deaths = 11 + (seed_val % 6)
-                    assists = 4 + (seed_val % 4)
-                kda_b.append({
-                    "nick": j.get("nick", "Jogador"),
-                    "kills": kills,
-                    "deaths": deaths,
-                    "assists": assists
-                })
+        if not kda_b:
+            if time_b_doc:
+                for j in time_b_doc.get("jogadores", []):
+                    kills = 0
+                    deaths = 0
+                    assists = 0
+                    if status == "finalizado":
+                        seed_val = hash(str(m["_id"]) + str(j["jogador_id"]) + "b") % 10
+                        kills = 11 + seed_val
+                        deaths = 11 + (seed_val % 6)
+                        assists = 4 + (seed_val % 4)
+                    kda_b.append({
+                        "nick": j.get("nick", "Jogador"),
+                        "kills": kills,
+                        "deaths": deaths,
+                        "assists": assists
+                    })
+        else:
+            for item in kda_b:
+                if "nick" not in item:
+                    item["nick"] = item.get("jogador_id") # Fallback
 
         partidas.append({
             "id": str(m["_id"]),
@@ -1010,11 +1021,25 @@ def register_routes(app, services):
             flash("Acesso negado para arbitrar esta partida.", "danger")
             return redirect(url_for("dashboard"))
 
-        if match.get("status") == "finalizada":
-            flash("Esta partida ja foi finalizada.", "info")
-            return redirect(url_for("ver_campeonato", camp_id=str(match["campeonato_id"])))
+        # Fetch players of both teams to allow KDA input
+        time_a = services["teams"].team_repo.find_by_id(match["time_a"]["time_id"])
+        time_b = services["teams"].team_repo.find_by_id(match["time_b"]["time_id"])
+        players_a = []
+        if time_a:
+            for j in time_a.get("jogadores", []):
+                players_a.append({
+                    "jogador_id": str(j["jogador_id"]),
+                    "nick": j.get("nick", "Jogador")
+                })
+        players_b = []
+        if time_b:
+            for j in time_b.get("jogadores", []):
+                players_b.append({
+                    "jogador_id": str(j["jogador_id"]),
+                    "nick": j.get("nick", "Jogador")
+                })
 
-        return render_template("partidas/rounds.html", partida=match)
+        return render_template("partidas/rounds.html", partida=match, players_a=players_a, players_b=players_b)
 
     @app.route("/partidas/<partida_id>/rounds/vencer", methods=["POST"], endpoint="rounds_vencer")
     @login_required
@@ -1097,7 +1122,10 @@ def register_routes(app, services):
         score_a = str(match["time_a"]["placar"])
         score_b = str(match["time_b"]["placar"])
 
-        error, camp_id = services["matches"].register_result(current_user, oid, score_a, score_b)
+        kda_a = request.json.get("kda_a") if request.is_json else None
+        kda_b = request.json.get("kda_b") if request.is_json else None
+
+        error, camp_id = services["matches"].register_result(current_user, oid, score_a, score_b, kda_a, kda_b)
         if error:
             return {"success": False, "error": error}, 400
 
