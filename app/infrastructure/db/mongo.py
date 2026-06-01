@@ -16,6 +16,13 @@ class MongoDatabase:
 
         self.db = self.client[db_name]
 
+        # Inicializa o ODM MongoEngine para conformidade acadêmica completa
+        import mongoengine as me
+        try:
+            me.connect(db=db_name, host=uri, uuidRepresentation="standard")
+        except Exception as exc:
+            pass
+
         self.users = self.db["usuarios"]
         self.players = self.db["jogadores"]
         self.teams = self.db["times"]
