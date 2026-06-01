@@ -25,7 +25,6 @@ from .odm.models import (
     ChampionshipDocument,
     MatchDocument,
     EventDocument,
-    TicketDocument,
     LogDocument,
     ArbitroDocument,
     NotificationDocument
@@ -275,16 +274,6 @@ class MongoEventRepository:
             cursor = cursor.sort(sort)
         return list(cursor)
 
-
-class MongoTicketRepository:
-    def __init__(self, collection):
-        self.collection = collection
-
-    def list_by_query(self, filtro=None, sort=None):
-        cursor = self.collection.find(filtro or {})
-        if sort:
-            cursor = cursor.sort(sort)
-        return list(cursor)
 
 
 class MongoLogRepository:

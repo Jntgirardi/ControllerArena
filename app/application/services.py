@@ -1375,13 +1375,12 @@ class AuditLogService:
 class ReportService:
     SUMMARY_PREVIEW_LIMIT = 5
 
-    def __init__(self, championship_repo, match_repo, player_repo, team_repo, event_repo, ticket_repo, log_repo):
+    def __init__(self, championship_repo, match_repo, player_repo, team_repo, event_repo, log_repo):
         self.championship_repo = championship_repo
         self.match_repo = match_repo
         self.player_repo = player_repo
         self.team_repo = team_repo
         self.event_repo = event_repo
-        self.ticket_repo = ticket_repo
         self.log_repo = log_repo
         self.report_builders = {
             "system-logs": self._build_system_logs_report,
@@ -1389,8 +1388,6 @@ class ReportService:
             "match-history": self._build_match_history_report,
             "championship-stats": self._build_championship_stats_report,
             "tournament-players": self._build_tournament_players_report,
-            "ticket-sales": self._build_ticket_sales_report,
-            "capacity-control": self._build_capacity_control_report,
         }
 
     def _base_filter(self, current_user: dict[str, Any]) -> dict[str, Any]:
@@ -1637,92 +1634,6 @@ class ReportService:
             "metrics": [
                 {"label": "Inscricoes", "value": len(rows)},
                 {"label": "Torneios com inscritos", "value": len({row['Campeonato'] for row in rows})},
-            ],
-        }
-
-    def _build_ticket_sales_report(self, current_user: dict[str, Any], start, end):
-        base_filter = self._base_filter(current_user)
-        events = self.event_repo.list_by_query(base_filter, sort=[("data_evento", DESCENDING)])
-        event_names = {event["_id"]: event.get("nome", "-") for event in events}
-        tickets = self.ticket_repo.list_by_query(base_filter, sort=[("vendido_em", DESCENDING)])
-        rows = []
-        faturamento = 0.0
-        vendidos = 0
-        for ticket in tickets:
-            sold_at = ticket.get("vendido_em")
-            if not self._filter_by_date_range(sold_at, start, end):
-                continue
-            quantidade = int(ticket.get("quantidade", 0) or 0)
-            valor_total = float(ticket.get("valor_total", 0) or 0)
-            faturamento += valor_total
-            vendidos += quantidade
-            rows.append(
-                {
-                    "Evento": event_names.get(ticket.get("evento_id"), "-"),
-                    "Comprador": ticket.get("comprador", "-"),
-                    "Lote": ticket.get("lote", "-"),
-                    "Quantidade": quantidade,
-                    "Valor total (R$)": f"{valor_total:.2f}",
-                    "Status": self._normalize_status_label(ticket.get("status", "")),
-                    "Venda": self._serialize_date(sold_at),
-                }
-            )
-        return {
-            "key": "ticket-sales",
-            "title": "Relatorio de vendas de ingressos",
-            "category": "Shows e Eventos",
-            "admin_only": True,
-            "allowed_roles": [ROLE_ADMIN],
-            "summary_columns": ["Evento", "Lote", "Quantidade", "Valor total (R$)", "Status"],
-            "columns": ["Evento", "Comprador", "Lote", "Quantidade", "Valor total (R$)", "Status", "Venda"],
-            "rows": rows,
-            "summary_rows": self._build_summary(rows),
-            "metrics": [
-                {"label": "Ingressos vendidos", "value": vendidos},
-                {"label": "Faturamento", "value": f"R$ {faturamento:.2f}"},
-            ],
-        }
-
-    def _build_capacity_control_report(self, current_user: dict[str, Any], start, end):
-        events = self.event_repo.list_by_query(self._base_filter(current_user), sort=[("data_evento", DESCENDING)])
-        tickets = self.ticket_repo.list_by_query(self._base_filter(current_user))
-        sold_by_event = {}
-        for ticket in tickets:
-            sold_by_event[ticket.get("evento_id")] = sold_by_event.get(ticket.get("evento_id"), 0) + int(ticket.get("quantidade", 0) or 0)
-
-        rows = []
-        for event in events:
-            event_date = event.get("data_evento")
-            if not self._filter_by_date_range(event_date, start, end):
-                continue
-            capacidade = int(event.get("capacidade_total", 0) or 0)
-            vendidos = sold_by_event.get(event["_id"], 0)
-            disponivel = max(capacidade - vendidos, 0)
-            ocupacao = round((vendidos / capacidade) * 100, 1) if capacidade else 0.0
-            rows.append(
-                {
-                    "Evento": event.get("nome", "-"),
-                    "Data": self._serialize_date(event_date),
-                    "Local": event.get("local", "-"),
-                    "Capacidade total": capacidade,
-                    "Ingressos vendidos": vendidos,
-                    "Disponivel": disponivel,
-                    "Ocupacao (%)": ocupacao,
-                }
-            )
-        return {
-            "key": "capacity-control",
-            "title": "Controle de lotacao",
-            "category": "Shows e Eventos",
-            "admin_only": True,
-            "allowed_roles": [ROLE_ADMIN],
-            "summary_columns": ["Evento", "Data", "Capacidade total", "Ingressos vendidos", "Ocupacao (%)"],
-            "columns": ["Evento", "Data", "Local", "Capacidade total", "Ingressos vendidos", "Disponivel", "Ocupacao (%)"],
-            "rows": rows,
-            "summary_rows": self._build_summary(rows),
-            "metrics": [
-                {"label": "Eventos monitorados", "value": len(rows)},
-                {"label": "Maior ocupacao", "value": f"{max((row['Ocupacao (%)'] for row in rows), default=0):.1f}%"},
             ],
         }
 
@@ -2169,7 +2080,6 @@ def build_services(repositories: dict[str, Any], password_hasher, cache):
             repositories["players"],
             repositories["teams"],
             repositories["events"],
-            repositories["tickets"],
             repositories["logs"],
         ),
         "users": UserService(repositories["users"], password_hasher),

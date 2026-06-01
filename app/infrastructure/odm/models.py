@@ -187,25 +187,6 @@ class EventDocument(me.Document):
     criado_em = me.DateTimeField()
 
 
-class TicketDocument(me.Document):
-    meta = {
-        "collection": "ingressos",
-        "indexes": [
-            "admin_id",
-            "evento_id",
-            "status",
-            ("admin_id", "-vendido_em")
-        ]
-    }
-    evento_id = me.ObjectIdField(required=True)
-    admin_id = me.ObjectIdField(required=True)
-    comprador = me.StringField(required=True)
-    lote = me.StringField(required=True)
-    quantidade = me.IntField(required=True)
-    valor_total = me.FloatField(required=True)
-    status = me.StringField(required=True)
-    vendido_em = me.DateTimeField()
-
 
 class LogDocument(me.Document):
     meta = {

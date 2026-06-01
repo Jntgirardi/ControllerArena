@@ -671,28 +671,7 @@ def test_reports_page_lists_new_exports(monkeypatch):
         }
     )
 
-    event_id = mongo.events.insert_one(
-        {
-            "nome": "Arena Music Clash",
-            "local": "Main Stage",
-            "data_evento": datetime.now(UTC) + timedelta(days=3),
-            "capacidade_total": 300,
-            "admin_id": admin_id,
-            "criado_em": datetime.now(UTC),
-        }
-    ).inserted_id
-    mongo.tickets.insert_one(
-        {
-            "evento_id": event_id,
-            "admin_id": admin_id,
-            "comprador": "Julia",
-            "lote": "1o lote",
-            "quantidade": 2,
-            "valor_total": 150.0,
-            "status": "pago",
-            "vendido_em": datetime.now(UTC),
-        }
-    )
+
     mongo.logs.insert_one(
         {
             "user_id": admin_id,
@@ -723,8 +702,7 @@ def test_reports_page_lists_new_exports(monkeypatch):
     assert b"Historico de partidas por campeonato" in reports_response.data
     assert b"Estatisticas de campeonatos" in reports_response.data
     assert b"Jogadores inscritos por torneio" in reports_response.data
-    assert b"Relatorio de vendas de ingressos" in reports_response.data
-    assert b"Controle de lotacao" in reports_response.data
+
 
 
 def test_report_exports_return_complete_files(monkeypatch):
@@ -756,28 +734,7 @@ def test_report_exports_return_complete_files(monkeypatch):
         }
     )
 
-    event_id = mongo.events.insert_one(
-        {
-            "nome": "Arena Music Clash",
-            "local": "Main Stage",
-            "data_evento": datetime.now(UTC) + timedelta(days=3),
-            "capacidade_total": 300,
-            "admin_id": admin_id,
-            "criado_em": datetime.now(UTC),
-        }
-    ).inserted_id
-    mongo.tickets.insert_one(
-        {
-            "evento_id": event_id,
-            "admin_id": admin_id,
-            "comprador": "Julia",
-            "lote": "1o lote",
-            "quantidade": 2,
-            "valor_total": 150.0,
-            "status": "pago",
-            "vendido_em": datetime.now(UTC),
-        }
-    )
+
     mongo.logs.insert_one(
         {
             "user_id": admin_id,
@@ -796,7 +753,7 @@ def test_report_exports_return_complete_files(monkeypatch):
     client.post("/login", data={"modo": "login", "identificador": "admin.export", "senha": "admin123"})
 
     csv_response = client.get("/relatorios/export/player-ranking.csv")
-    pdf_response = client.get("/relatorios/export/ticket-sales.pdf")
+    pdf_response = client.get("/relatorios/export/player-ranking.pdf")
 
     assert csv_response.status_code == 200
     assert csv_response.mimetype == "text/csv"
@@ -807,22 +764,6 @@ def test_report_exports_return_complete_files(monkeypatch):
     assert pdf_response.mimetype == "application/pdf"
     assert pdf_response.data.startswith(b"%PDF-1.4")
 
-
-def test_superadmin_reports_hide_shows_and_events(monkeypatch):
-    flask_app = build_test_app(monkeypatch)
-    client = flask_app.test_client()
-
-    login_response = client.post(
-        "/login",
-        data={"modo": "login", "identificador": "superadmin", "senha": "super123"},
-        follow_redirects=False,
-    )
-    reports_response = client.get("/relatorios")
-
-    assert login_response.status_code == 302
-    assert reports_response.status_code == 200
-    assert b"Relatorio de vendas de ingressos" not in reports_response.data
-    assert b"Controle de lotacao" not in reports_response.data
 
 
 def test_dashboard_hides_users_and_reports_tabs(monkeypatch):
@@ -931,11 +872,6 @@ def test_mongodb_optimized_indexes_are_created(monkeypatch):
     assert matches_indexes["campeonato_id_1_data_partida_1"]["key"] == [("campeonato_id", 1), ("data_partida", 1)]
     assert "admin_id_1_data_partida_-1" in matches_indexes
     assert matches_indexes["admin_id_1_data_partida_-1"]["key"] == [("admin_id", 1), ("data_partida", -1)]
-
-    # Verify tickets indexes
-    tickets_indexes = mongo.tickets.index_information()
-    assert "admin_id_1_vendido_em_-1" in tickets_indexes
-    assert tickets_indexes["admin_id_1_vendido_em_-1"]["key"] == [("admin_id", 1), ("vendido_em", -1)]
 
 
 def test_player_deletion_removes_user_account(monkeypatch):

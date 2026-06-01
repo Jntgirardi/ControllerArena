@@ -17,7 +17,7 @@ def utc_now():
     return datetime.now(UTC)
 
 # Clean all collections
-for col in ["usuarios", "jogadores", "times", "campeonatos", "partidas", "eventos", "ingressos", "logs", "notificacoes"]:
+for col in ["usuarios", "jogadores", "times", "campeonatos", "partidas", "eventos", "logs", "notificacoes"]:
     db[col].drop()
 
 print("Banco limpo.")
@@ -194,42 +194,6 @@ evento_festival = db.eventos.insert_one(
         "criado_em": hoje,
     }
 ).inserted_id
-
-# 6. Tickets
-db.ingressos.insert_many(
-    [
-        {
-            "evento_id": evento_show,
-            "admin_id": admin_id,
-            "comprador": "Julia Martins",
-            "lote": "1o lote",
-            "quantidade": 2,
-            "valor_total": 240.0,
-            "status": "pago",
-            "vendido_em": hoje - timedelta(days=1),
-        },
-        {
-            "evento_id": evento_show,
-            "admin_id": admin_id,
-            "comprador": "Felipe Nunes",
-            "lote": "1o lote",
-            "quantidade": 3,
-            "valor_total": 360.0,
-            "status": "pago",
-            "vendido_em": hoje,
-        },
-        {
-            "evento_id": evento_festival,
-            "admin_id": admin_id,
-            "comprador": "Camila Rocha",
-            "lote": "Pista premium",
-            "quantidade": 4,
-            "valor_total": 720.0,
-            "status": "reservado",
-            "vendido_em": hoje,
-        },
-    ]
-)
 
 # 7. Audit Logs
 db.logs.insert_many(
