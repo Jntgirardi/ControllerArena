@@ -11,7 +11,7 @@
 
 <div class="card" style="max-width:620px">
   <div class="card-body">
-    <form method="post">
+    <form method="post" enctype="multipart/form-data">
       <div class="row g-3 mb-3">
         <div class="col-12 col-sm-8">
           <label class="form-label">Nome do Time *</label>
@@ -33,6 +33,21 @@
           <option value="CS2"     {% if dados.get('jogo') == 'CS2'     %}selected{% endif %}>CS2</option>
           <option value="Valorant"{% if dados.get('jogo') == 'Valorant'%}selected{% endif %}>Valorant</option>
         </select>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Logo do Time</label>
+        <div class="d-flex align-items-center gap-3 flex-wrap">
+          {% if acao == 'editar' and time and time.logo_path %}
+          <img class="team-logo team-logo-lg" src="{{ url_for('static', filename=time.logo_path) }}" alt="Logo de {{ time.nome }}">
+          {% else %}
+          <span class="team-logo team-logo-lg team-logo-placeholder"><i class="bi bi-shield-fill fs-2"></i></span>
+          {% endif %}
+          <div class="flex-fill">
+            <input type="file" name="logo" class="form-control" accept="image/png,image/jpeg">
+            <small class="text-muted">PNG ou JPG ate 2 MB. A imagem sera ajustada para o padrao do sistema.</small>
+          </div>
+        </div>
       </div>
 
       <div class="mb-3">

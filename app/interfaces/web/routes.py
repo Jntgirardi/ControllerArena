@@ -1,10 +1,71 @@
 from __future__ import annotations
 
-from flask import Response, abort, flash, redirect, render_template, request, session, url_for
+from io import BytesIO
+from pathlib import Path
+from uuid import uuid4
+
+from flask import Response, abort, current_app, flash, redirect, render_template, request, session, url_for
+from PIL import Image, ImageOps, UnidentifiedImageError
 
 from ...application.services import ROLE_ADMIN, ROLE_PLAYER, ROLE_REFEREE, ROLE_SUPER_ADMIN, can_access_admin_scope
 from .common import build_current_user, login_required, roles_required, to_oid
 from .report_exports import build_csv_bytes, build_pdf_bytes
+
+TEAM_LOGO_MAX_BYTES = 2 * 1024 * 1024
+TEAM_LOGO_SIZE = (256, 256)
+TEAM_LOGO_UPLOAD_DIR = Path("uploads") / "team_logos"
+TEAM_LOGO_ALLOWED_FORMATS = {"PNG", "JPEG"}
+
+
+def _team_logo_absolute_path(logo_path: str | None) -> Path | None:
+    if not logo_path:
+        return None
+    static_root = Path(current_app.static_folder).resolve()
+    candidate = (static_root / logo_path).resolve()
+    if candidate == static_root or static_root not in candidate.parents:
+        return None
+    return candidate
+
+
+def _delete_team_logo(logo_path: str | None) -> None:
+    logo_file = _team_logo_absolute_path(logo_path)
+    if logo_file and logo_file.exists():
+        logo_file.unlink()
+
+
+def _save_team_logo(upload) -> tuple[str | None, list[str]]:
+    if not upload or not upload.filename:
+        return None, []
+
+    raw = upload.read()
+    if hasattr(upload.stream, "seek"):
+        upload.stream.seek(0)
+    if not raw:
+        return None, ["Envie um arquivo de logo valido."]
+    if len(raw) > TEAM_LOGO_MAX_BYTES:
+        return None, ["A logo deve ter no maximo 2 MB."]
+
+    try:
+        with Image.open(BytesIO(raw)) as image:
+            if image.format not in TEAM_LOGO_ALLOWED_FORMATS:
+                return None, ["A logo deve estar nos formatos PNG ou JPG."]
+            image = ImageOps.exif_transpose(image)
+            image = image.convert("RGBA")
+            resample = getattr(Image, "Resampling", Image).LANCZOS
+            image.thumbnail(TEAM_LOGO_SIZE, resample)
+            resized = Image.new("RGBA", TEAM_LOGO_SIZE, (0, 0, 0, 0))
+            offset = ((TEAM_LOGO_SIZE[0] - image.width) // 2, (TEAM_LOGO_SIZE[1] - image.height) // 2)
+            resized.alpha_composite(image, offset)
+
+            upload_dir = Path(current_app.static_folder) / TEAM_LOGO_UPLOAD_DIR
+            upload_dir.mkdir(parents=True, exist_ok=True)
+            filename = f"{uuid4().hex}.png"
+            saved_path = upload_dir / filename
+            resized.save(saved_path, format="PNG", optimize=True)
+    except (UnidentifiedImageError, OSError):
+        return None, ["A logo deve ser uma imagem PNG ou JPG valida."]
+
+    return f"{TEAM_LOGO_UPLOAD_DIR.as_posix()}/{filename}", []
 
 
 def _store_session_user(user):
@@ -709,6 +770,11 @@ def register_routes(app, services):
         current_user = build_current_user()
         todos_jogadores = services["teams"].list_available_players(current_user)
         if request.method == "POST":
+            logo_path, logo_errors = _save_team_logo(request.files.get("logo"))
+            if logo_errors:
+                for error in logo_errors:
+                    flash(error, "danger")
+                return render_template("times/form.html", todos_jogadores=todos_jogadores, acao="novo", dados=request.form)
             errors = services["teams"].create_team(
                 current_user,
                 request.form.get("nome", "").strip(),
@@ -716,8 +782,10 @@ def register_routes(app, services):
                 request.form.get("jogo", ""),
                 request.form.getlist("jogadores_ids"),
                 request.form,
+                logo_path,
             )
             if errors:
+                _delete_team_logo(logo_path)
                 for error in errors:
                     flash(error, "danger")
                 return render_template("times/form.html", todos_jogadores=todos_jogadores, acao="novo", dados=request.form)
@@ -755,6 +823,11 @@ def register_routes(app, services):
         time, ids_atuais, funcoes_atuais = team_data
         todos_jogadores = services["teams"].list_available_players(current_user, oid)
         if request.method == "POST":
+            logo_path, logo_errors = _save_team_logo(request.files.get("logo"))
+            if logo_errors:
+                for error in logo_errors:
+                    flash(error, "danger")
+                return render_template("times/form.html", todos_jogadores=todos_jogadores, acao="editar", dados=request.form, time=time, ids_atuais=ids_atuais, funcoes_atuais=funcoes_atuais)
             errors = services["teams"].update_team(
                 current_user,
                 oid,
@@ -763,11 +836,15 @@ def register_routes(app, services):
                 request.form.get("jogo", ""),
                 request.form.getlist("jogadores_ids"),
                 request.form,
+                logo_path,
             )
             if errors:
+                _delete_team_logo(logo_path)
                 for error in errors:
                     flash(error, "danger")
                 return render_template("times/form.html", todos_jogadores=todos_jogadores, acao="editar", dados=request.form, time=time, ids_atuais=ids_atuais, funcoes_atuais=funcoes_atuais)
+            if logo_path:
+                _delete_team_logo(time.get("logo_path"))
             flash("Time atualizado com sucesso!", "success")
             return redirect(url_for("listar_times"))
         return render_template("times/form.html", todos_jogadores=todos_jogadores, acao="editar", dados=time, time=time, ids_atuais=ids_atuais, funcoes_atuais=funcoes_atuais)

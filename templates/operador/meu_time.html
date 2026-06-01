@@ -9,10 +9,16 @@
 
 <div class="card mb-4" style="max-width:640px">
   <div class="card-header d-flex justify-content-between align-items-center">
-    <span>
-      <i class="bi bi-shield-fill me-1" style="color:var(--accent)"></i>
-      <strong>{{ time.nome }}</strong>
-      <span class="badge bg-secondary ms-1" style="font-size:.7rem">{{ time.tag }}</span>
+    <span class="d-flex align-items-center gap-2">
+      {% if time.logo_path %}
+      <img class="team-logo team-logo-sm" src="{{ url_for('static', filename=time.logo_path) }}" alt="Logo de {{ time.nome }}">
+      {% else %}
+      <span class="team-logo team-logo-sm team-logo-placeholder"><i class="bi bi-shield-fill"></i></span>
+      {% endif %}
+      <span>
+        <strong>{{ time.nome }}</strong>
+        <span class="badge bg-secondary ms-1" style="font-size:.7rem">{{ time.tag }}</span>
+      </span>
     </span>
     <span class="badge {{ 'badge-cs2' if time.jogo == 'CS2' else 'badge-valorant' }}">
       {{ time.jogo }}

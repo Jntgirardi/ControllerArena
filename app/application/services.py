@@ -359,22 +359,23 @@ class TeamService:
             )
         return membros, errors
 
-    def create_team(self, current_user: dict[str, Any], nome: str, tag: str, jogo: str, ids_selecionados: list[str], form_data) -> list[str]:
+    def create_team(self, current_user: dict[str, Any], nome: str, tag: str, jogo: str, ids_selecionados: list[str], form_data, logo_path: str | None = None) -> list[str]:
         errors = self.validate(nome, tag, jogo, ids_selecionados)
         membros, build_errors = self.build_members(ids_selecionados, form_data, current_user)
         errors.extend(build_errors)
         if errors:
             return errors
-        inserted_id = self.team_repo.insert(
-            {
-                "nome": nome,
-                "tag": tag.upper(),
-                "jogo": jogo,
-                "admin_id": get_scope_admin_id(current_user),
-                "jogadores": membros,
-                "criado_em": utc_now_naive(),
-            }
-        )
+        document = {
+            "nome": nome,
+            "tag": tag.upper(),
+            "jogo": jogo,
+            "admin_id": get_scope_admin_id(current_user),
+            "jogadores": membros,
+            "criado_em": utc_now_naive(),
+        }
+        if logo_path:
+            document["logo_path"] = logo_path
+        inserted_id = self.team_repo.insert(document)
         for membro in membros:
             self.player_repo.set_team(membro["jogador_id"], inserted_id)
         return []
@@ -396,7 +397,7 @@ class TeamService:
         self.team_repo.delete_by_id(object_id)
         return True
 
-    def update_team(self, current_user: dict[str, Any], object_id, nome: str, tag: str, jogo: str, ids_selecionados: list[str], form_data) -> list[str]:
+    def update_team(self, current_user: dict[str, Any], object_id, nome: str, tag: str, jogo: str, ids_selecionados: list[str], form_data, logo_path: str | None = None) -> list[str]:
         team = self.team_repo.find_by_id(object_id)
         if not team or not can_access_admin_scope(current_user, team.get("admin_id")):
             return ["Time nao encontrado."]
@@ -411,7 +412,10 @@ class TeamService:
         for jid in ids_atuais - novos_ids:
             self.player_repo.clear_team(ObjectId(jid))
 
-        self.team_repo.update_fields(object_id, {"nome": nome, "tag": tag.upper(), "jogo": jogo, "jogadores": membros})
+        update_fields = {"nome": nome, "tag": tag.upper(), "jogo": jogo, "jogadores": membros}
+        if logo_path:
+            update_fields["logo_path"] = logo_path
+        self.team_repo.update_fields(object_id, update_fields)
         for jid in novos_ids:
             self.player_repo.set_team(ObjectId(jid), object_id)
         return []
@@ -1332,6 +1336,7 @@ class RankingService:
                     "nome": team.get("nome", "-"),
                     "tag": team.get("tag", "-"),
                     "jogo": team.get("jogo", "-"),
+                    "logo_path": team.get("logo_path", ""),
                     "partidas": partidas,
                     "vitorias": vitorias,
                     "derrotas": derrotas,

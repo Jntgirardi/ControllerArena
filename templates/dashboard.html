@@ -106,9 +106,16 @@
           <div class="card-body">
             {% if time %}
             <div class="d-flex justify-content-between align-items-center gap-3 flex-wrap">
-              <div>
-                <h5 class="fw-bold mb-1">{{ time.nome }}</h5>
-                <div class="text-muted small">{{ time.tag }} • {{ time.jogo }}</div>
+              <div class="d-flex align-items-center gap-3">
+                {% if time.logo_path %}
+                <img class="team-logo" src="{{ url_for('static', filename=time.logo_path) }}" alt="Logo de {{ time.nome }}">
+                {% else %}
+                <span class="team-logo team-logo-placeholder"><i class="bi bi-shield-fill"></i></span>
+                {% endif %}
+                <div>
+                  <h5 class="fw-bold mb-1">{{ time.nome }}</h5>
+                  <div class="text-muted small">{{ time.tag }} • {{ time.jogo }}</div>
+                </div>
               </div>
               <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#meuTimeModal">
                 Ver composicao

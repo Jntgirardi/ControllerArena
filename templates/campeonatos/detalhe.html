@@ -52,6 +52,11 @@
       <div class="card-body">
         {% for t in times_inscritos %}
         <div class="d-flex align-items-center gap-2 p-2 mb-2 rounded" style="background:var(--bg-card-hd);border:1px solid var(--border)">
+          {% if t.logo_path %}
+          <img class="team-logo team-logo-sm" src="{{ url_for('static', filename=t.logo_path) }}" alt="Logo de {{ t.nome }}">
+          {% else %}
+          <span class="team-logo team-logo-sm team-logo-placeholder"><i class="bi bi-shield-fill"></i></span>
+          {% endif %}
           <span class="badge {{ 'badge-cs2' if t.jogo == 'CS2' else 'badge-valorant' }}">{{ t.tag }}</span>
           <span class="small fw-bold flex-fill">{{ t.nome }}</span>
           {% if session.role == 'ADMIN' and camp.status != 'FINALIZADO' and camp.status != 'ARQUIVADO' %}

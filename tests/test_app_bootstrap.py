@@ -1,8 +1,10 @@
 from datetime import UTC, datetime, timedelta
+from io import BytesIO
 
 import mongomock
 import fakeredis
 from bson import ObjectId
+from PIL import Image
 
 import app.infrastructure.cache.redis_cache as cache_module
 import app.infrastructure.db.mongo as mongo_module
@@ -16,6 +18,14 @@ def build_test_app(monkeypatch):
     from app import create_app
 
     return create_app()
+
+
+def build_test_logo(format_name="PNG", size=(640, 360)):
+    image = Image.new("RGB", size, color=(33, 99, 180))
+    buffer = BytesIO()
+    image.save(buffer, format=format_name)
+    buffer.seek(0)
+    return buffer
 
 
 def test_public_championship_flow_uses_mock_data(monkeypatch):
@@ -74,6 +84,117 @@ def test_app_boots_with_mongo_and_redis(monkeypatch):
 
     cached_ranking = flask_app.extensions["cache"].get("fps_arena:ranking:global:todos")
     assert cached_ranking is not None
+
+
+def test_admin_can_upload_resized_team_logo(monkeypatch, tmp_path):
+    flask_app = build_test_app(monkeypatch)
+    flask_app.static_folder = str(tmp_path)
+    mongo = flask_app.extensions["mongo"]
+    password_hasher = PasswordHasher()
+
+    admin_id = mongo.users.insert_one(
+        {
+            "nome": "Organizador Logo",
+            "login": "admin.logo",
+            "role": "ADMIN",
+            "senha_hash": password_hasher.hash("admin123"),
+            "ativo": True,
+            "must_change_password": False,
+            "criado_em": datetime.now(UTC),
+        }
+    ).inserted_id
+    player_id = mongo.players.insert_one(
+        {
+            "nick": "LogoPlayer",
+            "nome": "Logo Player",
+            "login": "logo.player",
+            "jogo_principal": "CS2",
+            "admin_id": admin_id,
+            "estatisticas": {"partidas_jogadas": 0, "vitorias": 0, "derrotas": 0, "kd_ratio": 0.0},
+            "criado_em": datetime.now(UTC),
+        }
+    ).inserted_id
+
+    client = flask_app.test_client()
+    client.post("/login", data={"modo": "login", "identificador": "admin.logo", "senha": "admin123"})
+
+    response = client.post(
+        "/times/novo",
+        data={
+            "nome": "Logo Team",
+            "tag": "LGT",
+            "jogo": "CS2",
+            "jogadores_ids": [str(player_id)],
+            f"funcao_{player_id}": "Capitao",
+            "logo": (build_test_logo("JPEG"), "logo.jpg"),
+        },
+        content_type="multipart/form-data",
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 302
+    team = mongo.teams.find_one({"nome": "Logo Team"})
+    assert team["logo_path"].startswith("uploads/team_logos/")
+
+    logo_file = tmp_path / team["logo_path"]
+    assert logo_file.exists()
+    with Image.open(logo_file) as saved_logo:
+        assert saved_logo.format == "PNG"
+        assert saved_logo.size == (256, 256)
+
+    list_response = client.get("/times")
+    assert b"Logo Team" in list_response.data
+    assert team["logo_path"].encode() in list_response.data
+
+
+def test_team_logo_upload_rejects_files_over_2_mb(monkeypatch, tmp_path):
+    flask_app = build_test_app(monkeypatch)
+    flask_app.static_folder = str(tmp_path)
+    mongo = flask_app.extensions["mongo"]
+    password_hasher = PasswordHasher()
+
+    admin_id = mongo.users.insert_one(
+        {
+            "nome": "Organizador Limite",
+            "login": "admin.limite",
+            "role": "ADMIN",
+            "senha_hash": password_hasher.hash("admin123"),
+            "ativo": True,
+            "must_change_password": False,
+            "criado_em": datetime.now(UTC),
+        }
+    ).inserted_id
+    player_id = mongo.players.insert_one(
+        {
+            "nick": "LimitPlayer",
+            "nome": "Limit Player",
+            "login": "limit.player",
+            "jogo_principal": "CS2",
+            "admin_id": admin_id,
+            "estatisticas": {"partidas_jogadas": 0, "vitorias": 0, "derrotas": 0, "kd_ratio": 0.0},
+            "criado_em": datetime.now(UTC),
+        }
+    ).inserted_id
+
+    client = flask_app.test_client()
+    client.post("/login", data={"modo": "login", "identificador": "admin.limite", "senha": "admin123"})
+
+    response = client.post(
+        "/times/novo",
+        data={
+            "nome": "Heavy Logo Team",
+            "tag": "HLT",
+            "jogo": "CS2",
+            "jogadores_ids": [str(player_id)],
+            f"funcao_{player_id}": "Capitao",
+            "logo": (BytesIO(b"x" * ((2 * 1024 * 1024) + 1)), "logo.png"),
+        },
+        content_type="multipart/form-data",
+    )
+
+    assert response.status_code == 200
+    assert b"A logo deve ter no maximo 2 MB." in response.data
+    assert mongo.teams.find_one({"nome": "Heavy Logo Team"}) is None
 
 
 def test_admin_first_access_accepts_timezone_aware_expiration(monkeypatch):

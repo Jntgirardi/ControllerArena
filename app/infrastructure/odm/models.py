@@ -57,6 +57,7 @@ class TeamDocument(me.Document):
     nome = me.StringField(required=True)
     tag = me.StringField(required=True)
     jogo = me.StringField(required=True)
+    logo_path = me.StringField()
     admin_id = me.ObjectIdField(required=True)
     jogadores = me.EmbeddedDocumentListField(TeamPlayer, default=list)
     criado_em = me.DateTimeField()

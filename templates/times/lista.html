@@ -16,9 +16,16 @@
   <div class="col-12 col-md-6 col-xl-4">
     <div class="card h-100">
       <div class="card-header d-flex justify-content-between align-items-center">
-        <div>
-          <strong>{{ t.nome }}</strong>
-          <span class="badge bg-secondary ms-1">{{ t.tag }}</span>
+        <div class="d-flex align-items-center gap-2">
+          {% if t.logo_path %}
+          <img class="team-logo team-logo-sm" src="{{ url_for('static', filename=t.logo_path) }}" alt="Logo de {{ t.nome }}">
+          {% else %}
+          <span class="team-logo team-logo-sm team-logo-placeholder"><i class="bi bi-shield-fill"></i></span>
+          {% endif %}
+          <div>
+            <strong>{{ t.nome }}</strong>
+            <span class="badge bg-secondary ms-1">{{ t.tag }}</span>
+          </div>
         </div>
         <span class="badge {{ 'badge-cs2' if t.jogo == 'CS2' else 'badge-valorant' }}">{{ t.jogo }}</span>
       </div>

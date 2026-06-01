@@ -34,8 +34,17 @@
       <div class="card-header">Time atual</div>
       <div class="card-body">
         {% if time %}
-        <div class="fw-bold">{{ time.nome }}</div>
-        <div class="text-muted">{{ time.tag }} - {{ time.jogo }}</div>
+        <div class="d-flex align-items-center gap-2">
+          {% if time.logo_path %}
+          <img class="team-logo team-logo-sm" src="{{ url_for('static', filename=time.logo_path) }}" alt="Logo de {{ time.nome }}">
+          {% else %}
+          <span class="team-logo team-logo-sm team-logo-placeholder"><i class="bi bi-shield-fill"></i></span>
+          {% endif %}
+          <div>
+            <div class="fw-bold">{{ time.nome }}</div>
+            <div class="text-muted">{{ time.tag }} - {{ time.jogo }}</div>
+          </div>
+        </div>
         {% else %}
         <div class="text-muted">Jogador sem time no momento.</div>
         {% endif %}

@@ -25,6 +25,7 @@ class Time:
     nome: str
     tag: str
     jogo: str
+    logo_path: str = ""
     jogadores: list[dict[str, Any]] = field(default_factory=list)
 
 
