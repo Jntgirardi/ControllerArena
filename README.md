@@ -235,11 +235,6 @@ O **FPS Arena** preocupa-se ativamente com a usabilidade profissional, estrutura
 3. **Painel de Arbitragem (Súmulas em Tempo Real):** Interface técnica exclusiva do Árbitro onde ele visualiza a chave, gerencia a presença e insere rounds um a um selecionando o time vencedor e a condição (Ex: Detonação do Spike, Abates, Defuse da C4). O sistema desenha em tempo real o histórico do placar na tela.
 4. **Ranking Competitivo (Leaderboard):** Tabela esportiva de alto padrão contendo filtros por modalidade e exibindo dados compilados de vitórias, derrotas, e K/D ratio carregados de forma extremamente rápida.
 
-### 5.2 O Mockup Premium de Alta Fidelidade (Interface Real)
-Abaixo está o mockup real em alta definição da interface principal do sistema em modo escuro premium:
-
-![Mockup do Dashboard Premium do FPS Arena](/C:/Users/jonat/.gemini/antigravity/brain/1c313484-4a12-4d8e-be1e-b21a34bee79f/fps_arena_dashboard_1780317668788.png)
-
 ---
 
 ## 🛡️ 6. Segurança e Blindagem dos Dados (Etapa 2)
@@ -293,7 +288,7 @@ Certifique-se de ter instalado em sua máquina local:
 
 1. **Clonar o Repositório:**
    ```bash
-   git clone <URL_DO_SEU_REPOSITORIO>
+   git clone https://github.com/Jntgirardi/FPS-Arena.git
    cd fps_arena
    ```
 
