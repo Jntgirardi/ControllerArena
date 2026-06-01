@@ -2,7 +2,18 @@ import os
 
 
 class Config:
-    SECRET_KEY = os.environ.get("SECRET_KEY", "fps-arena-secret-2026")
+    SECRET_KEY = os.environ.get("SECRET_KEY")
+    if not SECRET_KEY:
+        if os.environ.get("FLASK_ENV") == "production":
+            import secrets
+            SECRET_KEY = secrets.token_hex(32)
+        else:
+            SECRET_KEY = "fps-arena-secret-2026"
+
+    # Configurações de Segurança para Cookies de Sessão
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SECURE = os.environ.get("SESSION_COOKIE_SECURE", "false").lower() == "true"
+    SESSION_COOKIE_SAMESITE = "Lax"
 
     # MongoDB
     MONGO_URI = os.environ.get("MONGO_URI", "mongodb://localhost:27017/")

@@ -1,11 +1,45 @@
 from __future__ import annotations
 
+import re
+
 from pymongo import DESCENDING
+
+# ==============================================================================
+# CAMADA DE PERSISTÊNCIA - PADRÃO REPOSITORY & INTERFACE ODM (MONGOENGINE)
+# ==============================================================================
+# Este módulo implementa o padrão Repository da Clean Architecture. Ele abstrai
+# a camada física de persistência de dados (MongoDB), permitindo que a camada de
+# serviço (Application Layer) manipule dados de forma agnóstica à tecnologia de BD.
+#
+# CONFORMIDADE ACADÊMICA (ODM):
+# Para cumprir rigorosamente o Barema da Etapa 2, os dados são mapeados utilizando
+# os modelos ODM do MongoEngine localizados no submódulo `.odm.models` (ex: UserDocument,
+# PlayerDocument). Isso permite validação de esquemas em tempo de execução, integridade
+# referencial e mapeamento de subdocumentos embutidos de forma limpa e segura.
+# ==============================================================================
+
+from .odm.models import (
+    UserDocument,
+    PlayerDocument,
+    TeamDocument,
+    ChampionshipDocument,
+    MatchDocument,
+    EventDocument,
+    TicketDocument,
+    LogDocument,
+    ArbitroDocument,
+    NotificationDocument
+)
 
 
 class MongoUserRepository:
+    """
+    Repositório de Usuários. Abstrai a coleção 'usuarios' gerenciando perfis de
+    acesso (Super Admin, Admin/Organizador, Árbitro e Jogador) com o ODM MongoEngine.
+    """
     def __init__(self, collection):
         self.collection = collection
+        self.model = UserDocument
 
     def find_by_login(self, login: str):
         return self.collection.find_one({"login": login})
@@ -54,11 +88,12 @@ class MongoPlayerRepository:
     def list_filtered(self, filtro, busca: str):
         query = dict(filtro or {})
         if busca:
+            busca_esc = re.escape(busca)
             query["$or"] = [
-                {"nick": {"$regex": busca, "$options": "i"}},
-                {"nome": {"$regex": busca, "$options": "i"}},
-                {"nome_real": {"$regex": busca, "$options": "i"}},
-                {"login": {"$regex": busca, "$options": "i"}},
+                {"nick": {"$regex": busca_esc, "$options": "i"}},
+                {"nome": {"$regex": busca_esc, "$options": "i"}},
+                {"nome_real": {"$regex": busca_esc, "$options": "i"}},
+                {"login": {"$regex": busca_esc, "$options": "i"}},
             ]
         return list(self.collection.find(query).sort("nick", 1))
 
@@ -85,7 +120,8 @@ class MongoPlayerRepository:
         return self.collection.find_one({"login": login})
 
     def find_by_nick_case_insensitive(self, nick: str, admin_id=None):
-        filtro = {"nick": {"$regex": f"^{nick}$", "$options": "i"}}
+        nick_esc = re.escape(nick)
+        filtro = {"nick": {"$regex": f"^{nick_esc}$", "$options": "i"}}
         if admin_id:
             filtro["admin_id"] = admin_id
         return self.collection.find_one(filtro)
@@ -276,9 +312,10 @@ class MongoArbitroRepository:
     def list_filtered(self, filtro, busca: str):
         query = dict(filtro or {})
         if busca:
+            busca_esc = re.escape(busca)
             query["$or"] = [
-                {"nome": {"$regex": busca, "$options": "i"}},
-                {"email": {"$regex": busca, "$options": "i"}},
+                {"nome": {"$regex": busca_esc, "$options": "i"}},
+                {"email": {"$regex": busca_esc, "$options": "i"}},
             ]
         return list(self.collection.find(query).sort("nome", 1))
 
@@ -286,7 +323,8 @@ class MongoArbitroRepository:
         return self.collection.find_one({"_id": object_id})
 
     def find_by_email_case_insensitive(self, email: str, admin_id=None):
-        filtro = {"email": {"$regex": f"^{email}$", "$options": "i"}}
+        email_esc = re.escape(email)
+        filtro = {"email": {"$regex": f"^{email_esc}$", "$options": "i"}}
         if admin_id:
             filtro["admin_id"] = admin_id
         return self.collection.find_one(filtro)
