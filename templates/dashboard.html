@@ -67,7 +67,7 @@
           {% else %}
           <li class="list-group-item text-center text-muted py-5" style="background:transparent;">
             <i class="bi bi-bell-slash fs-3 d-block mb-2 text-muted"></i>
-            <span class="small">Nenhuma partida do seu jogo com inicio em ate 1 hora.</span>
+            <span class="small">Nenhuma partida agendada para o seu jogo no momento.</span>
           </li>
           {% endfor %}
         </ul>
@@ -265,15 +265,15 @@
           {% for n in stats.notificacoes %}
           <li class="list-group-item p-3 border-bottom border-secondary-subtle" style="background:transparent;" id="notif_{{ n._id }}">
             <div class="d-flex justify-content-between align-items-start gap-2 mb-1">
-              <span class="small fw-semibold text-wrap">{{ n.mensagem }}</span>
+              <span class="small fw-semibold text-wrap text-white">{{ n.mensagem }}</span>
               <button onclick="marcarComoLida('{{ n._id }}')" class="btn btn-xs btn-outline-secondary border-0 p-0 text-muted" style="font-size:0.75rem;"><i class="bi bi-x-lg"></i></button>
             </div>
-            <div class="small text-muted" style="font-size:0.68rem;">{{ n.criado_em.strftime('%d/%m %H:%M') if n.get('criado_em') else 'Agora' }}</div>
+            <div class="small text-white-50" style="font-size:0.68rem;">{{ n.criado_em.strftime('%d/%m %H:%M') if n.get('criado_em') else 'Agora' }}</div>
           </li>
           {% else %}
           <li class="list-group-item text-center text-muted py-5" style="background:transparent;">
             <i class="bi bi-bell-slash fs-3 d-block mb-2 text-muted"></i>
-            <span class="small">Nenhuma notificação pendente.</span>
+            <span class="small">Nenhuma notificação pendente no momento.</span>
           </li>
           {% endfor %}
         </ul>
@@ -436,7 +436,7 @@ function renderNotificationList(listId, notifications, emptyMessage, linkLabel) 
     list.innerHTML = `
       <li class="list-group-item text-center text-muted py-5" style="background:transparent;">
         <i class="bi bi-bell-slash fs-3 d-block mb-2 text-muted"></i>
-        <span class="small">${escapeHtml(emptyMessage)}</span>
+        <span class="small text-white">${escapeHtml(emptyMessage)}</span>
       </li>
     `;
     return;
@@ -448,9 +448,9 @@ function renderNotificationList(listId, notifications, emptyMessage, linkLabel) 
         ${n.jogo ? `<span class="badge ${n.jogo === 'CS2' ? 'badge-cs2' : 'badge-valorant'}">${escapeHtml(n.jogo)}</span>` : '<span></span>'}
         <button onclick="marcarComoLida('${escapeHtml(n.id)}')" class="btn btn-xs btn-outline-secondary border-0 p-0 text-muted" style="font-size:0.75rem;"><i class="bi bi-x-lg"></i></button>
       </div>
-      <div class="small fw-semibold text-wrap mb-2">${escapeHtml(n.mensagem)}</div>
+      <div class="small fw-semibold text-wrap mb-2 text-white">${escapeHtml(n.mensagem)}</div>
       <div class="d-flex justify-content-between align-items-center gap-2">
-        <div class="small text-muted" style="font-size:0.68rem;">${escapeHtml(n.criado_em || 'Agora')}</div>
+        <div class="small text-white-50" style="font-size:0.68rem;">${escapeHtml(n.criado_em || 'Agora')}</div>
         ${n.link ? `<a href="${escapeHtml(n.link)}" class="btn btn-sm btn-outline-primary py-1 px-2">${escapeHtml(linkLabel)}</a>` : ''}
       </div>
     </li>
@@ -477,7 +477,7 @@ async function refreshNotifications() {
       renderNotificationList(
         'player-notifications-list',
         data.notifications || [],
-        'Nenhuma partida do seu jogo com inicio em ate 1 hora.',
+        'Nenhuma partida agendada para o seu jogo no momento.',
         'Ver partida'
       );
     }
@@ -485,7 +485,7 @@ async function refreshNotifications() {
       renderNotificationList(
         'admin-notifications-list',
         data.notifications || [],
-        'Nenhum jogo agendado para comecar em ate 1 hora.',
+        'Nenhum jogo agendado no momento.',
         'Abrir'
       );
     }
@@ -493,7 +493,7 @@ async function refreshNotifications() {
       renderNotificationList(
         'referee-notifications-list',
         data.notifications || [],
-        'Nenhuma notificacao pendente.',
+        'Nenhuma notificacao pendente no momento.',
         'Abrir'
       );
     }

@@ -36,6 +36,10 @@ def utc_now_naive() -> datetime:
     return datetime.now(UTC).replace(tzinfo=None)
 
 
+def local_now_naive() -> datetime:
+    return datetime.now().replace(tzinfo=None)
+
+
 def normalize_utc_naive(value: datetime) -> datetime:
     if value.tzinfo is None:
         return value
@@ -1967,10 +1971,30 @@ class NotificationService:
             championship_cache[championship_id] = self.championship_repo.find_by_id(championship_id) or {}
         return championship_cache[championship_id].get("jogo", "")
 
-    def _build_match_alert_message(self, match: dict[str, Any], game: str) -> str:
+    def _match_team_ids(self, match: dict[str, Any]) -> set[ObjectId]:
+        team_ids = set()
+        time_a = (match.get("time_a") or {}).get("time_id")
+        time_b = (match.get("time_b") or {}).get("time_id")
+        if time_a:
+            team_ids.add(time_a)
+        if time_b:
+            team_ids.add(time_b)
+        return team_ids
+
+    def _build_match_alert_message(self, match: dict[str, Any], game: str, team_name: str | None = None) -> str:
         inicio = match.get("data_partida")
         horario = inicio.strftime("%H:%M") if inicio else "--:--"
-        return f"[{game}] A partida {match['time_a']['nome']} x {match['time_b']['nome']} comeca em ate 1 hora, as {horario}."
+        if team_name:
+            opponent = match["time_b"]["nome"] if team_name == match["time_a"]["nome"] else match["time_a"]["nome"]
+            return f"[{game}] O seu time {team_name} enfrenta {opponent} as {horario}."
+        return f"[{game}] A partida {match['time_a']['nome']} x {match['time_b']['nome']} comeca as {horario}."
+
+    def _match_starts_within_one_hour(self, match: dict[str, Any]) -> bool:
+        start = match.get("data_partida")
+        if not start:
+            return False
+        now_candidates = (local_now_naive(), utc_now_naive())
+        return any(now <= start <= (now + timedelta(hours=1)) for now in now_candidates)
 
     def ensure_upcoming_match_notifications(self, current_user: dict[str, Any] | None) -> None:
         if not current_user:
@@ -1980,17 +2004,12 @@ class NotificationService:
         if role not in (ROLE_ADMIN, ROLE_PLAYER):
             return
 
-        now = utc_now_naive()
-        window_end = now + timedelta(hours=1)
-        match_filter = {
-            "status": "agendada",
-            "data_partida": {"$gte": now, "$lte": window_end},
-        }
+        match_filter = {"status": "agendada"}
         if role == ROLE_ADMIN:
             admin_id = get_scope_admin_id(current_user)
             if admin_id:
                 match_filter["admin_id"] = admin_id
-            users_to_notify = {current_user["_id"]: ""}
+            users_to_notify = [{"user_id": current_user["_id"], "team_id": None}]
         else:
             user = self.user_repo.find_by_id(current_user["_id"])
             if not user or not user.get("player_id"):
@@ -1998,10 +2017,13 @@ class NotificationService:
             player = self.player_repo.find_by_id(user["player_id"])
             if not player:
                 return
+            team = self.team_repo.find_by_player_id(player["_id"])
+            if not team:
+                return
             admin_id = user.get("admin_id")
             if admin_id:
                 match_filter["admin_id"] = admin_id
-            users_to_notify = {current_user["_id"]: player.get("jogo_principal", "")}
+            users_to_notify = [{"user_id": current_user["_id"], "team_id": team["_id"]}]
 
         championship_cache: dict[ObjectId, dict[str, Any]] = {}
         matches = self.match_repo.list_by_query(match_filter, sort=[("data_partida", 1)])
@@ -2009,23 +2031,51 @@ class NotificationService:
             match_id = match.get("_id")
             if not match_id:
                 continue
+            if not self._match_starts_within_one_hour(match):
+                continue
             game = self._match_game(match, championship_cache)
-            for user_id, allowed_game in users_to_notify.items():
-                if allowed_game and game != allowed_game:
+            match_team_ids = self._match_team_ids(match)
+            for target in users_to_notify:
+                user_id = target["user_id"]
+                team_id = target["team_id"]
+                if team_id and team_id not in match_team_ids:
                     continue
-                if self._notification_exists(user_id, match_id):
+                team_name = None
+                if team_id:
+                    team_name = match["time_a"]["nome"] if match["time_a"]["time_id"] == team_id else match["time_b"]["nome"]
+                message = self._build_match_alert_message(match, game or "Jogo", team_name=team_name)
+                existing = self.notification_repo.collection.find_one(
+                    {
+                        "user_id": user_id,
+                        "tipo": self.UPCOMING_ALERT_TYPE,
+                        "partida_id": match_id,
+                    }
+                )
+                if existing:
+                    if existing.get("mensagem") != message or existing.get("jogo") != game:
+                        self.notification_repo.collection.update_one(
+                            {"_id": existing["_id"]},
+                            {
+                                "$set": {
+                                    "mensagem": message,
+                                    "jogo": game,
+                                    "link": f"/campeonatos/{match['campeonato_id']}",
+                                    "criado_em": local_now_naive(),
+                                }
+                            },
+                        )
                     continue
                 self.notification_repo.insert(
                     {
                         "user_id": user_id,
-                        "mensagem": self._build_match_alert_message(match, game or "Jogo"),
+                        "mensagem": message,
                         "jogo": game,
                         "tipo": self.UPCOMING_ALERT_TYPE,
                         "partida_id": match_id,
                         "campeonato_id": match.get("campeonato_id"),
                         "lida": False,
                         "link": f"/campeonatos/{match['campeonato_id']}",
-                        "criado_em": now,
+                        "criado_em": local_now_naive(),
                     }
                 )
 

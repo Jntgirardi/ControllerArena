@@ -1571,7 +1571,7 @@ def test_automatic_matchup_generation_mata_mata_and_grupos(monkeypatch):
     assert len(mata_matches) == 2
     assert mata_matches[0]["fase"] == "Semifinal"
     assert mata_matches[1]["fase"] == "Semifinal"
-    
+
     # Check if first-round pairs are: (t1 vs t2) and (t3 vs t4)
     assert mata_matches[0]["time_a"]["time_id"] == t1_id
     assert mata_matches[0]["time_b"]["time_id"] == t2_id
@@ -1589,8 +1589,8 @@ def test_automatic_matchup_generation_mata_mata_and_grupos(monkeypatch):
 
     # Verify Grupos generated matches
     grupos_matches = list(mongo.matches.find({"campeonato_id": camp_grupos_id}))
-    assert len(grupos_matches) == 2 # 2 matches total: 1 in Grupo A, 1 in Grupo B
-    
+    assert len(grupos_matches) == 2  # 2 matches total: 1 in Grupo A, 1 in Grupo B
+
     # Verify group phases are correct
     phases = {m["fase"] for m in grupos_matches}
     assert "Grupo A" in phases
@@ -1601,4 +1601,108 @@ def test_automatic_matchup_generation_mata_mata_and_grupos(monkeypatch):
     assert camp_grupos["status"] == "EM_ANDAMENTO"
 
 
+def test_upcoming_match_notifications_reach_admin_scope(monkeypatch):
+    flask_app = build_test_app(monkeypatch)
+    mongo = flask_app.extensions["mongo"]
+    services = flask_app.extensions["services"]
+
+    admin_id = ObjectId()
+    current_user = {"role": "ADMIN", "_id": admin_id}
+    now = datetime.now().replace(tzinfo=None)
+    time_a_id = mongo.teams.insert_one({"nome": "Team A", "tag": "A", "jogo": "CS2", "admin_id": admin_id, "jogadores": []}).inserted_id
+    time_b_id = mongo.teams.insert_one({"nome": "Team B", "tag": "B", "jogo": "CS2", "admin_id": admin_id, "jogadores": []}).inserted_id
+    camp_id = mongo.championships.insert_one(
+        {
+            "nome": "Arena Admin",
+            "jogo": "CS2",
+            "status": "EM_ANDAMENTO",
+            "admin_id": admin_id,
+            "datas": {"inicio": now, "fim": now + timedelta(days=1)},
+        }
+    ).inserted_id
+    mongo.matches.insert_one(
+        {
+            "admin_id": admin_id,
+            "campeonato_id": camp_id,
+            "fase": "Final",
+            "time_a": {"time_id": time_a_id, "nome": "Team A", "placar": 0},
+            "time_b": {"time_id": time_b_id, "nome": "Team B", "placar": 0},
+            "mapa": "Mirage",
+            "status": "agendada",
+            "data_partida": now + timedelta(minutes=30),
+            "rounds": [],
+        }
+    )
+
+    services["notifications"].ensure_upcoming_match_notifications(current_user)
+
+    notifications = list(mongo.notifications.find({"user_id": admin_id}))
+    assert len(notifications) == 1
+    assert notifications[0]["jogo"] == "CS2"
+    assert "Team A x Team B" in notifications[0]["mensagem"]
+    assert "as " in notifications[0]["mensagem"]
+
+
+def test_upcoming_match_notifications_follow_player_team(monkeypatch):
+    flask_app = build_test_app(monkeypatch)
+    mongo = flask_app.extensions["mongo"]
+    services = flask_app.extensions["services"]
+
+    admin_id = ObjectId()
+    player_id = ObjectId()
+    team_a_id = mongo.teams.insert_one(
+        {
+            "nome": "Team Alpha",
+            "tag": "ALP",
+            "jogo": "CS2",
+            "admin_id": admin_id,
+            "jogadores": [{"jogador_id": player_id, "nick": "PlayerOne", "funcao": "Capitao"}],
+        }
+    ).inserted_id
+    team_b_id = mongo.teams.insert_one({"nome": "Team Beta", "tag": "BET", "jogo": "CS2", "admin_id": admin_id, "jogadores": []}).inserted_id
+    mongo.players.insert_one({"_id": player_id, "nick": "PlayerOne", "jogo_principal": "CS2", "admin_id": admin_id})
+    mongo.users.insert_one(
+        {
+            "_id": ObjectId(),
+            "nome": "Player One",
+            "login": "player.one",
+            "role": "PLAYER",
+            "player_id": player_id,
+            "admin_id": admin_id,
+            "senha_hash": PasswordHasher().hash("player123"),
+            "ativo": True,
+            "must_change_password": False,
+            "criado_em": datetime.now(UTC),
+        }
+    )
+    camp_id = mongo.championships.insert_one(
+        {
+            "nome": "Arena Player",
+            "jogo": "CS2",
+            "status": "EM_ANDAMENTO",
+            "admin_id": admin_id,
+            "datas": {"inicio": datetime.now(UTC), "fim": datetime.now(UTC) + timedelta(days=1)},
+        }
+    ).inserted_id
+    mongo.matches.insert_one(
+        {
+            "admin_id": admin_id,
+            "campeonato_id": camp_id,
+            "fase": "Semifinal",
+            "time_a": {"time_id": team_a_id, "nome": "Team Alpha", "placar": 0},
+            "time_b": {"time_id": team_b_id, "nome": "Team Beta", "placar": 0},
+            "mapa": "Inferno",
+            "status": "agendada",
+            "data_partida": datetime.now().replace(tzinfo=None) + timedelta(minutes=45),
+            "rounds": [],
+        }
+    )
+
+    current_user = {"role": "PLAYER", "_id": mongo.users.find_one({"login": "player.one"})["_id"], "player_id": player_id, "admin_id": admin_id}
+    services["notifications"].ensure_upcoming_match_notifications(current_user)
+
+    notifications = list(mongo.notifications.find({"user_id": current_user["_id"]}).sort("criado_em", -1))
+    assert len(notifications) == 1
+    assert "Team Alpha" in notifications[0]["mensagem"]
+    assert "Team Beta" in notifications[0]["mensagem"]
 
