@@ -7,7 +7,6 @@ from .infrastructure.db.mongo import MongoDatabase
 from .infrastructure.db.migrations import migrate_legacy_data
 from .infrastructure.repositories import (
     MongoChampionshipRepository,
-    MongoEventRepository,
     MongoLogRepository,
     MongoMatchRepository,
     MongoPlayerRepository,
@@ -41,7 +40,6 @@ def create_app():
         "teams": MongoTeamRepository(mongo.teams),
         "championships": MongoChampionshipRepository(mongo.championships),
         "matches": MongoMatchRepository(mongo.matches),
-        "events": MongoEventRepository(mongo.events),
         "logs": MongoLogRepository(mongo.logs),
         "arbitros": MongoArbitroRepository(mongo.arbitros),
         "notifications": MongoNotificationRepository(mongo.notifications),
