@@ -17,7 +17,7 @@ def utc_now():
     return datetime.now(UTC)
 
 # Clean all collections
-for col in ["usuarios", "jogadores", "times", "campeonatos", "partidas", "eventos", "logs", "notificacoes"]:
+for col in ["usuarios", "jogadores", "times", "campeonatos", "partidas", "logs", "notificacoes"]:
     db[col].drop()
 
 print("Banco limpo.")
@@ -169,29 +169,6 @@ camp_val = db.campeonatos.insert_one(
         "times_inscritos": val_team_ids,
         "criado_por": admin_id,
         "criado_em": hoje - timedelta(days=1),
-    }
-).inserted_id
-
-# 5. Events
-evento_show = db.eventos.insert_one(
-    {
-        "nome": "Arena Music Clash",
-        "local": "Arena Demo Stage",
-        "data_evento": hoje + timedelta(days=12),
-        "capacidade_total": 500,
-        "admin_id": admin_id,
-        "criado_em": hoje,
-    }
-).inserted_id
-
-evento_festival = db.eventos.insert_one(
-    {
-        "nome": "Valorant Fan Fest",
-        "local": "Expo Center",
-        "data_evento": hoje + timedelta(days=25),
-        "capacidade_total": 800,
-        "admin_id": admin_id,
-        "criado_em": hoje,
     }
 ).inserted_id
 

@@ -24,7 +24,6 @@ from .odm.models import (
     TeamDocument,
     ChampionshipDocument,
     MatchDocument,
-    EventDocument,
     LogDocument,
     ArbitroDocument,
     NotificationDocument
@@ -262,18 +261,6 @@ class MongoMatchRepository:
 
     def delete_by_championship(self, championship_id):
         self.collection.delete_many({"campeonato_id": championship_id})
-
-
-class MongoEventRepository:
-    def __init__(self, collection):
-        self.collection = collection
-
-    def list_by_query(self, filtro=None, sort=None):
-        cursor = self.collection.find(filtro or {})
-        if sort:
-            cursor = cursor.sort(sort)
-        return list(cursor)
-
 
 
 class MongoLogRepository:

@@ -171,23 +171,6 @@ class UserDocument(me.Document):
     password_reset_expires_at = me.DateTimeField()
 
 
-class EventDocument(me.Document):
-    meta = {
-        "collection": "eventos",
-        "indexes": [
-            "admin_id",
-            "data_evento"
-        ]
-    }
-    nome = me.StringField(required=True)
-    local = me.StringField(required=True)
-    data_evento = me.DateTimeField(required=True)
-    capacidade_total = me.IntField(required=True)
-    admin_id = me.ObjectIdField(required=True)
-    criado_em = me.DateTimeField()
-
-
-
 class LogDocument(me.Document):
     meta = {
         "collection": "logs",
