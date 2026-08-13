@@ -28,34 +28,231 @@ def build_test_logo(format_name="PNG", size=(640, 360)):
     return buffer
 
 
-def test_public_championship_flow_uses_mock_data(monkeypatch):
+def test_public_championship_flow_uses_database_data(monkeypatch):
     flask_app = build_test_app(monkeypatch)
     client = flask_app.test_client()
+    mongo = flask_app.extensions["mongo"]
+    password_hasher = PasswordHasher()
+
+    admin_id = mongo.users.insert_one(
+        {
+            "nome": "Organizador Publico",
+            "login": "admin.publico",
+            "role": "ADMIN",
+            "senha_hash": password_hasher.hash("admin123"),
+            "ativo": True,
+            "must_change_password": False,
+            "criado_em": datetime.now(UTC),
+        }
+    ).inserted_id
+
+    team_a_id = mongo.teams.insert_one(
+        {
+            "nome": "Blue Storm",
+            "tag": "BST",
+            "jogo": "CS2",
+            "admin_id": admin_id,
+            "jogadores": [],
+            "criado_em": datetime.now(UTC),
+        }
+    ).inserted_id
+    team_b_id = mongo.teams.insert_one(
+        {
+            "nome": "Red Vipers",
+            "tag": "RVP",
+            "jogo": "CS2",
+            "admin_id": admin_id,
+            "jogadores": [],
+            "criado_em": datetime.now(UTC),
+        }
+    ).inserted_id
+
+    camp_id = mongo.championships.insert_one(
+        {
+            "nome": "FPS Arena Cup CS2",
+            "jogo": "CS2",
+            "formato": "mata-mata",
+            "max_times": 16,
+            "premiacao": {"1_lugar": "R$ 3.000,00"},
+            "datas": {"inicio": datetime.now(UTC) + timedelta(days=1), "fim": datetime.now(UTC) + timedelta(days=10)},
+            "status": "EM_ANDAMENTO",
+            "admin_id": admin_id,
+            "times_inscritos": [team_a_id, team_b_id],
+            "criado_em": datetime.now(UTC),
+        }
+    ).inserted_id
+
+    match_id = mongo.matches.insert_one(
+        {
+            "campeonato_id": camp_id,
+            "admin_id": admin_id,
+            "fase": "Grande Final",
+            "status": "finalizada",
+            "data_partida": datetime.now(UTC),
+            "mapa": "Mirage",
+            "time_a": {"time_id": team_a_id, "nome": "Blue Storm", "placar": 13},
+            "time_b": {"time_id": team_b_id, "nome": "Red Vipers", "placar": 8},
+            "kda_a": [{"nick": "Ares", "kills": 19, "deaths": 12, "assists": 6}],
+            "kda_b": [{"nick": "Kross", "kills": 15, "deaths": 15, "assists": 7}],
+            "criado_em": datetime.now(UTC),
+        }
+    ).inserted_id
 
     home = client.get("/")
     assert home.status_code == 200
-    assert b"FPS Arena Masters" in home.data
+    assert b"FPS Arena Cup CS2" in home.data
     assert b"Area do Competidor" in home.data
-    assert b"/campeonato/1" in home.data
 
-    details = client.get("/campeonato/1")
+    details = client.get(f"/campeonato/{camp_id}")
     assert details.status_code == 200
-    assert b"Partidas Ao Vivo" in details.data
-    assert b"Proximos Jogos" in details.data
     assert b"Resultados" in details.data
-    assert b"/partida/1001" in details.data
     assert b"Times Inscritos" in details.data
     assert b"Blue Storm" in details.data
     assert b"Red Vipers" in details.data
-    assert b"Delta Five" in details.data
 
-    summary = client.get("/partida/1001")
+    summary = client.get(f"/partida/{match_id}")
     assert summary.status_code == 200
     assert b"Abates" in summary.data
     assert b"Mortes" in summary.data
     assert b"Assistencias" in summary.data
     assert b"Blue Storm" in summary.data
     assert b"Red Vipers" in summary.data
+
+
+def test_archived_championship_is_hidden_from_public_home(monkeypatch):
+    flask_app = build_test_app(monkeypatch)
+    client = flask_app.test_client()
+    mongo = flask_app.extensions["mongo"]
+    password_hasher = PasswordHasher()
+
+    admin_id = mongo.users.insert_one(
+        {
+            "nome": "Organizador Arquivado",
+            "login": "admin.arquivado",
+            "role": "ADMIN",
+            "senha_hash": password_hasher.hash("admin123"),
+            "ativo": True,
+            "must_change_password": False,
+            "criado_em": datetime.now(UTC),
+        }
+    ).inserted_id
+
+    mongo.championships.insert_many(
+        [
+            {
+                "nome": "Campeonato Ativo Visivel",
+                "jogo": "CS2",
+                "formato": "mata-mata",
+                "premiacao": {"1_lugar": "R$ 1.000,00"},
+                "status": "INSCRICAO",
+                "admin_id": admin_id,
+                "times_inscritos": [],
+                "criado_em": datetime.now(UTC),
+            },
+            {
+                "nome": "Campeonato Arquivado Oculto",
+                "jogo": "Valorant",
+                "formato": "mata-mata",
+                "premiacao": {"1_lugar": "R$ 1.000,00"},
+                "status": "ARQUIVADO",
+                "admin_id": admin_id,
+                "times_inscritos": [],
+                "criado_em": datetime.now(UTC),
+            },
+        ]
+    )
+
+    home = client.get("/")
+    assert home.status_code == 200
+    assert b"Campeonato Ativo Visivel" in home.data
+    assert b"Campeonato Arquivado Oculto" not in home.data
+
+
+def test_scheduled_match_shows_without_score_and_live_match_visible(monkeypatch):
+    flask_app = build_test_app(monkeypatch)
+    client = flask_app.test_client()
+    mongo = flask_app.extensions["mongo"]
+    password_hasher = PasswordHasher()
+
+    admin_id = mongo.users.insert_one(
+        {
+            "nome": "Organizador Partidas",
+            "login": "admin.partidas",
+            "role": "ADMIN",
+            "senha_hash": password_hasher.hash("admin123"),
+            "ativo": True,
+            "must_change_password": False,
+            "criado_em": datetime.now(UTC),
+        }
+    ).inserted_id
+
+    team_a_id = mongo.teams.insert_one(
+        {
+            "nome": "Team A",
+            "tag": "TMA",
+            "jogo": "CS2",
+            "admin_id": admin_id,
+            "jogadores": [],
+            "criado_em": datetime.now(UTC),
+        }
+    ).inserted_id
+    team_b_id = mongo.teams.insert_one(
+        {
+            "nome": "Team B",
+            "tag": "TMB",
+            "jogo": "CS2",
+            "admin_id": admin_id,
+            "jogadores": [],
+            "criado_em": datetime.now(UTC),
+        }
+    ).inserted_id
+
+    camp_id = mongo.championships.insert_one(
+        {
+            "nome": "Campeonato Partidas Diversas",
+            "jogo": "CS2",
+            "formato": "mata-mata",
+            "premiacao": {"1_lugar": "R$ 2.000,00"},
+            "status": "EM_ANDAMENTO",
+            "admin_id": admin_id,
+            "times_inscritos": [team_a_id, team_b_id],
+            "criado_em": datetime.now(UTC),
+        }
+    ).inserted_id
+
+    mongo.matches.insert_many(
+        [
+            {
+                "campeonato_id": camp_id,
+                "admin_id": admin_id,
+                "fase": "Quartas",
+                "status": "agendada",
+                "data_partida": datetime.now(UTC) + timedelta(days=3),
+                "mapa": "Inferno",
+                "time_a": {"time_id": team_a_id, "nome": "Team A"},
+                "time_b": {"time_id": team_b_id, "nome": "Team B"},
+                "criado_em": datetime.now(UTC),
+            },
+            {
+                "campeonato_id": camp_id,
+                "admin_id": admin_id,
+                "fase": "Semifinal",
+                "status": "em_andamento",
+                "data_partida": datetime.now(UTC),
+                "mapa": "Dust2",
+                "time_a": {"time_id": team_a_id, "nome": "Team A", "placar": 9},
+                "time_b": {"time_id": team_b_id, "nome": "Team B", "placar": 6},
+                "criado_em": datetime.now(UTC),
+            },
+        ]
+    )
+
+    details = client.get(f"/campeonato/{camp_id}")
+    assert details.status_code == 200
+    assert b"Partidas Ao Vivo" in details.data
+    assert b"Proximos Jogos" in details.data
+    assert b"Team A" in details.data
+    assert b"Team B" in details.data
 
 
 def test_app_boots_with_mongo_and_redis(monkeypatch):
