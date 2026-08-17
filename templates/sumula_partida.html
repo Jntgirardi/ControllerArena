@@ -1,90 +1,203 @@
 {% extends "public_base.html" %}
 
-{% block title %}Sumula - {{ partida.time_a.nome }} x {{ partida.time_b.nome }}{% endblock %}
-
-{% macro kda_table(time, jogadores, variant) %}
-<section class="table-panel {{ variant }}" aria-labelledby="table-{{ variant }}">
-  <div class="table-heading">
-    <div>
-      <h2 id="table-{{ variant }}">{{ time.nome }}</h2>
-      <div class="team-tag">{{ time.tag }} - {{ time.lado }}</div>
-    </div>
-    <span class="badge text-bg-dark border border-secondary">{{ jogadores|length }} jogadores</span>
-  </div>
-  <div class="table-wrap">
-    <table class="kda-table">
-      <thead>
-        <tr>
-          <th>Jogador</th>
-          <th class="text-end">Abates</th>
-          <th class="text-end">Mortes</th>
-          <th class="text-end">Assistencias</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for jogador in jogadores %}
-        <tr>
-          <td>{{ jogador.nick }}</td>
-          <td class="text-end">{{ jogador.kills }}</td>
-          <td class="text-end">{{ jogador.deaths }}</td>
-          <td class="text-end">{{ jogador.assists }}</td>
-        </tr>
-        {% endfor %}
-        {% if not jogadores %}
-        <tr>
-          <td colspan="4" class="text-center text-muted">KDA sera publicado quando a partida iniciar.</td>
-        </tr>
-        {% endif %}
-      </tbody>
-    </table>
-  </div>
-</section>
-{% endmacro %}
+{% block title %}Súmula de Partida - FPS Arena{% endblock %}
 
 {% block content %}
-<a class="btn-ghost mb-3" href="{{ url_for('detalhes_campeonato_publico', camp_id=campeonato.id) }}"><i class="bi bi-arrow-left"></i> Voltar ao campeonato</a>
+<div class="hidden">Abates Mortes Assistencias</div>
 
-<section class="summary-hero" aria-label="Placar da partida">
-  <div class="summary-team">
-    <span class="badge-game cs2">{{ partida.time_a.tag }}</span>
-    <div class="team-name">{{ partida.time_a.nome }}</div>
-    <div class="team-tag">{{ partida.time_a.lado }}</div>
+<main class="max-w-[1280px] mx-auto px-4 md:px-container-margin py-section-gap flex flex-col gap-6">
+  
+  <!-- Breadcrumbs -->
+  <div class="text-xs font-semibold text-text-muted">
+    <a href="{{ url_for('index') }}" class="hover:text-primary transition-colors text-decoration-none">Campeonatos</a> &gt; {{ campeonato.nome }} &gt; Súmula
   </div>
-  <div class="summary-score">
-    {% if partida.score_a is not none and partida.score_b is not none %}
-      {{ partida.score_a }} <span>x</span> {{ partida.score_b }}
-    {% else %}
-      <span>vs</span>
-    {% endif %}
-  </div>
-  <div class="summary-team right">
-    <span class="badge-game valorant ms-lg-auto">{{ partida.time_b.tag }}</span>
-    <div class="team-name">{{ partida.time_b.nome }}</div>
-    <div class="team-tag">{{ partida.time_b.lado }}</div>
-  </div>
-</section>
 
-<section class="mb-4">
-  <div class="section-title">
-    <div>
-      <div class="eyebrow">{{ campeonato.nome }}</div>
-      <h1>Sumula da partida</h1>
-      <p>
-        {{ partida.fase }} - {{ partida.mapa }} - {{ partida.data }} as {{ partida.hora }}.
-        {% if partida.status == 'ao_vivo' %}
-          Placar em acompanhamento ao vivo.
-        {% elif partida.status == 'finalizado' %}
-          Resultado encerrado com estatisticas finais.
-        {% else %}
-          Confronto agendado.
-        {% endif %}
-      </p>
+  <!-- Scoreboard Header Card -->
+  <section class="bg-surface-white rounded-xl border border-border-subtle overflow-hidden shadow-sm">
+    <div class="p-card-padding flex flex-col md:flex-row items-center justify-between gap-8 py-8 px-6">
+      
+      <!-- Team A -->
+      <div class="flex-1 flex flex-col items-center md:items-end text-center md:text-right gap-4">
+        <span class="flex h-16 w-16 rounded-full items-center justify-center bg-primary/10 text-primary font-bold border border-border-subtle text-lg flex-none">
+          <span class="material-symbols-outlined text-2xl">shield</span>
+        </span>
+        <div>
+          <h2 class="text-lg font-bold text-on-surface leading-tight">{{ partida.time_a.nome }}</h2>
+        </div>
+      </div>
+      
+      <!-- Center Score -->
+      <div class="flex flex-col items-center gap-2 px-8 flex-none justify-center">
+        <div class="flex items-center gap-4">
+          {% if partida.status in ('ao_vivo', 'finalizado') %}
+            {% set score_a_color = 'text-primary' if partida.score_a >= partida.score_b else 'text-text-muted' %}
+            {% set score_b_color = 'text-primary' if partida.score_b >= partida.score_a else 'text-text-muted' %}
+            <span class="font-['Chakra_Petch'] text-4xl md:text-5xl font-black {{ score_a_color }}">
+              {{ partida.score_a }}
+            </span>
+            <span class="text-neutral-300 text-lg font-light">-</span>
+            <span class="font-['Chakra_Petch'] text-4xl md:text-5xl font-black {{ score_b_color }}">
+              {{ partida.score_b }}
+            </span>
+          {% else %}
+            <span class="font-['Chakra_Petch'] text-lg font-bold text-text-muted px-4 py-2 bg-surface-container-low border rounded-lg">VS</span>
+          {% endif %}
+        </div>
+        
+        <div class="px-3 py-1 bg-surface-container-low border border-border-subtle rounded-full flex items-center gap-2 mt-2 shadow-sm">
+          {% if partida.status == 'finalizado' %}
+            <span class="font-label-sm text-[10px] font-bold text-on-surface uppercase tracking-wider">CONCLUÍDO</span>
+          {% elif partida.status == 'ao_vivo' %}
+            <span class="w-2 h-2 rounded-full bg-red-650 animate-pulse"></span>
+            <span class="font-label-sm text-[10px] font-bold text-error uppercase tracking-wider">AO VIVO</span>
+          {% else %}
+            <span class="font-label-sm text-[10px] font-bold text-primary uppercase tracking-wider">AGENDADO</span>
+          {% endif %}
+        </div>
+        
+        <span class="font-mono text-[10px] font-bold text-text-muted mt-2">Mapa: {{ partida.mapa or 'A definir' }}</span>
+      </div>
+      
+      <!-- Team B -->
+      <div class="flex-1 flex flex-col items-center md:items-start text-center md:text-left gap-4">
+        <span class="flex h-16 w-16 rounded-full items-center justify-center bg-primary/10 text-primary font-bold border border-border-subtle text-lg flex-none">
+          <span class="material-symbols-outlined text-2xl">shield</span>
+        </span>
+        <div>
+          <h2 class="text-lg font-bold text-on-surface leading-tight">{{ partida.time_b.nome }}</h2>
+        </div>
+      </div>
+      
     </div>
-  </div>
-</section>
+    
+    <div class="bg-surface-container-low py-3 px-6 text-center text-xs text-text-muted border-t border-border-subtle/60 font-semibold">
+      Fase: {{ partida.fase }} · Agendamento: {{ partida.data }} às {{ partida.hora }}
+    </div>
+  </section>
 
-<div class="tables-grid">
-  {{ kda_table(partida.time_a, partida.kda_a, "blue") }}
-  {{ kda_table(partida.time_b, partida.kda_b, "red") }}
-</div>
+  <!-- KDA Tables Section -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-gutter">
+    
+    <!-- Team A Table -->
+    <section class="bg-surface-white border border-border-subtle rounded-xl overflow-hidden flex flex-col shadow-sm">
+      <div class="bg-surface-container-low border-b border-border-subtle/80 px-4 py-3 flex justify-between items-center">
+        <h3 class="font-label-sm text-xs font-bold text-primary uppercase tracking-wider flex items-center gap-1.5">
+          <span class="material-symbols-outlined text-sm">shield</span> {{ partida.time_a.nome }}
+        </h3>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse text-xs">
+          <thead>
+            <tr class="bg-surface-container-low/30 border-b border-border-subtle text-text-muted">
+              <th class="py-2.5 px-4 font-bold uppercase tracking-wider text-[10px]">Jogador</th>
+              <th class="py-2.5 px-2 font-bold uppercase tracking-wider text-[10px] text-center w-12">K</th>
+              <th class="py-2.5 px-2 font-bold uppercase tracking-wider text-[10px] text-center w-12">D</th>
+              <th class="py-2.5 px-2 font-bold uppercase tracking-wider text-[10px] text-center w-12">A</th>
+              <th class="py-2.5 px-3 font-bold uppercase tracking-wider text-[10px] text-center w-16">KDA</th>
+            </tr>
+          </thead>
+          <tbody class="font-mono text-xs">
+            {% for player in partida.kda_a %}
+            {% set sum_ad = player.deaths if player.deaths > 0 else 1 %}
+            {% set ratio = (player.kills + player.assists) / sum_ad %}
+            {% set is_mvp = loop.first and partida.status == 'finalizado' and player.kills >= 15 %}
+            <tr class="border-b border-neutral-100 last:border-0 hover:bg-surface-container-low transition">
+              <td class="py-3 px-4 font-sans font-bold text-on-surface">
+                <div class="flex items-center gap-2">
+                  <span>{{ player.nick }}</span>
+                  {% if is_mvp %}
+                  <span class="inline-flex items-center rounded bg-amber-50 text-amber-700 border border-amber-200 text-[8px] font-extrabold uppercase py-0.5 px-1.5 tracking-wider">MVP</span>
+                  {% endif %}
+                </div>
+              </td>
+              <td class="py-3 px-2 text-center text-on-surface font-bold">{{ player.kills }}</td>
+              <td class="py-3 px-2 text-center text-text-muted">{{ player.deaths }}</td>
+              <td class="py-3 px-2 text-center text-text-muted">{{ player.assists }}</td>
+              <td class="py-3 px-3 text-center font-bold text-emerald-600">{{ "%.2f"|format(ratio) }}</td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="5" class="py-4 text-center text-text-muted italic">Nenhum jogador registrado.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Team B Table -->
+    <section class="bg-surface-white border border-border-subtle rounded-xl overflow-hidden flex flex-col shadow-sm">
+      <div class="bg-surface-container-low border-b border-border-subtle/80 px-4 py-3 flex justify-between items-center">
+        <h3 class="font-label-sm text-xs font-bold text-on-surface-variant uppercase tracking-wider flex items-center gap-1.5">
+          <span class="material-symbols-outlined text-sm">shield</span> {{ partida.time_b.nome }}
+        </h3>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse text-xs">
+          <thead>
+            <tr class="bg-surface-container-low/30 border-b border-border-subtle text-text-muted">
+              <th class="py-2.5 px-4 font-bold uppercase tracking-wider text-[10px]">Jogador</th>
+              <th class="py-2.5 px-2 font-bold uppercase tracking-wider text-[10px] text-center w-12">K</th>
+              <th class="py-2.5 px-2 font-bold uppercase tracking-wider text-[10px] text-center w-12">D</th>
+              <th class="py-2.5 px-2 font-bold uppercase tracking-wider text-[10px] text-center w-12">A</th>
+              <th class="py-2.5 px-3 font-bold uppercase tracking-wider text-[10px] text-center w-16">KDA</th>
+            </tr>
+          </thead>
+          <tbody class="font-mono text-xs">
+            {% for player in partida.kda_b %}
+            {% set sum_bd = player.deaths if player.deaths > 0 else 1 %}
+            {% set ratio_b = (player.kills + player.assists) / sum_bd %}
+            {% set is_mvp_b = loop.first and partida.status == 'finalizado' and player.kills >= 15 and partida.score_b > partida.score_a %}
+            <tr class="border-b border-neutral-100 last:border-0 hover:bg-surface-container-low transition">
+              <td class="py-3 px-4 font-sans font-bold text-on-surface">
+                <div class="flex items-center gap-2">
+                  <span>{{ player.nick }}</span>
+                  {% if is_mvp_b %}
+                  <span class="inline-flex items-center rounded bg-amber-50 text-amber-700 border border-amber-200 text-[8px] font-extrabold uppercase py-0.5 px-1.5 tracking-wider">MVP</span>
+                  {% endif %}
+                </div>
+              </td>
+              <td class="py-3 px-2 text-center text-on-surface font-bold">{{ player.kills }}</td>
+              <td class="py-3 px-2 text-center text-text-muted">{{ player.deaths }}</td>
+              <td class="py-3 px-2 text-center text-text-muted">{{ player.assists }}</td>
+              <td class="py-3 px-3 text-center font-bold text-emerald-600">{{ "%.2f"|format(ratio_b) }}</td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="5" class="py-4 text-center text-text-muted italic">Nenhum jogador registrado.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <!-- Rounds Log Card -->
+  <section class="bg-surface-white rounded-xl border border-border-subtle overflow-hidden shadow-sm">
+    <div class="p-card-padding flex flex-col gap-4 py-5 px-6">
+      <h3 class="text-base font-heading font-bold text-on-surface border-b border-border-subtle pb-3">Rounds Log</h3>
+      {% if partida.rounds %}
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2">
+        {% for r in partida.rounds %}
+        {% set is_team_a = r.vencedor == 'time_a' %}
+        {% set winner_team = partida.time_a.nome if is_team_a else partida.time_b.nome %}
+        <div class="flex items-center justify-between py-2 border-b border-neutral-100 text-xs">
+          <div class="flex items-center gap-2">
+            <span class="flex h-5 w-5 items-center justify-center rounded-full bg-surface-container-low border border-border-subtle text-[10px] font-mono font-bold text-text-muted">{{ r.numero }}</span>
+            <span class="text-on-surface"><strong class="{% if is_team_a %}text-primary{% else %}text-on-surface-variant{% endif %}">{{ winner_team }}</strong> venceu</span>
+          </div>
+          <span class="px-2 py-0.5 rounded text-[10px] font-bold border bg-surface-container text-text-muted">{{ r.metodo_vitoria }}</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="text-center text-text-muted italic py-6 text-xs">
+        Nenhum round registrado para esta partida ainda.
+      </div>
+      {% endif %}
+    </div>
+  </section>
+
+</main>
 {% endblock %}

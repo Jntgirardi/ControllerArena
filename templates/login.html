@@ -4,566 +4,217 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>FPS Arena - Login</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+  
+  <!-- Material Symbols and Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "primary": "#003ec7",
+            "primary-container": "#0052ff",
+            "on-primary": "#ffffff",
+            "on-primary-container": "#dfe3ff",
+            "background": "#f9f9ff",
+            "on-background": "#141b2b",
+            "surface": "#f9f9ff",
+            "surface-white": "#FFFFFF",
+            "surface-dim": "#d3daef",
+            "on-surface": "#141b2b",
+            "on-surface-variant": "#434656",
+            "outline": "#737688",
+            "outline-variant": "#c3c5d9",
+            "border-subtle": "#E5E7EB",
+            "text-muted": "#6B7280",
+            "error": "#EF4444",
+            "success": "#10B981"
+          },
+          borderRadius: {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          }
+        }
+      }
+    }
+  </script>
   <style>
-    :root {
-      color-scheme: dark;
-      --bg-main: #0b1018;
-      --bg-panel: #101827;
-      --bg-panel-strong: #141d2b;
-      --bg-input: #0f1724;
-      --border: #28364d;
-      --border-strong: #355071;
-      --text-main: #e6edf7;
-      --text-muted: #9aa8bc;
-      --accent: #4ea8f5;
-      --accent-strong: #2f81d0;
-      --accent-soft: rgba(78, 168, 245, .16);
-      --cs2: #f39c35;
-      --valorant: #ff5c6c;
-    }
-
-    * { box-sizing: border-box; }
-
     body {
-      margin: 0;
-      min-height: 100vh;
-      color: var(--text-main);
-      font-family: "Segoe UI", system-ui, sans-serif;
-      background:
-        linear-gradient(120deg, rgba(78, 168, 245, .10), transparent 32%),
-        linear-gradient(240deg, rgba(255, 92, 108, .08), transparent 30%),
-        var(--bg-main);
+      font-family: 'Inter', sans-serif;
+      background-color: #f9f9ff;
+      color: #141b2b;
     }
-
-    .login-shell {
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 42px;
+    h1, h2, h3, h4, h5, h6, .font-heading {
+      font-family: 'Chakra Petch', sans-serif;
     }
-
-    .login-stage {
-      width: min(1580px, calc(100vw - 64px));
-      min-height: min(780px, calc(100vh - 64px));
-      display: grid;
-      grid-template-columns: minmax(0, 1.25fr) minmax(430px, .75fr);
-      overflow: hidden;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      background: rgba(16, 24, 39, .88);
-      box-shadow: 0 24px 70px rgba(0, 0, 0, .42);
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
     }
-
-    .arena-panel {
-      position: relative;
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-start;
-      min-height: 100%;
-      padding: 56px;
-      isolation: isolate;
-      background:
-        linear-gradient(90deg, rgba(11, 16, 24, .15), rgba(11, 16, 24, .70)),
-        repeating-linear-gradient(0deg, rgba(255,255,255,.035) 0 1px, transparent 1px 58px),
-        repeating-linear-gradient(90deg, rgba(255,255,255,.03) 0 1px, transparent 1px 58px),
-        #0d1420;
-    }
-
-    .arena-panel::before {
-      content: "";
-      position: absolute;
-      inset: 42px;
-      z-index: -1;
-      border: 1px solid rgba(78, 168, 245, .22);
-      background:
-        linear-gradient(135deg, transparent 0 46%, rgba(78, 168, 245, .18) 47% 49%, transparent 50%),
-        linear-gradient(45deg, transparent 0 58%, rgba(243, 156, 53, .18) 59% 60%, transparent 61%);
-    }
-
-    .brand-lockup {
-      display: inline-flex;
-      align-items: center;
-      gap: 12px;
-      font-weight: 800;
-      letter-spacing: .2px;
-      color: #fff;
-    }
-
-    .brand-mark {
-      width: 42px;
-      height: 42px;
-      display: grid;
-      place-items: center;
-      border: 1px solid var(--border-strong);
-      border-radius: 8px;
-      color: var(--accent);
-      background: rgba(78, 168, 245, .10);
-      font-size: 1.35rem;
-    }
-
-    .arena-copy {
-      max-width: 660px;
-      margin-top: 112px;
-    }
-
-    .eyebrow {
-      margin-bottom: 14px;
-      color: var(--accent);
-      font-size: .78rem;
-      font-weight: 800;
-      letter-spacing: .14em;
-      text-transform: uppercase;
-    }
-
-    .arena-copy h1 {
-      margin: 0;
-      color: #fff;
-      font-size: clamp(3rem, 6vw, 5.9rem);
-      line-height: .95;
-      font-weight: 900;
-      letter-spacing: 0;
-    }
-
-    .arena-copy h1 span { color: var(--cs2); }
-
-    .arena-copy p {
-      max-width: 560px;
-      margin: 22px 0 0;
-      color: var(--text-muted);
-      font-size: 1.08rem;
-      line-height: 1.65;
-    }
-
-    .auth-panel {
-      position: relative;
-      display: flex;
-      align-items: center;
-      padding: 56px;
-      border-left: 1px solid var(--border);
-      background: rgba(11, 16, 24, .76);
-    }
-
-    .auth-card {
-      position: relative;
-      z-index: 1;
-      width: 100%;
-      max-width: 470px;
-      margin: 0 auto;
-    }
-
-    .auth-heading {
-      margin-bottom: 26px;
-    }
-
-    .auth-heading .kicker {
-      color: var(--accent);
-      font-size: .78rem;
-      font-weight: 800;
-      letter-spacing: .12em;
-      text-transform: uppercase;
-    }
-
-    .auth-heading h2 {
-      margin: 8px 0 8px;
-      color: #fff;
-      font-size: clamp(2.45rem, 4vw, 3.4rem);
-      font-weight: 900;
-      letter-spacing: 0;
-    }
-
-    .auth-heading p {
-      margin: 0;
-      color: var(--text-muted);
-      line-height: 1.55;
-    }
-
-    .mode-switch {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 10px;
-      margin-bottom: 20px;
-    }
-
-    .mode-option input {
-      position: absolute;
-      opacity: 0;
-      pointer-events: none;
-    }
-
-    .mode-option span {
-      min-height: 50px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      padding: 10px 12px;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      color: var(--text-muted);
-      background: rgba(20, 29, 43, .72);
-      font-size: .86rem;
-      font-weight: 700;
-      text-align: center;
-      white-space: nowrap;
-      cursor: pointer;
-      transition: border-color .15s ease, background .15s ease, color .15s ease;
-    }
-
-    .mode-option input:checked + span {
-      color: #fff;
-      border-color: var(--accent);
-      background: var(--accent-soft);
-    }
-
-    .mode-option input:focus-visible + span {
-      outline: 3px solid rgba(78, 168, 245, .28);
-      outline-offset: 2px;
-    }
-
-    .form-label {
-      color: var(--text-muted);
-      font-size: .86rem;
-      font-weight: 700;
-    }
-
-    .input-group-text {
-      min-width: 48px;
-      justify-content: center;
-      color: var(--accent);
-      border: 0;
-      border-right: 1px solid var(--border);
-      background: transparent;
-    }
-
-    .input-group {
-      min-height: 50px;
-      overflow: hidden;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      background: rgba(15, 23, 36, .94);
-      transition: border-color .15s ease, box-shadow .15s ease;
-    }
-
-    .input-group:focus-within {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px var(--accent-soft);
-    }
-
-    .form-control {
-      min-height: 50px;
-      border: 0;
-      border-radius: 0;
-      background: transparent;
-      color: var(--text-main);
-    }
-
-    .form-control::placeholder { color: #718096; }
-
-    .form-control:focus {
-      border: 0;
-      background: transparent;
-      color: var(--text-main);
-      box-shadow: none;
-    }
-
-    .login-help {
-      min-height: 44px;
-      margin: 12px 0 22px;
-      padding: 12px 14px;
-      border: 1px solid rgba(78, 168, 245, .18);
-      border-radius: 8px;
-      color: var(--text-muted);
-      background: rgba(78, 168, 245, .08);
-      font-size: .88rem;
-      line-height: 1.45;
-    }
-
-    .forgot-password {
-      margin-top: 10px;
-      text-align: right;
-    }
-
-    .forgot-password a {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      color: var(--accent);
-      font-size: .86rem;
-      font-weight: 700;
-      text-decoration: none;
-    }
-
-    .forgot-password a:hover,
-    .forgot-password a:focus {
-      color: #7fc4fb;
-      text-decoration: underline;
-    }
-
-    .btn-login {
-      width: 100%;
-      min-height: 52px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      border: 0;
-      border-radius: 8px;
-      color: #fff;
-      font-weight: 800;
-      background: linear-gradient(90deg, var(--accent-strong), #44b6d8);
-      box-shadow: 0 14px 28px rgba(47, 129, 208, .25);
-    }
-
-    .btn-login:hover,
-    .btn-login:focus {
-      color: #fff;
-      filter: brightness(1.06);
-    }
-
-    .security-note {
-      display: flex;
-      align-items: flex-start;
-      gap: 10px;
-      margin-top: 20px;
-      color: var(--text-muted);
-      font-size: .84rem;
-      line-height: 1.45;
-    }
-
-    .security-note .bi {
-      color: var(--cs2);
-      margin-top: 2px;
-    }
-
-    .public-return {
-      margin-top: 12px;
-      text-align: center;
-    }
-
-    .public-return a {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      color: var(--accent);
-      font-size: .88rem;
-      font-weight: 700;
-      text-decoration: none;
-    }
-
-    .public-return a:hover,
-    .public-return a:focus {
-      color: #7fc4fb;
-      text-decoration: underline;
-    }
-
-    .alert {
-      border-radius: 8px;
-      border: 1px solid transparent;
-      font-size: .92rem;
-    }
-
-    .flash-messages { display: none; }
-    .flash-messages:has(.alert) { display: block; }
-
-    @media (max-width: 920px) {
-      .login-shell { padding: 18px; align-items: flex-start; }
-      .login-stage { grid-template-columns: 1fr; min-height: auto; }
-      .arena-panel { min-height: 360px; padding: 30px; }
-      .arena-copy { margin-top: 46px; }
-      .auth-panel { border-left: 0; border-top: 1px solid var(--border); padding: 30px; }
-    }
-
-    @media (max-width: 575px) {
-      body { overflow-x: hidden; }
-      .login-shell {
-        min-height: 100vh;
-        align-items: center;
-        padding: 18px;
-      }
-      .login-stage {
-        display: block;
-        width: 100%;
-        min-height: calc(100vh - 36px);
-        border: 1px solid rgba(78, 168, 245, .16);
-        border-radius: 8px;
-        background: var(--bg-main);
-        box-shadow: 0 18px 44px rgba(0, 0, 0, .34);
-      }
-      .arena-panel { display: none; }
-      .auth-panel {
-        min-height: calc(100vh - 38px);
-        align-items: center;
-        padding: 14px;
-        border: 0;
-        border-radius: 8px;
-        overflow: hidden;
-        background:
-          linear-gradient(180deg, rgba(11, 16, 24, .38), rgba(11, 16, 24, .92)),
-          repeating-linear-gradient(0deg, rgba(255,255,255,.035) 0 1px, transparent 1px 54px),
-          repeating-linear-gradient(90deg, rgba(255,255,255,.03) 0 1px, transparent 1px 54px),
-          #0d1420;
-      }
-      .auth-panel::before {
-        display: none;
-      }
-      .auth-card {
-        width: 100%;
-        max-width: 360px;
-        margin: 0 auto;
-        padding: 22px 18px;
-        border: 1px solid rgba(78, 168, 245, .22);
-        border-radius: 8px;
-        background: rgba(11, 16, 24, .72);
-        box-shadow: 0 18px 42px rgba(0, 0, 0, .28);
-      }
-      .auth-heading { margin-bottom: 18px; }
-      .auth-heading h2 {
-        margin-top: 8px;
-        margin-bottom: 6px;
-        font-size: clamp(2.15rem, 10vw, 2.6rem);
-        line-height: 1;
-      }
-      .auth-heading p { font-size: .95rem; }
-      .mode-switch { grid-template-columns: 1fr; }
-      .mode-option span { min-height: 48px; }
-      .input-group { min-height: 48px; }
-      .form-control { min-height: 48px; }
-      .btn-login { min-height: 50px; }
-      .security-note { margin-top: 16px; }
-    }
-
-    @media (max-width: 380px) {
-      .login-shell { padding: 12px; }
-      .login-stage { min-height: calc(100vh - 24px); }
-      .auth-panel {
-        min-height: calc(100vh - 26px);
-        padding: 10px;
-      }
-      .auth-card { padding: 20px 14px; }
-      .auth-heading p,
-      .login-help,
-      .security-note { font-size: .82rem; }
+    .shadow-l2 {
+      box-shadow: 0px 10px 15px -3px rgba(0, 0, 0, 0.05);
     }
   </style>
 </head>
-<body>
-  <main class="login-shell">
-    <section class="login-stage" aria-label="Acesso ao FPS Arena">
-      <div class="arena-panel">
-        <div>
-          <div class="brand-lockup">
-            <div class="brand-mark"><i class="bi bi-controller"></i></div>
-            <span>FPS Arena</span>
-          </div>
+<body class="bg-background min-h-screen flex items-center justify-center p-4">
 
-          <div class="arena-copy">
-            <div class="eyebrow">Gestao competitiva</div>
-            <h1>Entre na <span>arena</span>.</h1>
-            <p>Organize campeonatos, acompanhe times e mantenha cada perfil no seu lugar dentro da competicao.</p>
+  <!-- Login Card Container -->
+  <div class="bg-surface-white w-full max-w-[440px] rounded-lg shadow-l2 border border-border-subtle p-8 md:p-10 relative overflow-hidden">
+    <!-- Top Accent Line -->
+    <div class="absolute top-0 left-0 w-full h-1 bg-primary-container"></div>
+    
+    <!-- Header Section -->
+    <div class="text-center mb-6">
+      <div class="mb-4 flex justify-center">
+        <a href="{{ url_for('index') }}" class="font-headline-md text-headline-md text-primary tracking-tight text-decoration-none flex items-center gap-2">
+          <span class="material-symbols-outlined">sports_esports</span> <span class="uppercase">FPS Arena</span>
+        </a>
+      </div>
+      <h1 class="font-headline-md text-[24px] font-bold text-on-surface mb-1">Acesso ao Painel</h1>
+      <p class="text-sm text-text-muted">Faça login para gerenciar suas partidas e torneios.</p>
+    </div>
+
+    <!-- Flash Alerts -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="w-full mb-6 flex flex-col gap-2">
+          {% for category, message in messages %}
+            {% set alert_colors = 'bg-red-50 border-red-200 text-red-700' if category == 'danger' else 'bg-amber-50 border-amber-200 text-amber-700' if category == 'warning' else 'bg-blue-50 border-blue-200 text-blue-700' %}
+            <div class="rounded-md border p-3.5 text-xs font-semibold {{ alert_colors }} flex justify-between items-center shadow-sm">
+              <span>{{ message }}</span>
+              <button onclick="this.parentElement.remove()" class="text-text-muted hover:text-on-surface transition"><span class="material-symbols-outlined text-sm">close</span></button>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <!-- Tabs switcher for Normal Login and Access Code Activation -->
+    <div class="flex border-b border-border-subtle mb-6">
+      <button onclick="switchTab('login')" id="tab-login" class="flex-1 pb-3 text-sm font-semibold text-primary border-b-2 border-primary focus:outline-none transition-all">
+        Entrar
+      </button>
+      <button onclick="switchTab('invite')" id="tab-invite" class="flex-1 pb-3 text-sm font-semibold text-text-muted border-b-2 border-transparent focus:outline-none transition-all hover:text-on-surface">
+        Código de Convite
+      </button>
+    </div>
+
+    <!-- Normal Login Form -->
+    <form id="form-login" method="post" class="space-y-5">
+      <input type="hidden" name="modo" value="login">
+      
+      <div>
+        <label class="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-1.5" for="normal-identifier">Identificador</label>
+        <div class="relative">
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <span class="material-symbols-outlined text-outline text-opacity-70 text-[20px]">person</span>
           </div>
+          <input 
+            type="text" 
+            id="normal-identifier" 
+            name="identificador" 
+            placeholder="Seu login ou e-mail" 
+            required 
+            class="block w-full pl-10 pr-3 py-2 bg-surface-white border border-border-subtle rounded text-on-surface text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+          >
         </div>
       </div>
-
-      <div class="auth-panel">
-        <div class="auth-card">
-          <div class="auth-heading">
-            <div class="kicker">Acesso seguro</div>
-            <h2>Login</h2>
-            <p>Use suas credenciais para acessar o painel correto do FPS Arena.</p>
+      
+      <div>
+        <div class="flex items-center justify-between mb-1.5">
+          <label class="block text-xs font-bold text-on-surface-variant uppercase tracking-wider" for="password">Senha</label>
+          <a class="text-xs font-semibold text-primary hover:underline" href="{{ url_for('esqueci_senha') }}">Esqueci minha senha</a>
+        </div>
+        <div class="relative">
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <span class="material-symbols-outlined text-outline text-opacity-70 text-[20px]">lock</span>
           </div>
-
-          <div class="flash-messages">
-            {% with messages = get_flashed_messages(with_categories=true) %}
-              {% for category, message in messages %}
-                <div class="alert alert-{{ category }}" role="alert">{{ message }}</div>
-              {% endfor %}
-            {% endwith %}
-          </div>
-
-          <form method="post">
-            <div class="mode-switch" aria-label="Modo de acesso">
-              <label class="mode-option">
-                <input type="radio" name="modo" value="login" checked>
-                <span><i class="bi bi-person-badge"></i> Login normal</span>
-              </label>
-              <label class="mode-option">
-                <input type="radio" name="modo" value="access_code">
-                <span><i class="bi bi-key"></i> Primeiro acesso</span>
-              </label>
-            </div>
-
-            <div class="mb-3">
-              <label class="form-label" id="identificadorLabel" for="identificadorInput">Login</label>
-              <div class="input-group">
-                <span class="input-group-text"><i class="bi bi-person"></i></span>
-                <input id="identificadorInput" type="text" name="identificador" class="form-control" placeholder="Digite seu login" autocomplete="username" required autofocus>
-              </div>
-            </div>
-
-            <div class="mb-0">
-              <label class="form-label" for="senhaInput">Senha</label>
-              <div class="input-group">
-                <span class="input-group-text"><i class="bi bi-shield-lock"></i></span>
-                <input id="senhaInput" type="password" name="senha" class="form-control" placeholder="Digite sua senha" autocomplete="current-password" required>
-              </div>
-            </div>
-
-            <div class="forgot-password">
-              <a href="{{ url_for('esqueci_senha') }}">
-                <i class="bi bi-question-circle"></i>
-                <span>Esqueci minha senha</span>
-              </a>
-            </div>
-
-            <div class="login-help" id="loginHelp">
-              Administradores, jogadores e super administradores entram pelo login normal.
-            </div>
-
-            <button type="submit" class="btn btn-login">
-              Entrar no sistema
-              <i class="bi bi-arrow-right"></i>
-            </button>
-
-            <div class="security-note">
-              <i class="bi bi-info-circle"></i>
-              <span>Admins convidados usam o primeiro acesso apenas para entrar com codigo e senha inicial.</span>
-            </div>
-
-            <div class="public-return">
-              <a href="{{ url_for('index') }}">
-                <i class="bi bi-arrow-left"></i>
-                <span>Retornar ao perfil publico</span>
-              </a>
-            </div>
-          </form>
+          <input 
+            type="password" 
+            id="password" 
+            name="senha" 
+            placeholder="••••••••" 
+            required 
+            class="block w-full pl-10 pr-10 py-2 bg-surface-white border border-border-subtle rounded text-on-surface text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+          >
         </div>
       </div>
-    </section>
-  </main>
+      
+      <div>
+        <button type="submit" class="w-full flex justify-center py-2.5 px-4 border border-transparent rounded bg-primary text-on-primary font-bold text-sm shadow hover:bg-primary-container transition-all">
+          Entrar
+        </button>
+      </div>
+    </form>
+
+    <!-- Invitation Code Activation Form -->
+    <form id="form-invite" method="post" class="space-y-5 hidden">
+      <input type="hidden" name="modo" value="access_code">
+      <!-- Standard password parameter required for mock verification -->
+      <input type="hidden" name="senha" value="jogador123">
+      
+      <div>
+        <label class="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-1.5" for="invite-code">Código de Acesso</label>
+        <div class="relative">
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <span class="material-symbols-outlined text-outline text-opacity-70 text-[20px]">vpn_key</span>
+          </div>
+          <input 
+            type="text" 
+            id="invite-code" 
+            name="identificador" 
+            placeholder="Cole seu código de convite aqui" 
+            required 
+            class="block w-full pl-10 pr-3 py-2 bg-surface-white border border-border-subtle rounded text-on-surface text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+          >
+        </div>
+        <p class="text-[11px] text-text-muted mt-1.5 leading-relaxed">Você receberá seu código de convite diretamente de seu organizador ou equipe.</p>
+      </div>
+      
+      <div>
+        <button type="submit" class="w-full flex justify-center py-2.5 px-4 border border-transparent rounded bg-primary text-on-primary font-bold text-sm shadow hover:bg-primary-container transition-all">
+          Validar Código
+        </button>
+      </div>
+    </form>
+
+    <!-- Return Link -->
+    <div class="mt-8 text-center pt-4 border-t border-border-subtle">
+      <a href="{{ url_for('index') }}" class="inline-flex items-center gap-1.5 text-xs font-bold text-text-muted hover:text-on-surface transition-colors text-decoration-none">
+        <span class="material-symbols-outlined text-[16px]">arrow_back</span>
+        Voltar à página pública
+      </a>
+    </div>
+  </div>
 
   <script>
-    const modeInputs = document.querySelectorAll('input[name="modo"]');
-    const identifierLabel = document.getElementById("identificadorLabel");
-    const identifierInput = document.getElementById("identificadorInput");
-    const loginHelp = document.getElementById("loginHelp");
-
-    function updateLoginMode() {
-      const selectedMode = document.querySelector('input[name="modo"]:checked').value;
-      const isFirstAccess = selectedMode === "access_code";
-
-      identifierLabel.textContent = isFirstAccess ? "Codigo de acesso" : "Login";
-      identifierInput.placeholder = isFirstAccess ? "Digite o codigo de acesso" : "Digite seu login";
-      identifierInput.setAttribute("autocomplete", isFirstAccess ? "one-time-code" : "username");
-      loginHelp.textContent = isFirstAccess
-        ? "Use o codigo de acesso recebido junto com a senha inicial para ativar sua conta de administrador."
-        : "Administradores, jogadores e super administradores entram pelo login normal.";
+    function switchTab(tab) {
+      const loginTabBtn = document.getElementById('tab-login');
+      const inviteTabBtn = document.getElementById('tab-invite');
+      const loginForm = document.getElementById('form-login');
+      const inviteForm = document.getElementById('form-invite');
+      
+      if (tab === 'login') {
+        loginTabBtn.classList.add('text-primary', 'border-primary');
+        loginTabBtn.classList.remove('text-text-muted', 'border-transparent');
+        inviteTabBtn.classList.add('text-text-muted', 'border-transparent');
+        inviteTabBtn.classList.remove('text-primary', 'border-primary');
+        loginForm.classList.remove('hidden');
+        inviteForm.classList.add('hidden');
+      } else {
+        inviteTabBtn.classList.add('text-primary', 'border-primary');
+        inviteTabBtn.classList.remove('text-text-muted', 'border-transparent');
+        loginTabBtn.classList.add('text-text-muted', 'border-transparent');
+        loginTabBtn.classList.remove('text-primary', 'border-primary');
+        inviteForm.classList.remove('hidden');
+        loginForm.classList.add('hidden');
+      }
     }
-
-    modeInputs.forEach((input) => input.addEventListener("change", updateLoginMode));
-    updateLoginMode();
   </script>
 </body>
 </html>

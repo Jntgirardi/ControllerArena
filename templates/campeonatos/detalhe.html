@@ -1,305 +1,484 @@
 {% extends "base.html" %}
+
 {% block title %}{{ camp.nome }} - FPS Arena{% endblock %}
+
 {% block content %}
-<div class="d-flex align-items-center gap-2 mb-4 flex-wrap">
-  <a href="{{ url_for('listar_campeonatos') }}" class="btn btn-outline-secondary btn-sm">Voltar</a>
-  <h4 class="mb-0 page-title">{{ camp.nome }}</h4>
-  <span class="badge {{ 'badge-cs2' if camp.jogo == 'CS2' else 'badge-valorant' }}">{{ camp.jogo }}</span>
-  <span class="badge bg-secondary">{{ camp.status }}</span>
-  {% if session.role == 'ADMIN' and camp.status != 'ARQUIVADO' %}
-  <a href="{{ url_for('editar_campeonato', camp_id=camp._id) }}" class="btn btn-sm btn-outline-primary ms-auto">Editar campeonato</a>
-  {% endif %}
-</div>
-
-<div class="row g-3">
-  <div class="col-lg-3">
-    <div class="card mb-3">
-      <div class="card-header">Informacoes</div>
-      <div class="card-body">
-        <div><strong>Formato:</strong> {{ camp.formato }}</div>
-        <div><strong>Times:</strong> {{ times_inscritos|length }} / {{ camp.max_times }}</div>
-        <div><strong>Inicio:</strong> {{ camp.datas.inicio.strftime('%d/%m/%Y') }}</div>
-        <div><strong>Fim:</strong> {{ camp.datas.fim.strftime('%d/%m/%Y') }}</div>
-        <div><strong>Discord:</strong> {{ 'configurado' if camp.get('discord_webhook_url') else 'nao configurado' }}</div>
-      </div>
+<main class="flex-grow w-full max-w-[1280px] mx-auto px-4 md:px-container-margin py-6 flex flex-col gap-6">
+  
+  <!-- Breadcrumbs & Quick actions -->
+  <div class="flex justify-between items-center flex-wrap gap-2 text-xs font-semibold">
+    <div class="text-text-muted">
+      <a href="{{ url_for('listar_campeonatos') }}" class="hover:text-primary transition-colors text-decoration-none">Campeonatos</a> &gt; {{ camp.nome }}
     </div>
+    {% if session.role == 'ADMIN' and camp.status != 'ARQUIVADO' %}
+    <a href="{{ url_for('editar_campeonato', camp_id=camp._id) }}" class="inline-flex items-center gap-1.5 text-primary hover:underline text-decoration-none">
+      <span class="material-symbols-outlined text-sm">edit</span> Editar Campeonato
+    </a>
+    {% endif %}
+  </div>
 
-    {% if session.role == 'ADMIN' %}
-    <div class="card mb-2">
-      <div class="card-header">Alterar status</div>
-      <div class="card-body">
-        <form method="post" action="{{ url_for('atualizar_status_campeonato', camp_id=camp._id) }}">
-          <select name="status" class="form-select form-select-sm mb-2">
-            <option value="INSCRICAO" {% if camp.status == 'INSCRICAO' %}selected{% endif %}>Inscricao</option>
+  <!-- Tournament Banner -->
+  <header class="relative w-full h-[200px] md:h-[260px] rounded-xl overflow-hidden border border-border-subtle bg-surface-white shadow-sm">
+    <div class="absolute inset-0 bg-gradient-to-r from-primary to-primary-container opacity-90 mix-blend-multiply z-10"></div>
+    <img alt="Arena Background" class="w-full h-full object-cover absolute inset-0 z-0" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCQF4GrXQeBebXchuFXhhSz7ElZ-NQjYiD37OwWReQhkqXa93oBUwqvwsNCxX1E09aARQ8mf5f2LvckO-yBnZ-rjm_rIZDWlYVoPaxsOxUfqWS1TjkkoNfjXBEFi49kBk81OLEnKgzEaUG-2W4FB7ZCQ-REUFssxJ8zjN5i9aX7x3Vmn0OM1kY1P7elcmCD5yMA1L2pc5cZMyVo1xjWDTnTcHiPdvuSmblB2DNytEGZvUyYyxJusP9U3A"/>
+    <div class="relative z-20 h-full flex flex-col justify-end p-6 text-surface-white">
+      <div class="flex items-center gap-3 mb-2">
+        <span class="bg-success text-on-error px-3 py-1 rounded-full font-label-sm text-[10px] uppercase tracking-wider flex items-center gap-1.5 shadow-sm border border-[rgba(255,255,255,0.2)] font-bold">
+          <span class="w-1.5 h-1.5 rounded-full bg-surface-white pulse-animation"></span> {{ camp.status }}
+        </span>
+        <span class="bg-surface-white/20 backdrop-blur-sm text-surface-white border border-white/30 px-3 py-1 rounded-full font-label-sm text-[10px] uppercase tracking-wider font-bold">
+          {{ camp.jogo }}
+        </span>
+      </div>
+      <h1 class="text-[28px] md:text-[34px] font-['Chakra_Petch'] font-bold text-surface-white leading-tight">{{ camp.nome }}</h1>
+    </div>
+  </header>
+
+  <!-- Admin Action Bar -->
+  {% if session.role == 'ADMIN' %}
+  <div class="w-full bg-surface-container-low border border-primary-fixed rounded-lg p-card-padding flex flex-col sm:flex-row justify-between items-center gap-4 shadow-sm">
+    <div class="flex items-center gap-2.5 text-primary font-headline-md text-base font-bold">
+      <span class="material-symbols-outlined text-xl">admin_panel_settings</span>
+      <span>Ações Administrativas</span>
+    </div>
+    <div class="flex flex-wrap gap-2.5 w-full sm:w-auto">
+      {% if camp.status == 'INSCRICAO' and partidas|length == 0 %}
+      <form method="post" action="{{ url_for('gerar_partidas_campeonato', camp_id=camp._id) }}" class="m-0">
+        <button type="submit" class="w-full sm:w-auto px-4 py-2 bg-primary hover:bg-primary-container text-on-primary font-bold text-xs rounded shadow-sm transition-all flex items-center justify-center gap-1.5">
+          <span class="material-symbols-outlined text-sm">account_tree</span> Gerar Confrontos
+        </button>
+      </form>
+      {% endif %}
+      
+      {% if camp.status in ('INSCRICAO','EM_ANDAMENTO') %}
+      <button onclick="document.getElementById('addPartida').classList.toggle('hidden'); document.getElementById('addPartida').scrollIntoView({behavior: 'smooth'})" class="w-full sm:w-auto px-4 py-2 bg-surface-white text-on-surface-variant font-bold text-xs border border-border-subtle rounded hover:bg-surface transition-all flex items-center justify-center gap-1.5">
+        <span class="material-symbols-outlined text-sm">schedule</span> Agendar Partida
+      </button>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Two Column Layout -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter items-start">
+    
+    <!-- Sidebar -->
+    <aside class="lg:col-span-4 flex flex-col gap-gutter">
+      <!-- Info Card -->
+      <div class="bg-surface-white border border-border-subtle rounded-xl p-card-padding shadow-sm flex flex-col gap-4">
+        <h2 class="font-headline-md text-base text-on-surface border-b border-border-subtle pb-2">Informações</h2>
+        <ul class="flex flex-col gap-3 text-xs text-on-surface-variant">
+          <li class="flex justify-between items-center">
+            <span class="text-text-muted flex items-center gap-1.5"><span class="material-symbols-outlined text-sm">category</span> Formato</span>
+            <span class="font-bold text-on-surface">{{ camp.formato }}</span>
+          </li>
+          <li class="flex justify-between items-center">
+            <span class="text-text-muted flex items-center gap-1.5"><span class="material-symbols-outlined text-sm">group</span> Vagas ocupadas</span>
+            <span class="font-bold text-on-surface">{{ times_inscritos|length }} / {{ camp.max_times }}</span>
+          </li>
+          <li class="flex justify-between items-center">
+            <span class="text-text-muted flex items-center gap-1.5"><span class="material-symbols-outlined text-sm">calendar_month</span> Data Início</span>
+            <span class="font-bold text-on-surface">{{ camp.datas.inicio.strftime('%d/%m/%Y') }}</span>
+          </li>
+          <li class="flex justify-between items-center">
+            <span class="text-text-muted flex items-center gap-1.5"><span class="material-symbols-outlined text-sm">event</span> Data Fim</span>
+            <span class="font-bold text-on-surface">{{ camp.datas.fim.strftime('%d/%m/%Y') }}</span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Update Status Card -->
+      {% if session.role == 'ADMIN' %}
+      <div class="bg-surface-white border border-border-subtle rounded-xl p-card-padding shadow-sm flex flex-col gap-3">
+        <h2 class="font-headline-md text-base text-on-surface border-b border-border-subtle pb-2">Status do Campeonato</h2>
+        <form method="post" action="{{ url_for('atualizar_status_campeonato', camp_id=camp._id) }}" class="flex flex-col gap-2">
+          <select name="status" class="block w-full rounded border-border-subtle text-xs bg-surface-white p-2 focus:ring-primary focus:border-primary">
+            <option value="INSCRICAO" {% if camp.status == 'INSCRICAO' %}selected{% endif %}>Inscrições</option>
             <option value="EM_ANDAMENTO" {% if camp.status == 'EM_ANDAMENTO' %}selected{% endif %}>Em andamento</option>
             <option value="FINALIZADO" {% if camp.status == 'FINALIZADO' %}selected{% endif %}>Finalizado</option>
             <option value="ARQUIVADO" {% if camp.status == 'ARQUIVADO' %}selected{% endif %}>Arquivado</option>
           </select>
-          <button type="submit" class="btn btn-sm btn-warning w-100">Atualizar</button>
-
+          <button type="submit" class="w-full py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded transition-all">
+            Atualizar Status
+          </button>
         </form>
       </div>
-    </div>
-    {% endif %}
-  </div>
+      {% endif %}
 
-  <div class="col-lg-4">
-    <div class="card h-100">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <span>Times inscritos</span>
-        <span class="badge bg-secondary">{{ times_inscritos|length }}/{{ camp.max_times }}</span>
-      </div>
-      <div class="card-body">
-        {% for t in times_inscritos %}
-        <div class="d-flex align-items-center gap-2 p-2 mb-2 rounded" style="background:var(--bg-card-hd);border:1px solid var(--border)">
-          {% if t.logo_path %}
-          <img class="team-logo team-logo-sm" src="{{ url_for('static', filename=t.logo_path) }}" alt="Logo de {{ t.nome }}">
-          {% else %}
-          <span class="team-logo team-logo-sm team-logo-placeholder"><i class="bi bi-shield-fill"></i></span>
-          {% endif %}
-          <span class="badge {{ 'badge-cs2' if t.jogo == 'CS2' else 'badge-valorant' }}">{{ t.tag }}</span>
-          <span class="small fw-bold flex-fill">{{ t.nome }}</span>
-          {% if session.role == 'ADMIN' and camp.status != 'FINALIZADO' and camp.status != 'ARQUIVADO' %}
-          <form method="post" action="{{ url_for('desinscrever_time', camp_id=camp._id) }}" style="margin:0">
-            <input type="hidden" name="time_id" value="{{ t._id }}">
-            <button type="submit" class="btn btn-sm btn-outline-danger">X</button>
-          </form>
-          {% endif %}
-
+      <!-- Teams Card -->
+      <div class="bg-surface-white border border-border-subtle rounded-xl p-card-padding shadow-sm flex flex-col gap-3">
+        <div class="flex justify-between items-center border-b border-border-subtle pb-2">
+          <h2 class="font-headline-md text-base text-on-surface">Equipes Inscritas</h2>
+          <span class="bg-surface-container-high text-on-surface-variant text-[10px] font-bold px-2 py-0.5 rounded">{{ times_inscritos|length }}/{{ camp.max_times }}</span>
         </div>
-        {% else %}
-        <div class="text-muted">Nenhum time inscrito ainda.</div>
-        {% endfor %}
+        
+        <div class="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+          {% for t in times_inscritos %}
+          <div class="flex items-center justify-between p-2 rounded bg-surface-container-low border border-border-subtle/50">
+            <div class="flex items-center gap-2.5 overflow-hidden">
+              {% if t.logo_path %}
+              <img class="w-8 h-8 rounded object-cover border border-border-subtle flex-shrink-0" src="{{ url_for('static', filename=t.logo_path) }}" alt="Logo de {{ t.nome }}">
+              {% else %}
+              <span class="w-8 h-8 rounded bg-primary/10 text-primary border border-border-subtle overflow-hidden flex-shrink-0 flex items-center justify-center font-bold text-xs">
+                <span class="material-symbols-outlined text-xs">shield</span>
+              </span>
+              {% endif %}
+              <div class="flex flex-col overflow-hidden">
+                <span class="text-xs font-bold text-on-surface truncate">{{ t.nome }}</span>
+                <span class="text-[9px] text-text-muted font-mono font-bold">#{{ t.tag }}</span>
+              </div>
+            </div>
+            
+            {% if session.role == 'ADMIN' and camp.status != 'FINALIZADO' and camp.status != 'ARQUIVADO' %}
+            <form method="post" action="{{ url_for('desinscrever_time', camp_id=camp._id) }}" class="m-0">
+              <input type="hidden" name="time_id" value="{{ t._id }}">
+              <button type="submit" class="text-error hover:bg-error-container hover:text-red-700 p-1.5 rounded transition-colors flex items-center justify-center">
+                <span class="material-symbols-outlined text-sm">delete</span>
+              </button>
+            </form>
+            {% endif %}
+          </div>
+          {% else %}
+          <div class="text-center text-xs text-text-muted py-6 italic">Nenhum time inscrito ainda.</div>
+          {% endfor %}
+        </div>
 
         {% if session.role == 'ADMIN' and camp.status == 'INSCRICAO' %}
-        <hr>
-        <form method="post" action="{{ url_for('inscrever_time', camp_id=camp._id) }}">
-          <div class="d-grid gap-2 d-sm-flex">
-            <select name="time_id" class="form-select form-select-sm" required>
-              <option value="">Selecione...</option>
+        <div class="pt-3 border-t border-border-subtle mt-2">
+          <form method="post" action="{{ url_for('inscrever_time', camp_id=camp._id) }}" class="flex flex-col gap-2">
+            <select name="time_id" class="block w-full rounded border-border-subtle text-xs bg-surface-white p-2 focus:ring-primary focus:border-primary" required>
+              <option value="">Inscrever equipe...</option>
               {% set ids_inscritos = times_inscritos | map(attribute='_id') | list %}
               {% for t in todos_times %}
-              {% if t._id not in ids_inscritos %}
-              <option value="{{ t._id }}">{{ t.nome }} ({{ t.tag }})</option>
-              {% endif %}
+                {% if t._id not in ids_inscritos %}
+                <option value="{{ t._id }}">{{ t.nome }} ({{ t.tag }})</option>
+                {% endif %}
               {% endfor %}
             </select>
-            <button type="submit" class="btn btn-sm btn-success">Adicionar</button>
-          </div>
-        </form>
+            <button type="submit" class="w-full py-2 bg-success hover:opacity-90 text-white font-bold text-xs rounded transition-all">
+              Adicionar Equipe
+            </button>
+          </form>
+        </div>
         {% endif %}
       </div>
-    </div>
-  </div>
+    </aside>
 
-  <div class="col-lg-5">
-    <div class="card">
-      <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-        <span>Partidas</span>
-        <div class="d-flex gap-2">
-          {% if session.role == 'ADMIN' and camp.status == 'INSCRICAO' and partidas|length == 0 %}
-          <form method="post" action="{{ url_for('gerar_partidas_campeonato', camp_id=camp._id) }}" style="margin:0">
-            <button type="submit" class="btn btn-sm btn-success"><i class="bi bi-lightning-fill"></i> Gerar Confrontos</button>
-          </form>
-          {% endif %}
-          {% if session.role == 'ADMIN' and camp.status in ('INSCRICAO','EM_ANDAMENTO') %}
-          <button class="btn btn-sm btn-outline-primary" data-bs-toggle="collapse" data-bs-target="#addPartida">Agendar</button>
-          {% endif %}
+    <!-- Main Content Area -->
+    <section class="lg:col-span-8 flex flex-col gap-6">
+      
+      <!-- New Match Form Collapsible -->
+      {% if session.role == 'ADMIN' %}
+      <div id="addPartida" class="bg-surface-white border border-border-subtle rounded-xl p-card-padding shadow-sm flex flex-col gap-3 hidden transition-all">
+        <div class="flex justify-between items-center border-b border-border-subtle pb-2">
+          <h2 class="font-headline-md text-base text-on-surface">Agendar Nova Partida</h2>
+          <button onclick="document.getElementById('addPartida').classList.add('hidden')" class="text-text-muted hover:text-on-surface">
+            <span class="material-symbols-outlined text-base">close</span>
+          </button>
         </div>
+        
+        <form method="post" action="{{ url_for('nova_partida', camp_id=camp._id) }}" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="flex flex-col gap-1.5">
+            <label class="text-[10px] font-bold text-text-muted uppercase tracking-wider">Fase / Rodada</label>
+            <input type="text" name="fase" placeholder="Ex: Quartas de Final" class="block w-full rounded border-border-subtle text-xs p-2 focus:ring-primary focus:border-primary" required>
+          </div>
+          
+          <div class="flex flex-col gap-1.5">
+            <label class="text-[10px] font-bold text-text-muted uppercase tracking-wider">Mapa</label>
+            <input type="text" name="mapa" placeholder="Ex: Inferno / Ascent" class="block w-full rounded border-border-subtle text-xs p-2 focus:ring-primary focus:border-primary">
+          </div>
+
+          <div class="flex flex-col gap-1.5">
+            <label class="text-[10px] font-bold text-text-muted uppercase tracking-wider">Time A</label>
+            <select name="time_a_id" class="block w-full rounded border-border-subtle text-xs p-2 bg-surface-white focus:ring-primary focus:border-primary" required>
+              <option value="">Selecione...</option>
+              {% for t in times_inscritos %}
+              <option value="{{ t._id }}">{{ t.nome }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="flex flex-col gap-1.5">
+            <label class="text-[10px] font-bold text-text-muted uppercase tracking-wider">Time B</label>
+            <select name="time_b_id" class="block w-full rounded border-border-subtle text-xs p-2 bg-surface-white focus:ring-primary focus:border-primary" required>
+              <option value="">Selecione...</option>
+              {% for t in times_inscritos %}
+              <option value="{{ t._id }}">{{ t.nome }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="flex flex-col gap-1.5">
+            <label class="text-[10px] font-bold text-text-muted uppercase tracking-wider">Árbitro Designado</label>
+            <select name="arbitro_id" class="block w-full rounded border-border-subtle text-xs p-2 bg-surface-white focus:ring-primary focus:border-primary">
+              <option value="">Sem árbitro (A definir)</option>
+              {% for a in arbitros %}
+              <option value="{{ a._id }}">{{ a.nome }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="flex flex-col gap-1.5">
+            <label class="text-[10px] font-bold text-text-muted uppercase tracking-wider">Data e Hora</label>
+            <input type="datetime-local" name="data_partida" class="block w-full rounded border-border-subtle text-xs p-2 focus:ring-primary focus:border-primary">
+          </div>
+
+          <div class="col-span-1 md:col-span-2 pt-2">
+            <button type="submit" class="w-full py-2.5 bg-primary hover:bg-primary-container text-on-primary font-bold text-xs rounded transition-all">
+              Salvar Agendamento
+            </button>
+          </div>
+        </form>
       </div>
-      <div class="card-body">
+      {% endif %}
+
+      <!-- Tab Selection -->
+      <div class="flex gap-6 border-b border-border-subtle px-2">
+        <button id="btn-tab-list" onclick="switchTabs('list')" class="pb-3 border-b-2 border-primary text-primary font-bold text-xs px-1 focus:outline-none">
+          Partidas ({{ partidas|length }})
+        </button>
+        <button id="btn-tab-visual" onclick="switchTabs('visual')" class="pb-3 border-b-2 border-transparent text-text-muted hover:text-on-surface font-bold text-xs px-1 transition-colors focus:outline-none">
+          Chaveamento Visual
+        </button>
+      </div>
+
+      <!-- Tab Content: Match List -->
+      <div id="panel-list" class="space-y-4">
         {% for p in partidas %}
-        <div class="rounded p-2 mb-2" style="background:var(--bg-card-hd);border:1px solid var(--border)">
-          <div class="d-flex justify-content-between mb-1">
-            <span class="badge bg-secondary">{{ p.fase }}</span>
-            <span class="small text-muted">{{ p.mapa }}</span>
+        <div class="bg-surface-white border border-border-subtle rounded-xl p-card-padding shadow-sm flex flex-col gap-3.5 relative">
+          
+          <!-- Header info -->
+          <div class="flex justify-between items-center border-b border-border-subtle pb-2.5">
+            <div class="flex items-center gap-2">
+              <span class="bg-surface-container-high text-on-surface-variant text-[10px] font-bold px-2 py-0.5 rounded">{{ p.fase }}</span>
+              <span class="text-[10px] text-text-muted font-bold font-mono">Mapa: {{ p.mapa or 'A definir' }}</span>
+            </div>
+            {% if p.status == 'finalizada' %}
+              <span class="inline-flex items-center rounded bg-neutral-100 px-2 py-0.5 text-[10px] font-bold text-neutral-600">CONCLUÍDO</span>
+            {% elif p.status == 'em_andamento' %}
+              <span class="inline-flex items-center gap-1 rounded bg-red-100 px-2 py-0.5 text-[10px] font-bold text-red-600">
+                <span class="w-1.5 h-1.5 rounded-full bg-red-600 animate-pulse"></span> AO VIVO
+              </span>
+            {% else %}
+              <span class="inline-flex items-center rounded bg-blue-100 px-2.5 py-0.5 text-[10px] font-bold text-blue-600">AGENDADO</span>
+            {% endif %}
           </div>
-          <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-            <span class="small fw-bold">{{ p.time_a.nome }}</span>
-            <span class="badge bg-info text-dark">{{ p.time_a.placar }} x {{ p.time_b.placar }}</span>
-            <span class="small fw-bold">{{ p.time_b.nome }}</span>
+
+          <!-- Scoreboard matchup row -->
+          <div class="flex justify-between items-center px-4 md:px-12 py-1">
+            <span class="text-xs font-bold text-on-surface flex-1 text-left truncate">{{ p.time_a.nome }}</span>
+            <div class="flex items-center gap-4 bg-surface-container-low px-4 py-1.5 rounded border border-border-subtle font-mono text-sm font-bold mx-4">
+              <span>{{ p.time_a.placar }}</span>
+              <span class="text-text-muted text-xs">-</span>
+              <span>{{ p.time_b.placar }}</span>
+            </div>
+            <span class="text-xs font-bold text-on-surface flex-1 text-right truncate">{{ p.time_b.nome }}</span>
           </div>
+
+          <!-- Referee meta -->
           {% if p.arbitro_id %}
-          <div class="small mt-1 text-muted d-flex align-items-center gap-1" style="font-size:0.75rem;">
-            <i class="bi bi-person-check-fill text-info"></i> Árbitro:
+          <div class="text-[11px] text-text-muted flex items-center gap-1">
+            <span class="material-symbols-outlined text-[14px]">gavel</span>
+            <span>Árbitro: </span>
             {% set referee_found = false %}
             {% for a in arbitros %}
               {% if a._id|string == p.arbitro_id|string %}
-                <strong class="text-white">{{ a.nome }}</strong>
+                <strong class="text-on-surface">{{ a.nome }}</strong>
                 {% set referee_found = true %}
               {% endif %}
             {% endfor %}
             {% if not referee_found %}
-              <span class="text-muted">Designado</span>
+              <span class="italic">Designado</span>
             {% endif %}
           </div>
           {% endif %}
+
+          <!-- W.O. Banner -->
           {% if p.get('checkin') and p.checkin.wo_aplicado %}
-          <div class="alert alert-danger py-1 px-2 small mb-1 mt-2 text-center" role="alert" style="font-size: 0.72rem;">
-            <i class="bi bi-exclamation-octagon-fill"></i> {{ p.checkin.mensagem_wo }}
+          <div class="bg-red-50 border border-red-200 rounded p-2 text-xs text-red-700 flex items-center gap-2">
+            <span class="material-symbols-outlined text-[16px]">warning</span>
+            <span>{{ p.checkin.mensagem_wo }}</span>
           </div>
           {% endif %}
+
+          <!-- Manual Score Registration (Admin Only) -->
           {% if p.status != 'finalizada' and session.role == 'ADMIN' and camp.status != 'ARQUIVADO' %}
-          <form method="post" action="{{ url_for('registrar_resultado', partida_id=p._id) }}" class="d-grid gap-1 mt-2 d-sm-flex">
-            <input type="number" name="placar_a" class="form-control form-control-sm" min="0" required>
-            <input type="number" name="placar_b" class="form-control form-control-sm" min="0" required>
-            <button type="submit" class="btn btn-sm btn-success">Salvar</button>
-          </form>
+          <div class="pt-2 border-t border-border-subtle mt-1">
+            <form method="post" action="{{ url_for('registrar_resultado', partida_id=p._id) }}" class="flex flex-col sm:flex-row gap-2 items-center">
+              <span class="text-[10px] font-bold text-text-muted uppercase tracking-wider sm:mr-auto">Registrar placar manual:</span>
+              <div class="flex gap-2 w-full sm:w-auto">
+                <input type="number" name="placar_a" placeholder="Placar A" class="w-20 rounded border-border-subtle text-xs p-1 focus:ring-primary focus:border-primary" min="0" required>
+                <input type="number" name="placar_b" placeholder="Placar B" class="w-20 rounded border-border-subtle text-xs p-1 focus:ring-primary focus:border-primary" min="0" required>
+                <button type="submit" class="px-3 py-1 bg-success hover:opacity-90 text-white font-bold text-xs rounded transition-all">Salvar</button>
+              </div>
+            </form>
+          </div>
           {% endif %}
 
+          <!-- Round Control Link -->
           {% if p.status != 'finalizada' and camp.status != 'ARQUIVADO' and (session.role in ('ADMIN', 'SUPER_ADMIN') or (session.role == 'REFEREE' and current_referee_id and p.arbitro_id|string == current_referee_id|string)) %}
-          <div class="d-grid mt-2">
-            <a href="{{ url_for('rounds_control', partida_id=p._id) }}" class="btn btn-sm btn-primary py-1" style="font-size:0.72rem; padding: 2px 4px;">
-              <i class="bi bi-controller"></i> Controlar Rounds
+          <div class="pt-2">
+            <a href="{{ url_for('rounds_control', partida_id=p._id) }}" class="w-full py-2 bg-primary hover:bg-primary-container text-on-primary font-bold text-xs rounded shadow-sm text-center flex items-center justify-center gap-1.5 text-decoration-none">
+              <span class="material-symbols-outlined text-[16px]">controller</span> Controlar Súmula (Rounds)
             </a>
           </div>
           {% endif %}
 
+          <!-- Check-in & WO Validation Panel -->
           {% if p.status != 'finalizada' and camp.status != 'ARQUIVADO' %}
-
-          <div class="mt-2 pt-2 border-top border-secondary-subtle" style="border-top-style: dashed !important;">
+          <div class="pt-2.5 border-t border-border-subtle/50 mt-1 flex flex-col gap-2">
             {% if p.get('checkin') and p.checkin.solicitado %}
-              <div class="small mb-1 d-flex align-items-center justify-content-between flex-wrap gap-1">
-                <span class="text-muted" style="font-size: 0.8rem;"><i class="bi bi-clock-history"></i> Check-in ({{ p.checkin.antecedencia_minutos }} min):</span>
-                <div class="d-flex gap-2">
-                  <span class="badge {{ 'bg-success' if p.checkin.time_a_confirmado else 'bg-warning text-dark' }}" style="font-size: 0.7rem;">
+              <div class="flex justify-between items-center flex-wrap gap-2 text-xs">
+                <span class="text-text-muted flex items-center gap-1"><span class="material-symbols-outlined text-sm">schedule</span> Check-in ({{ p.checkin.antecedencia_minutos }}m):</span>
+                <div class="flex gap-2">
+                  <span class="px-2 py-0.5 rounded text-[10px] font-bold border {{ 'bg-emerald-50 text-emerald-700 border-emerald-200' if p.checkin.time_a_confirmado else 'bg-amber-50 text-amber-700 border-amber-200' }}">
                     {{ p.time_a.nome }}: {{ 'Confirmado' if p.checkin.time_a_confirmado else 'Pendente' }}
                   </span>
-                  <span class="badge {{ 'bg-success' if p.checkin.time_b_confirmado else 'bg-warning text-dark' }}" style="font-size: 0.7rem;">
+                  <span class="px-2 py-0.5 rounded text-[10px] font-bold border {{ 'bg-emerald-50 text-emerald-700 border-emerald-200' if p.checkin.time_b_confirmado else 'bg-amber-50 text-amber-700 border-amber-200' }}">
                     {{ p.time_b.nome }}: {{ 'Confirmado' if p.checkin.time_b_confirmado else 'Pendente' }}
                   </span>
                 </div>
               </div>
 
               {% if not p.checkin.time_a_confirmado or not p.checkin.time_b_confirmado %}
-              <div class="alert alert-danger py-1 px-2 small mb-1 text-center" role="alert" style="font-size: 0.7rem; margin: 6px 0 0 0;">
-                <i class="bi bi-exclamation-triangle-fill"></i> Alerta de W.O. pendente!
+              <div class="bg-red-50 border border-red-200 rounded p-2 text-[10px] text-red-700 font-bold flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-xs pulse-animation">warning</span> Alerta: W.O. iminente devido a ausência!
               </div>
               {% endif %}
 
-              {% if session.role == 'PLAYER' %}
-                <div class="d-flex gap-1 mt-2">
+              <!-- Force Presence actions -->
+              <div class="flex gap-2 flex-wrap">
+                {% if session.role == 'PLAYER' %}
                   {% if not p.checkin.time_a_confirmado %}
-                  <form method="post" action="{{ url_for('confirmar_presenca', partida_id=p._id) }}" class="w-100" style="margin:0">
+                  <form method="post" action="{{ url_for('confirmar_presenca', partida_id=p._id) }}" class="flex-1 m-0">
                     <input type="hidden" name="time_id" value="{{ p.time_a.time_id }}">
-                    <button type="submit" class="btn btn-xs btn-outline-success w-100 py-1" style="font-size:0.72rem; padding: 2px 4px;"><i class="bi bi-check-circle"></i> Confirmar {{ p.time_a.nome }}</button>
+                    <button type="submit" class="w-full py-1 border border-success text-success hover:bg-success/5 font-bold text-[10px] rounded transition-all">Confirmar {{ p.time_a.nome }}</button>
                   </form>
                   {% endif %}
                   {% if not p.checkin.time_b_confirmado %}
-                  <form method="post" action="{{ url_for('confirmar_presenca', partida_id=p._id) }}" class="w-100" style="margin:0">
+                  <form method="post" action="{{ url_for('confirmar_presenca', partida_id=p._id) }}" class="flex-1 m-0">
                     <input type="hidden" name="time_id" value="{{ p.time_b.time_id }}">
-                    <button type="submit" class="btn btn-xs btn-outline-success w-100 py-1" style="font-size:0.72rem; padding: 2px 4px;"><i class="bi bi-check-circle"></i> Confirmar {{ p.time_b.nome }}</button>
+                    <button type="submit" class="w-full py-1 border border-success text-success hover:bg-success/5 font-bold text-[10px] rounded transition-all">Confirmar {{ p.time_b.nome }}</button>
                   </form>
                   {% endif %}
-                </div>
-              {% endif %}
+                {% endif %}
 
-              {% if session.role == 'ADMIN' %}
-                <div class="d-flex gap-1 mt-2">
+                {% if session.role == 'ADMIN' %}
                   {% if not p.checkin.time_a_confirmado %}
-                  <form method="post" action="{{ url_for('confirmar_presenca', partida_id=p._id) }}" class="w-100" style="margin:0">
+                  <form method="post" action="{{ url_for('confirmar_presenca', partida_id=p._id) }}" class="flex-1 m-0">
                     <input type="hidden" name="time_id" value="{{ p.time_a.time_id }}">
-                    <button type="submit" class="btn btn-xs btn-outline-primary w-100 py-1" style="font-size:0.68rem; padding: 2px 4px;"><i class="bi bi-check-all"></i> Forçar {{ p.time_a.nome }}</button>
+                    <button type="submit" class="w-full py-1 border border-primary text-primary hover:bg-primary/5 font-bold text-[10px] rounded transition-all">Forçar {{ p.time_a.nome }}</button>
                   </form>
                   {% endif %}
                   {% if not p.checkin.time_b_confirmado %}
-                  <form method="post" action="{{ url_for('confirmar_presenca', partida_id=p._id) }}" class="w-100" style="margin:0">
+                  <form method="post" action="{{ url_for('confirmar_presenca', partida_id=p._id) }}" class="flex-1 m-0">
                     <input type="hidden" name="time_id" value="{{ p.time_b.time_id }}">
-                    <button type="submit" class="btn btn-xs btn-outline-primary w-100 py-1" style="font-size:0.68rem; padding: 2px 4px;"><i class="bi bi-check-all"></i> Forçar {{ p.time_b.nome }}</button>
+                    <button type="submit" class="w-full py-1 border border-primary text-primary hover:bg-primary/5 font-bold text-[10px] rounded transition-all">Forçar {{ p.time_b.nome }}</button>
                   </form>
                   {% endif %}
-                </div>
-              {% endif %}
+                {% endif %}
+              </div>
 
             {% elif session.role == 'ADMIN' %}
-              <div class="collapse" id="solicitarCheckinCollapse_{{ p._id }}">
-                <form method="post" action="{{ url_for('solicitar_checkin', partida_id=p._id) }}" class="d-grid gap-1 mt-2 d-sm-flex" style="margin:0">
-                  <select name="antecedencia_minutos" class="form-select form-select-sm" required style="font-size:0.75rem;">
+              <!-- Request Check-in Setup (Collapsible) -->
+              <div class="hidden" id="checkinCollapse_{{ p._id }}">
+                <form method="post" action="{{ url_for('solicitar_checkin', partida_id=p._id) }}" class="flex gap-2 items-center mt-2">
+                  <select name="antecedencia_minutos" class="flex-1 rounded border-border-subtle text-xs p-1.5 bg-surface-white focus:ring-primary focus:border-primary">
                     <option value="15">15 minutos</option>
                     <option value="30" selected>30 minutos</option>
                     <option value="45">45 minutos</option>
                     <option value="60">60 minutos</option>
                   </select>
-                  <button type="submit" class="btn btn-sm btn-primary py-0" style="font-size:0.75rem;">Ativar</button>
+                  <button type="submit" class="px-4 py-1.5 bg-primary text-on-primary hover:opacity-90 font-bold text-xs rounded transition-all">Ativar</button>
                 </form>
               </div>
-              <div class="d-grid mt-2">
-                <button class="btn btn-xs btn-outline-secondary py-1" type="button" data-bs-toggle="collapse" data-bs-target="#solicitarCheckinCollapse_{{ p._id }}" style="font-size:0.72rem; padding: 2px 4px;">
-                  <i class="bi bi-clock-history"></i> Configurar Check-in
+              <div class="flex gap-2">
+                <button onclick="document.getElementById('checkinCollapse_{{ p._id }}').classList.toggle('hidden')" class="flex-1 py-1.5 border border-border-subtle hover:bg-surface text-on-surface-variant font-bold text-[10px] rounded transition-all flex items-center justify-center gap-1">
+                  <span class="material-symbols-outlined text-xs">schedule</span> Configurar Check-in
                 </button>
-              </div>
-              {% if p.get('checkin') and p.checkin.solicitado and (not p.checkin.time_a_confirmado or not p.checkin.time_b_confirmado) %}
-              <div class="d-grid mt-2">
-                <form method="post" action="{{ url_for('verificar_checkin', partida_id=p._id) }}" style="margin:0;">
-                  <button class="btn btn-xs btn-outline-danger w-100 py-1" type="submit" style="font-size:0.72rem; padding: 2px 4px;">
-                    <i class="bi bi-exclamation-triangle"></i> Verificar W.O. / Ausência
+                {% if p.get('checkin') and p.checkin.solicitado and (not p.checkin.time_a_confirmado or not p.checkin.time_b_confirmado) %}
+                <form method="post" action="{{ url_for('verificar_checkin', partida_id=p._id) }}" class="flex-1 m-0">
+                  <button type="submit" class="w-full py-1.5 border border-error hover:bg-error-container hover:text-red-700 text-error font-bold text-[10px] rounded transition-all flex items-center justify-center gap-1">
+                    <span class="material-symbols-outlined text-xs">gavel</span> Validar W.O.
                   </button>
                 </form>
+                {% endif %}
               </div>
-              {% endif %}
             {% endif %}
           </div>
           {% endif %}
+
         </div>
         {% else %}
-        <div class="text-muted">Sem partidas agendadas.</div>
+        <div class="bg-surface-white border border-border-subtle rounded-xl p-card-padding text-center text-text-muted text-xs italic">
+          Nenhuma partida agendada.
+        </div>
         {% endfor %}
       </div>
-    </div>
 
-    {% if session.role == 'ADMIN' %}
-    <div class="collapse mt-2" id="addPartida">
-      <div class="card">
-        <div class="card-header">Nova partida</div>
-        <div class="card-body">
-          <form method="post" action="{{ url_for('nova_partida', camp_id=camp._id) }}">
-            <div class="mb-2">
-              <label>Fase</label>
-              <input type="text" name="fase" class="form-control form-control-sm" required>
-            </div>
-            <div class="row g-2 mb-2">
-              <div class="col-12 col-sm-6">
-                <label>Time A</label>
-                <select name="time_a_id" class="form-select form-select-sm" required>
-                  <option value="">Selecione...</option>
-                  {% for t in times_inscritos %}
-                  <option value="{{ t._id }}">{{ t.nome }}</option>
-                  {% endfor %}
-                </select>
-              </div>
-              <div class="col-12 col-sm-6">
-                <label>Time B</label>
-                <select name="time_b_id" class="form-select form-select-sm" required>
-                  <option value="">Selecione...</option>
-                  {% for t in times_inscritos %}
-                  <option value="{{ t._id }}">{{ t.nome }}</option>
-                  {% endfor %}
-                </select>
-              </div>
-            </div>
-            <div class="mb-2">
-              <label>Mapa</label>
-              <input type="text" name="mapa" class="form-control form-control-sm">
-            </div>
-            <div class="mb-2">
-              <label>Árbitro Designado</label>
-              <select name="arbitro_id" class="form-select form-select-sm">
-                <option value="">Nenhum árbitro (A definir)</option>
-                {% for a in arbitros %}
-                <option value="{{ a._id }}">{{ a.nome }}</option>
+      <!-- Tab Content: Brackets / Fases -->
+      <div id="panel-visual" class="space-y-6 hidden">
+        {% if partidas %}
+          {% set phases = namespace(list=[]) %}
+          {% for p in partidas %}
+            {% if p.fase not in phases.list %}
+              {% set phases.list = phases.list + [p.fase] %}
+            {% endif %}
+          {% endfor %}
+          
+          <div class="flex flex-col gap-6 w-full">
+            {% for phase in phases.list %}
+            <div class="flex flex-col gap-3">
+              <span class="font-['Chakra_Petch'] text-xs font-bold text-on-surface-variant border-l-4 border-primary pl-2.5 py-0.5 bg-surface-white shadow-sm rounded-r border border-border-subtle uppercase tracking-wider">
+                {{ phase }}
+              </span>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {% for p in partidas if p.fase == phase %}
+                <div class="flex items-center justify-between rounded-lg border border-border-subtle bg-surface-white p-4 shadow-sm hover:border-primary transition duration-150">
+                  <div class="flex flex-col gap-1.5">
+                    <span class="text-xs font-bold text-on-surface">{{ p.time_a.nome }}</span>
+                    <span class="text-xs font-bold text-on-surface">{{ p.time_b.nome }}</span>
+                  </div>
+                  <div class="flex flex-col gap-1.5 items-end font-['Chakra_Petch'] font-bold text-xs">
+                    <span>{{ p.time_a.placar }}</span>
+                    <span>{{ p.time_b.placar }}</span>
+                  </div>
+                </div>
                 {% endfor %}
-              </select>
+              </div>
             </div>
-            <div class="mb-3">
-              <label>Data e hora</label>
-              <input type="datetime-local" name="data_partida" class="form-control form-control-sm">
-            </div>
-            <button type="submit" class="btn btn-sm btn-primary w-100">Agendar partida</button>
-          </form>
-        </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="bg-surface-white border border-border-subtle rounded-xl p-card-padding text-center text-text-muted text-xs italic">
+            Nenhuma partida agendada para chaveamento.
+          </div>
+        {% endif %}
       </div>
-    </div>
-    {% endif %}
+
+    </section>
+
   </div>
-</div>
+</main>
+
+<script>
+  function switchTabs(tab) {
+    const btnList = document.getElementById('btn-tab-list');
+    const btnVisual = document.getElementById('btn-tab-visual');
+    const panelList = document.getElementById('panel-list');
+    const panelVisual = document.getElementById('panel-visual');
+    
+    if (tab === 'list') {
+      btnList.className = "pb-3 border-b-2 border-primary text-primary font-bold text-xs px-1 focus:outline-none";
+      btnVisual.className = "pb-3 border-b-2 border-transparent text-text-muted hover:text-on-surface font-bold text-xs px-1 transition-colors focus:outline-none";
+      panelList.classList.remove('hidden');
+      panelVisual.classList.add('hidden');
+    } else {
+      btnVisual.className = "pb-3 border-b-2 border-primary text-primary font-bold text-xs px-1 focus:outline-none";
+      btnList.className = "pb-3 border-b-2 border-transparent text-text-muted hover:text-on-surface font-bold text-xs px-1 transition-colors focus:outline-none";
+      panelVisual.classList.remove('hidden');
+      panelList.classList.add('hidden');
+    }
+  }
+</script>
 {% endblock %}

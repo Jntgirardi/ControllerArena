@@ -128,6 +128,12 @@ PUBLIC_CHAMPIONSHIPS = [
                     {"nick": "Mika", "kills": 12, "deaths": 13, "assists": 8},
                     {"nick": "Dante", "kills": 9, "deaths": 14, "assists": 12},
                 ],
+                "rounds": [
+                    {"numero": 1, "vencedor": "time_a", "metodo_vitoria": "Eliminação"},
+                    {"numero": 2, "vencedor": "time_b", "metodo_vitoria": "Explosão da C4"},
+                    {"numero": 3, "vencedor": "time_a", "metodo_vitoria": "Eliminação"},
+                    {"numero": 4, "vencedor": "time_a", "metodo_vitoria": "Tempo Esgotado"},
+                ],
             },
             {
                 "id": 1002,
@@ -387,6 +393,15 @@ def map_championship_to_public(camp_doc, services):
                 if "nick" not in item:
                     item["nick"] = item.get("jogador_id") # Fallback
 
+        mapped_rounds = []
+        for idx, r in enumerate(m.get("rounds", [])):
+            vencedor_str = 'time_a' if str(r.get("vencedor_id")) == str(m["time_a"]["time_id"]) else 'time_b'
+            mapped_rounds.append({
+                "numero": r.get("round", idx + 1),
+                "vencedor": vencedor_str,
+                "metodo_vitoria": r.get("metodo", "Kills")
+            })
+
         partidas.append({
             "id": str(m["_id"]),
             "status": status,
@@ -407,7 +422,8 @@ def map_championship_to_public(camp_doc, services):
                 "lado": "A definir"
             },
             "kda_a": kda_a,
-            "kda_b": kda_b
+            "kda_b": kda_b,
+            "rounds": mapped_rounds
         })
 
     # Period formatting
@@ -651,8 +667,34 @@ def register_routes(app, services):
         current_user = build_current_user()
         jogo = request.args.get("jogo", "").strip()
         busca = request.args.get("busca", "").strip()
+        time_filter = request.args.get("time", "").strip()
+
         jogadores = services["players"].list_players(current_user, jogo, busca)
-        return render_template("jogadores/lista.html", jogadores=jogadores, filtro_jogo=jogo, busca=busca)
+
+        # Enrich each player with team info
+        for j in jogadores:
+            team = services["teams"].team_repo.find_by_player_id(j["_id"])
+            j["time_nome"] = team.get("nome", "-") if team else "-"
+
+        # Filter by team in memory
+        if time_filter:
+            jogadores = [j for j in jogadores if j["time_nome"] == time_filter]
+
+        # Fetch teams for dropdown select
+        from app.application.services import get_scope_admin_id
+        t_filter = {}
+        if current_user["role"] != ROLE_SUPER_ADMIN:
+            t_filter["admin_id"] = get_scope_admin_id(current_user)
+        teams = services["teams"].team_repo.list_all(t_filter)
+
+        return render_template(
+            "jogadores/lista.html",
+            jogadores=jogadores,
+            filtro_jogo=jogo,
+            busca=busca,
+            filtro_time=time_filter,
+            teams=teams
+        )
 
     @app.route("/jogadores/novo", methods=["GET", "POST"], endpoint="novo_jogador")
     @login_required
@@ -1116,7 +1158,10 @@ def register_routes(app, services):
                     "nick": j.get("nick", "Jogador")
                 })
 
-        return render_template("partidas/rounds.html", partida=match, players_a=players_a, players_b=players_b)
+        camp_doc = services["championships"].championship_repo.find_by_id(match["campeonato_id"])
+        campeonato_nome = camp_doc.get("nome", "Masters CS2") if camp_doc else "Masters CS2"
+
+        return render_template("partidas/rounds.html", partida=match, players_a=players_a, players_b=players_b, campeonato_nome=campeonato_nome)
 
     @app.route("/partidas/<partida_id>/rounds/vencer", methods=["POST"], endpoint="rounds_vencer")
     @login_required
