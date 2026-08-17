@@ -1304,6 +1304,22 @@ class RankingService:
         if jogo:
             filtro["jogo_principal"] = jogo
         ranking = self.player_repo.list_ranking(filtro)
+        
+        # Enrich players with team info
+        for player in ranking:
+            tid = player.get("time_id")
+            if tid:
+                team = self.team_repo.find_by_id(tid)
+                if team:
+                    player["time_nome"] = team.get("nome", "-")
+                    player["time_tag"] = team.get("tag", "-")
+                else:
+                    player["time_nome"] = "Sem time"
+                    player["time_tag"] = ""
+            else:
+                player["time_nome"] = "Sem time"
+                player["time_tag"] = ""
+
         self.cache.set(cache_key, ranking)
         return ranking
 

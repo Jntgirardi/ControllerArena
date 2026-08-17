@@ -1,412 +1,157 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-br" class="scroll-smooth">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}FPS Arena{% endblock %}</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+  
+  <!-- Material Symbols Outlined and Google Fonts (Inter & Chakra Petch) -->
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "primary": "#003ec7",
+            "primary-container": "#0052ff",
+            "on-primary": "#ffffff",
+            "on-primary-container": "#dfe3ff",
+            "secondary": "#5c5f60",
+            "secondary-container": "#dee0e2",
+            "on-secondary": "#ffffff",
+            "on-secondary-container": "#606365",
+            "background": "#f9f9ff",
+            "on-background": "#141b2b",
+            "surface": "#f9f9ff",
+            "surface-white": "#FFFFFF",
+            "surface-dim": "#d3daef",
+            "surface-bright": "#f9f9ff",
+            "surface-container-lowest": "#ffffff",
+            "surface-container-low": "#f1f3ff",
+            "surface-container": "#e9edff",
+            "surface-container-high": "#e1e8fd",
+            "surface-container-highest": "#dce2f7",
+            "on-surface": "#141b2b",
+            "on-surface-variant": "#434656",
+            "outline": "#737688",
+            "outline-variant": "#c3c5d9",
+            "border-subtle": "#E5E7EB",
+            "text-muted": "#6B7280",
+            "live": "#ef4444",
+            "success": "#10B981",
+            "warning": "#F59E0B",
+            "error": "#EF4444",
+            "error-container": "#ffdad6",
+          },
+          borderRadius: {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          spacing: {
+            "container-margin": "24px",
+            "section-gap": "40px",
+            "base": "4px",
+            "card-padding": "20px",
+            "gutter": "16px"
+          },
+          fontFamily: {
+            "body-lg": ["Inter", "sans-serif"],
+            "headline-md": ["Chakra Petch", "sans-serif"],
+            "display-score": ["Inter", "sans-serif"],
+            "headline-lg": ["Chakra Petch", "sans-serif"],
+            "body-md": ["Inter", "sans-serif"],
+            "label-sm": ["Inter", "sans-serif"],
+            "stats-mono": ["Inter", "sans-serif"]
+          }
+        }
+      }
+    }
+  </script>
   <style>
-    :root {
-      color-scheme: dark;
-      --bg-main: #0b1018;
-      --bg-topbar: #101827;
-      --bg-card: #141d2b;
-      --bg-card-hd: #182338;
-      --bg-input: #0f1724;
-      --border: #28364d;
-      --text-main: #e6edf7;
-      --text-muted: #9aa8bc;
-      --text-nav: #c7d2e5;
-      --accent: #4ea8f5;
-      --accent-strong: #2f81d0;
-      --accent-soft: rgba(78,168,245,.16);
-      --nav-hover: rgba(78,168,245,.14);
-      --table-hover: #18253a;
-      --badge-cs2: #f39c35;
-      --badge-val: #ff5c6c;
-      --danger: #ff5c6c;
-      --success: #41d48a;
-    }
-
-    * { box-sizing: border-box; }
-    html { overflow-x: hidden; scroll-behavior: smooth; }
     body {
-      min-height: 100vh;
-      margin: 0;
-      overflow-x: hidden;
-      background:
-        linear-gradient(140deg, rgba(78,168,245,.12), transparent 30%),
-        linear-gradient(320deg, rgba(255,92,108,.08), transparent 28%),
-        var(--bg-main);
-      color: var(--text-main);
-      font-family: "Segoe UI", system-ui, sans-serif;
+      font-family: 'Inter', sans-serif;
     }
-    a { color: var(--accent); text-decoration: none; }
-
-    .public-nav {
-      position: sticky;
-      top: 0;
-      z-index: 20;
-      background: rgba(16,24,39,.94);
-      border-bottom: 1px solid var(--border);
-      box-shadow: 0 12px 28px rgba(0,0,0,.22);
-      backdrop-filter: blur(10px);
+    h1, h2, h3, h4, h5, h6, .font-heading {
+      font-family: 'Chakra Petch', sans-serif;
     }
-    .navbar-brand {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      color: #fff;
-      font-weight: 800;
+    .pulse-dot {
+      animation: pulse 2s infinite;
     }
-    .navbar-brand:hover { color: #fff; }
-    .navbar .nav-link {
-      display: inline-flex;
-      align-items: center;
-      gap: 7px;
-      color: var(--text-nav);
-      border-radius: 8px;
-      padding: 8px 12px;
-    }
-    .navbar .nav-link:hover { color: #fff; background: var(--nav-hover); }
-    .navbar-toggler { border-color: var(--border); color: var(--text-main); }
-    .navbar-toggler:focus { box-shadow: 0 0 0 3px var(--accent-soft); }
-    .navbar-toggler-icon { filter: invert(1) grayscale(1); }
-
-    .page-wrap {
-      width: min(1180px, calc(100% - 32px));
-      margin: 0 auto;
-      padding: 34px 0 54px;
-    }
-    .hero {
-      display: grid;
-      grid-template-columns: minmax(0, 1.3fr) minmax(280px, .7fr);
-      gap: 22px;
-      align-items: stretch;
-      padding: 32px;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      background:
-        linear-gradient(135deg, rgba(78,168,245,.14), transparent 42%),
-        linear-gradient(315deg, rgba(243,156,53,.12), transparent 38%),
-        rgba(20,29,43,.74);
-    }
-    .eyebrow {
-      color: var(--accent);
-      font-size: .78rem;
-      font-weight: 800;
-      letter-spacing: .16em;
-      text-transform: uppercase;
-    }
-    .hero h1, .section-title h1 {
-      margin: 10px 0 12px;
-      color: #fff;
-      font-weight: 900;
-      letter-spacing: 0;
-      line-height: .98;
-      font-size: clamp(2.4rem, 5vw, 4.7rem);
-    }
-    .hero h1 span, .text-hot { color: var(--badge-cs2); }
-    .hero p, .section-title p {
-      max-width: 680px;
-      color: #bfd1e8;
-      font-size: 1.02rem;
-      line-height: 1.7;
-    }
-    .hero-panel {
-      display: grid;
-      gap: 12px;
-      align-content: center;
-      border-left: 1px solid var(--border);
-      padding-left: 22px;
-    }
-    .metric {
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      background: rgba(15,23,36,.82);
-      padding: 16px;
-    }
-    .metric strong {
-      display: block;
-      color: #fff;
-      font-size: 1.75rem;
-      line-height: 1;
-    }
-    .metric span { color: var(--text-muted); font-size: .88rem; }
-
-    .section-title {
-      display: flex;
-      align-items: flex-end;
-      justify-content: space-between;
-      gap: 16px;
-      margin: 34px 0 16px;
-    }
-    .section-title h2, .panel-title {
-      color: #fff;
-      font-size: 1.35rem;
-      font-weight: 800;
-      margin: 0;
-    }
-
-    .championship-grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 16px;
-    }
-    .public-card, .match-card, .table-panel {
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      background: rgba(20,29,43,.86);
-      color: var(--text-main);
-      box-shadow: 0 14px 34px rgba(0,0,0,.22);
-    }
-    .public-card {
-      display: flex;
-      flex-direction: column;
-      min-height: 100%;
-      padding: 18px;
-      transition: transform .16s ease, border-color .16s ease, background .16s ease;
-    }
-    .public-card:hover {
-      transform: translateY(-3px);
-      border-color: var(--accent);
-      background: rgba(24,35,56,.95);
-    }
-    .badge-game {
-      display: inline-flex;
-      align-items: center;
-      width: fit-content;
-      min-height: 26px;
-      border-radius: 999px;
-      padding: 4px 10px;
-      color: #101827;
-      font-weight: 800;
-      font-size: .75rem;
-    }
-    .badge-game.cs2 { background: var(--badge-cs2); }
-    .badge-game.valorant { background: var(--badge-val); color: #fff; }
-    .public-card h3 {
-      margin: 14px 0 8px;
-      color: #fff;
-      font-size: 1.35rem;
-      font-weight: 850;
-    }
-    .public-card p { color: #bfd1e8; line-height: 1.6; }
-    .card-meta {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-top: auto;
-      padding-top: 14px;
-    }
-    .meta-item {
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 10px;
-      color: var(--text-muted);
-      background: rgba(15,23,36,.72);
-      font-size: .86rem;
-    }
-    .meta-item strong { display: block; color: #fff; font-size: .98rem; }
-
-    .btn-fps {
-      min-height: 40px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      border: 1px solid var(--accent);
-      border-radius: 8px;
-      padding: 8px 14px;
-      background: var(--accent-strong);
-      color: #fff;
-      font-weight: 800;
-    }
-    .btn-fps:hover { color: #fff; background: #3d9ae6; }
-    .btn-ghost {
-      min-height: 40px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 8px 14px;
-      background: rgba(15,23,36,.64);
-      color: var(--text-main);
-      font-weight: 700;
-    }
-    .btn-ghost:hover { border-color: var(--accent); color: #fff; background: var(--accent-soft); }
-
-    .tabs-shell {
-      display: grid;
-      gap: 18px;
-    }
-    .match-list {
-      display: grid;
-      gap: 12px;
-    }
-    .match-card {
-      display: grid;
-      grid-template-columns: 1fr auto 1fr auto;
-      align-items: center;
-      gap: 16px;
-      padding: 16px;
-    }
-    .team-name {
-      color: #fff;
-      font-size: 1.08rem;
-      font-weight: 800;
-    }
-    .team-tag {
-      color: var(--text-muted);
-      font-size: .84rem;
-      text-transform: uppercase;
-    }
-    .score-box {
-      min-width: 120px;
-      text-align: center;
-      color: #fff;
-      font-size: 1.7rem;
-      font-weight: 900;
-    }
-    .score-box span { color: var(--text-muted); }
-    .match-info { color: var(--text-muted); font-size: .9rem; }
-    .status-live { color: var(--success); font-weight: 800; }
-    .status-finished { color: var(--badge-cs2); font-weight: 800; }
-
-    .summary-hero {
-      display: grid;
-      grid-template-columns: 1fr auto 1fr;
-      gap: 20px;
-      align-items: center;
-      margin-bottom: 22px;
-      padding: 24px;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      background: rgba(20,29,43,.86);
-    }
-    .summary-team {
-      display: grid;
-      gap: 6px;
-    }
-    .summary-team.right { text-align: right; }
-    .summary-score {
-      min-width: 168px;
-      color: #fff;
-      text-align: center;
-      font-size: clamp(2.8rem, 7vw, 5rem);
-      font-weight: 950;
-      line-height: 1;
-    }
-    .summary-score span { color: var(--text-muted); }
-    .tables-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-    }
-    .table-panel { overflow: hidden; }
-    .table-panel.blue { border-color: rgba(78,168,245,.54); }
-    .table-panel.red { border-color: rgba(255,92,108,.54); }
-    .table-heading {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 14px 16px;
-      border-bottom: 1px solid var(--border);
-      background: var(--bg-card-hd);
-    }
-    .table-heading h2 {
-      margin: 0;
-      color: #fff;
-      font-size: 1.05rem;
-      font-weight: 850;
-    }
-    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    .kda-table {
-      width: 100%;
-      min-width: 460px;
-      margin: 0;
-      color: var(--text-main);
-      border-collapse: collapse;
-    }
-    .kda-table th, .kda-table td {
-      padding: 12px 14px;
-      border-bottom: 1px solid var(--border);
-      vertical-align: middle;
-    }
-    .kda-table th {
-      color: var(--accent);
-      background: rgba(15,23,36,.72);
-      font-size: .76rem;
-      text-transform: uppercase;
-      letter-spacing: .08em;
-    }
-    .kda-table td { color: #d9e5f5; }
-    .kda-table td:first-child { color: #fff; font-weight: 800; }
-    .kda-table tbody tr:hover td { background: var(--table-hover); }
-    .empty-state {
-      padding: 18px;
-      border: 1px dashed var(--border);
-      border-radius: 8px;
-      color: var(--text-muted);
-      text-align: center;
-    }
-
-    @media (max-width: 991px) {
-      .page-wrap { width: min(100% - 24px, 760px); padding-top: 22px; }
-      .hero, .summary-hero, .tables-grid { grid-template-columns: 1fr; }
-      .hero { padding: 24px; }
-      .hero-panel { border-left: 0; border-top: 1px solid var(--border); padding: 18px 0 0; }
-      .championship-grid { grid-template-columns: 1fr 1fr; }
-      .match-card { grid-template-columns: 1fr auto; }
-      .match-card .btn-ghost { grid-column: 1 / -1; width: 100%; }
-      .summary-team.right { text-align: left; }
-      .summary-score { text-align: left; min-width: 0; }
-    }
-    @media (max-width: 575px) {
-      .page-wrap { width: min(100% - 20px, 430px); padding: 16px 0 36px; }
-      .navbar .btn-fps { width: 100%; margin-top: 8px; }
-      .hero { padding: 20px; }
-      .hero h1, .section-title h1 { font-size: 2.45rem; }
-      .section-title { display: block; margin-top: 26px; }
-      .championship-grid { grid-template-columns: 1fr; }
-      .card-meta { grid-template-columns: 1fr; }
-      .match-card { grid-template-columns: 1fr; gap: 10px; }
-      .score-box { text-align: left; min-width: 0; }
-      .summary-hero { padding: 18px; }
-      .btn-fps, .btn-ghost { width: 100%; }
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+      70% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
     }
   </style>
   {% block head %}{% endblock %}
 </head>
-<body>
-  <nav class="navbar navbar-expand-lg public-nav">
-    <div class="container-fluid px-3 px-lg-4">
-      <a class="navbar-brand" href="{{ url_for('index') }}">
-        <i class="bi bi-controller"></i> FPS Arena
-      </a>
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#publicNavbar" aria-controls="publicNavbar" aria-expanded="false" aria-label="Alternar navegacao">
-        <span class="navbar-toggler-icon"></span>
-      </button>
-      <div class="collapse navbar-collapse" id="publicNavbar">
-        <ul class="navbar-nav me-auto mb-2 mb-lg-0 gap-lg-1">
-          <li class="nav-item"><a class="nav-link" href="{{ url_for('index') }}#campeonatos"><i class="bi bi-trophy-fill"></i> Campeonatos</a></li>
-          <li class="nav-item"><a class="nav-link" href="{{ url_for('index') }}#ao-vivo"><i class="bi bi-broadcast"></i> Ao vivo</a></li>
-          <li class="nav-item"><a class="nav-link" href="{{ url_for('index') }}#resultados"><i class="bi bi-bar-chart-fill"></i> Resultados</a></li>
-        </ul>
-        <a class="btn-fps" href="{{ url_for('login') }}"><i class="bi bi-person-badge"></i> Area do Competidor</a>
+<body class="bg-background text-on-background font-body-md antialiased min-h-screen flex flex-col pb-32">
+
+  <!-- Floating Bottom Navigation Bar (Stitch Design System) -->
+  <nav class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-surface-white shadow-lg rounded-full border border-border-subtle px-8 py-4 flex items-center justify-between w-full max-w-3xl transition-all">
+    <div class="flex items-center justify-between w-full gap-8">
+      
+      <!-- Brand Logo -->
+      <div class="flex-shrink-0">
+        <a href="{{ url_for('index') }}" class="text-headline-md font-headline-lg text-primary tracking-tight text-decoration-none flex items-center gap-2">
+          <span class="material-symbols-outlined text-primary">sports_esports</span> <span class="uppercase">FPS Arena</span>
+        </a>
+      </div>
+      
+      <!-- Nav Links -->
+      <div class="hidden md:flex items-center justify-center flex-grow gap-6">
+        <a href="{{ url_for('index') }}#campeonatos" class="font-label-sm text-label-sm text-on-surface-variant hover:text-primary transition-colors text-decoration-none whitespace-nowrap flex-shrink-0">Campeonatos</a>
+        <a href="{{ url_for('index') }}#ao-vivo" class="font-label-sm text-label-sm text-on-surface-variant hover:text-primary transition-colors text-decoration-none whitespace-nowrap flex-shrink-0">Ao Vivo</a>
+        <a href="{{ url_for('ranking') }}" class="font-label-sm text-label-sm text-on-surface-variant hover:text-primary transition-colors text-decoration-none whitespace-nowrap flex-shrink-0">Rankings</a>
+      </div>
+      
+      <!-- User Profile / CTA -->
+      <div class="flex items-center gap-4 flex-shrink-0">
+        {% if session.user_id %}
+          <button class="p-2 rounded-full hover:bg-surface-container-low transition-colors text-on-surface-variant flex items-center justify-center">
+            <span class="material-symbols-outlined">notifications</span>
+          </button>
+          <a href="{{ url_for('dashboard') }}" class="p-2 rounded-full hover:bg-surface-container-low transition-colors text-on-surface-variant flex items-center justify-center">
+            <span class="material-symbols-outlined">settings</span>
+          </a>
+          <div class="w-8 h-8 rounded-full bg-surface-dim overflow-hidden border border-border-subtle">
+            <img class="w-full h-full object-cover" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=64&h=64&fit=crop">
+          </div>
+        {% else %}
+          <a href="{{ url_for('login') }}" class="bg-primary text-on-primary px-6 py-2.5 rounded-full font-label-sm text-label-sm hover:opacity-90 transition-opacity text-decoration-none flex items-center gap-2">
+            Entrar
+            <span class="hidden">Area do Competidor</span>
+          </a>
+        {% endif %}
       </div>
     </div>
   </nav>
 
-  <main class="page-wrap">
+  <!-- Main View Frame -->
+  <main class="flex-grow w-full">
     {% block content %}{% endblock %}
   </main>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Footer -->
+  <footer class="bg-surface border-t border-border-subtle w-full py-12 mt-auto">
+    <div class="flex flex-col md:flex-row justify-between items-center px-container-margin max-w-[1280px] mx-auto gap-8">
+      <span class="text-headline-md font-headline-md text-on-surface">FPS Arena</span>
+      <div class="flex gap-6 items-center">
+        <a class="font-label-sm text-label-sm text-text-muted hover:text-primary transition-colors text-decoration-none" href="#">Termos de Serviço</a>
+        <a class="font-label-sm text-label-sm text-text-muted hover:text-primary transition-colors text-decoration-none" href="#">Privacidade</a>
+        <a class="font-label-sm text-label-sm text-text-muted hover:text-primary transition-colors text-decoration-none" href="#">Regras</a>
+        <a class="font-label-sm text-label-sm text-text-muted hover:text-primary transition-colors text-decoration-none" href="#">Suporte</a>
+      </div>
+      <span class="font-body-md text-body-md text-text-muted">© 2026 FPS Arena. Professional Esports Management.</span>
+    </div>
+  </footer>
+
   {% block scripts %}{% endblock %}
 </body>
 </html>

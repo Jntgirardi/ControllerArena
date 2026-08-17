@@ -1,67 +1,160 @@
 {% extends "base.html" %}
+
 {% block title %}{{ 'Editar Campeonato' if acao == 'editar' else 'Novo Campeonato' }} - FPS Arena{% endblock %}
+
 {% block content %}
-<div class="d-flex align-items-center mb-3 flex-wrap gap-2">
-  <a href="{{ url_for('listar_campeonatos') }}" class="btn btn-outline-secondary btn-sm me-3">Voltar</a>
-  <h4 class="mb-0 page-title">{{ 'Editar Campeonato' if acao == 'editar' else 'Criar Campeonato' }}</h4>
-</div>
-<div class="card" style="max-width:600px">
-  <div class="card-body">
-    <form method="post">
-      {% if acao == 'editar' %}
-      <div class="alert alert-info small" role="alert">
-        Aqui o organizador pode editar todas as informacoes do campeonato ja criado.
-      </div>
-      {% endif %}
-      <div class="mb-3">
-        <label class="form-label">Nome *</label>
-        <input type="text" name="nome" class="form-control" value="{{ dados.get('nome','') }}" required>
-      </div>
-      <div class="row g-3 mb-3">
-        <div class="col-12 col-sm-6">
-          <label class="form-label">Jogo *</label>
-          <select name="jogo" class="form-select" required>
-            <option value="CS2" {% if dados.get('jogo') == 'CS2' %}selected{% endif %}>CS2</option>
-            <option value="Valorant" {% if dados.get('jogo') == 'Valorant' %}selected{% endif %}>Valorant</option>
-          </select>
-        </div>
-        <div class="col-12 col-sm-6">
-          <label class="form-label">Formato *</label>
-          <select name="formato" class="form-select" required>
-            <option value="mata-mata" {% if dados.get('formato') == 'mata-mata' %}selected{% endif %}>Mata-mata</option>
-            <option value="grupos" {% if dados.get('formato') == 'grupos' %}selected{% endif %}>Grupos</option>
-          </select>
-        </div>
-      </div>
-      <div class="mb-3">
-        <label class="form-label">Max. de Times *</label>
-        <input type="number" name="max_times" class="form-control" value="{{ dados.get('max_times', 8) }}" min="2" required>
-      </div>
-      <div class="row g-3 mb-3">
-        <div class="col-12 col-sm-6">
-          <label class="form-label">Data Inicio *</label>
-          <input type="date" name="data_inicio" class="form-control" value="{{ dados.get('data_inicio','') }}" required>
-        </div>
-        <div class="col-12 col-sm-6">
-          <label class="form-label">Data Fim *</label>
-          <input type="date" name="data_fim" class="form-control" value="{{ dados.get('data_fim','') }}" required>
-        </div>
-      </div>
-      <hr class="border-secondary">
-      <label class="form-label">Premiacao</label>
-      <div class="row g-2 mb-3">
-        <div class="col-12 col-sm-4"><input type="text" name="premio_1" class="form-control" placeholder="1o lugar" value="{{ dados.get('premio_1','') }}"></div>
-        <div class="col-12 col-sm-4"><input type="text" name="premio_2" class="form-control" placeholder="2o lugar" value="{{ dados.get('premio_2','') }}"></div>
-        <div class="col-12 col-sm-4"><input type="text" name="premio_3" class="form-control" placeholder="3o lugar" value="{{ dados.get('premio_3','') }}"></div>
-      </div>
-      <hr class="border-secondary">
-      <div class="mb-3">
-        <label class="form-label">Webhook do Discord</label>
-        <input type="url" name="discord_webhook_url" class="form-control" placeholder="https://discord.com/api/webhooks/..." value="{{ dados.get('discord_webhook_url','') }}">
-        <div class="form-text">Canal que recebera avisos de inicio de partida e resultado deste campeonato.</div>
-      </div>
-      <button type="submit" class="btn btn-primary w-100">{{ 'Salvar alteracoes' if acao == 'editar' else 'Criar Campeonato' }}</button>
-    </form>
+<main class="w-full max-w-[1024px] mx-auto px-4 md:px-6 py-8 flex flex-col gap-6">
+
+  <!-- Header with Back Button -->
+  <div class="flex items-center gap-4 border-b border-border-subtle pb-4">
+    <a href="{{ url_for('listar_campeonatos') }}" class="bg-surface-white border border-border-subtle hover:bg-surface text-text-muted hover:text-on-surface font-bold text-xs px-4 py-2 rounded-lg transition-colors flex items-center gap-1.5 text-decoration-none shadow-sm">
+      <span class="material-symbols-outlined text-[16px]">arrow_back</span> Voltar
+    </a>
+    <h1 class="text-2xl font-headline font-bold text-on-surface">
+      {{ 'Editar Campeonato' if acao == 'editar' else 'Criar Campeonato' }}
+    </h1>
   </div>
-</div>
+
+  <!-- Form Card Container -->
+  <div class="w-full max-w-[500px]">
+    <div class="bg-surface-white rounded-xl border border-border-subtle shadow-sm p-card-padding">
+      <form method="post" class="space-y-5">
+        {% if acao == 'editar' %}
+        <div class="bg-blue-50 border border-blue-200 text-blue-800 rounded-lg p-4 text-xs font-semibold" role="alert">
+          Aqui o organizador pode editar todas as informações do campeonato já criado.
+        </div>
+        {% endif %}
+
+        <!-- Nome -->
+        <div>
+          <label class="block font-bold text-xs text-on-surface mb-1" for="nome">Nome *</label>
+          <input 
+            type="text" 
+            name="nome" 
+            id="nome"
+            value="{{ dados.get('nome','') }}" 
+            required
+            class="w-full border border-border-subtle rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary bg-surface-white transition-colors text-on-surface"
+          >
+        </div>
+
+        <!-- Jogo & Formato -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block font-bold text-xs text-on-surface mb-1" for="jogo">Jogo *</label>
+            <select 
+              name="jogo" 
+              id="jogo" 
+              required
+              class="w-full border border-border-subtle rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary bg-surface-white text-on-surface-variant cursor-pointer"
+            >
+              <option value="CS2" {% if dados.get('jogo') == 'CS2' %}selected{% endif %}>CS2</option>
+              <option value="Valorant" {% if dados.get('jogo') == 'Valorant' %}selected{% endif %}>Valorant</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-bold text-xs text-on-surface mb-1" for="formato">Formato *</label>
+            <select 
+              name="formato" 
+              id="formato" 
+              required
+              class="w-full border border-border-subtle rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary bg-surface-white text-on-surface-variant cursor-pointer"
+            >
+              <option value="mata-mata" {% if dados.get('formato') == 'mata-mata' %}selected{% endif %}>Mata-mata</option>
+              <option value="grupos" {% if dados.get('formato') == 'grupos' %}selected{% endif %}>Grupos</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Max. de Times -->
+        <div>
+          <label class="block font-bold text-xs text-on-surface mb-1" for="max_times">Max. de Times *</label>
+          <input 
+            type="number" 
+            name="max_times" 
+            id="max_times"
+            value="{{ dados.get('max_times', 8) }}" 
+            min="2" 
+            required
+            class="w-full border border-border-subtle rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary bg-surface-white transition-colors text-on-surface"
+          >
+        </div>
+
+        <!-- Data Início & Data Fim -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block font-bold text-xs text-on-surface mb-1" for="data_inicio">Data Inicio *</label>
+            <input 
+              type="date" 
+              name="data_inicio" 
+              id="data_inicio"
+              value="{{ dados.get('data_inicio','') }}" 
+              required
+              class="w-full border border-border-subtle rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary bg-surface-white text-on-surface-variant transition-colors"
+            >
+          </div>
+          <div>
+            <label class="block font-bold text-xs text-on-surface mb-1" for="data_fim">Data Fim *</label>
+            <input 
+              type="date" 
+              name="data_fim" 
+              id="data_fim"
+              value="{{ dados.get('data_fim','') }}" 
+              required
+              class="w-full border border-border-subtle rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary bg-surface-white text-on-surface-variant transition-colors"
+            >
+          </div>
+        </div>
+
+        <!-- Premiação -->
+        <div class="space-y-2">
+          <label class="block font-bold text-xs text-on-surface mb-1">Premiação</label>
+          <input 
+            type="text" 
+            name="premio_1" 
+            placeholder="1o lugar" 
+            value="{{ dados.get('premio_1','') }}"
+            class="w-full border border-border-subtle rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary bg-surface-white placeholder:text-outline transition-colors text-on-surface"
+          >
+          <input 
+            type="text" 
+            name="premio_2" 
+            placeholder="2o lugar" 
+            value="{{ dados.get('premio_2','') }}"
+            class="w-full border border-border-subtle rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary bg-surface-white placeholder:text-outline transition-colors text-on-surface"
+          >
+          <input 
+            type="text" 
+            name="premio_3" 
+            placeholder="3o lugar" 
+            value="{{ dados.get('premio_3','') }}"
+            class="w-full border border-border-subtle rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary bg-surface-white placeholder:text-outline transition-colors text-on-surface"
+          >
+        </div>
+
+        <!-- Webhook do Discord -->
+        <div class="pt-2">
+          <label class="block font-bold text-xs text-on-surface mb-1" for="discord_webhook_url">Webhook do Discord</label>
+          <input 
+            type="url" 
+            name="discord_webhook_url" 
+            id="discord_webhook_url"
+            placeholder="https://discord.com/api/webhooks/..." 
+            value="{{ dados.get('discord_webhook_url','') }}"
+            class="w-full border border-border-subtle rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary bg-surface-white placeholder:text-outline transition-colors mb-2 text-on-surface"
+          >
+          <p class="text-[11px] text-text-muted leading-tight font-semibold">Canal que receberá avisos de início de partida e resultado deste campeonato.</p>
+        </div>
+
+        <!-- Submit Button -->
+        <div class="pt-4">
+          <button type="submit" class="w-full bg-primary hover:bg-primary-container text-on-primary font-bold text-xs rounded-lg py-3 transition-colors shadow-sm cursor-pointer">
+            {{ 'Salvar Alterações' if acao == 'editar' else 'Criar Campeonato' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+</main>
 {% endblock %}
