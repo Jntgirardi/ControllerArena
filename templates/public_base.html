@@ -114,9 +114,7 @@
       <!-- User Profile / CTA -->
       <div class="flex items-center gap-4 flex-shrink-0">
         {% if session.user_id %}
-          <button class="p-2 rounded-full hover:bg-surface-container-low transition-colors text-on-surface-variant flex items-center justify-center">
-            <span class="material-symbols-outlined">notifications</span>
-          </button>
+
           <a href="{{ url_for('dashboard') }}" class="p-2 rounded-full hover:bg-surface-container-low transition-colors text-on-surface-variant flex items-center justify-center">
             <span class="material-symbols-outlined">settings</span>
           </a>
