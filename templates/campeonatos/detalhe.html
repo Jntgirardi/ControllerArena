@@ -313,7 +313,7 @@
           {% if p.status != 'finalizada' and camp.status != 'ARQUIVADO' and (session.role in ('ADMIN', 'SUPER_ADMIN') or (session.role == 'REFEREE' and current_referee_id and p.arbitro_id|string == current_referee_id|string)) %}
           <div class="pt-2">
             <a href="{{ url_for('rounds_control', partida_id=p._id) }}" class="w-full py-2 bg-primary hover:bg-primary-container text-on-primary font-bold text-xs rounded shadow-sm text-center flex items-center justify-center gap-1.5 text-decoration-none">
-              <span class="material-symbols-outlined text-[16px]">controller</span> Controlar Súmula (Rounds)
+              <span class="material-symbols-outlined text-[16px]">sports_esports</span> Controlar Súmula (Rounds)
             </a>
           </div>
           {% endif %}
