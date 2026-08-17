@@ -1265,16 +1265,15 @@ def register_routes(app, services):
 
 
     @app.route("/ranking", endpoint="ranking")
-    @login_required
     def ranking():
         current_user = build_current_user()
-        player_data = services["player_profile"].get_profile(session["user_id"]) if session.get("role") == ROLE_PLAYER else None
+        player_data = services["player_profile"].get_profile(session["user_id"]) if session.get("user_id") and session.get("role") == ROLE_PLAYER else None
         player_game = ((player_data or {}).get("jogador") or {}).get("jogo_principal", "")
         jogo = request.args.get("jogo", "").strip()
         if session.get("role") == ROLE_PLAYER:
             jogo = player_game
         jogadores = services["ranking"].list_ranking(current_user, jogo)
-        show_team_ranking = session.get("role") in (ROLE_ADMIN, ROLE_SUPER_ADMIN) or bool(jogo)
+        show_team_ranking = not current_user or session.get("role") in (ROLE_ADMIN, ROLE_SUPER_ADMIN) or bool(jogo)
         team_ranking = services["ranking"].list_team_ranking(current_user, jogo) if show_team_ranking else []
         return render_template(
             "ranking.html",

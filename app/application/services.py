@@ -1264,21 +1264,21 @@ class RankingService:
         self.team_repo = team_repo
         self.cache = cache
 
-    def _cache_key(self, current_user: dict[str, Any], jogo: str) -> str:
+    def _cache_key(self, current_user: dict[str, Any] | None, jogo: str) -> str:
         scope = "global"
-        if current_user["role"] != ROLE_SUPER_ADMIN:
+        if current_user and current_user["role"] != ROLE_SUPER_ADMIN:
             scope = str(get_scope_admin_id(current_user))
         game = jogo or "todos"
         return f"{RANKING_CACHE_PREFIX}:{scope}:{game}"
 
-    def list_ranking(self, current_user: dict[str, Any], jogo: str):
+    def list_ranking(self, current_user: dict[str, Any] | None, jogo: str):
         cache_key = self._cache_key(current_user, jogo)
         cached = self.cache.get(cache_key)
         if cached is not None:
             return cached
 
         filtro = {}
-        if current_user["role"] != ROLE_SUPER_ADMIN:
+        if current_user and current_user["role"] != ROLE_SUPER_ADMIN:
             filtro["admin_id"] = get_scope_admin_id(current_user)
         if jogo:
             filtro["jogo_principal"] = jogo
@@ -1302,9 +1302,9 @@ class RankingService:
         self.cache.set(cache_key, ranking)
         return ranking
 
-    def list_team_ranking(self, current_user: dict[str, Any], jogo: str):
+    def list_team_ranking(self, current_user: dict[str, Any] | None, jogo: str):
         filtro = {}
-        if current_user["role"] != ROLE_SUPER_ADMIN:
+        if current_user and current_user["role"] != ROLE_SUPER_ADMIN:
             filtro["admin_id"] = get_scope_admin_id(current_user)
         if jogo:
             filtro["jogo"] = jogo
