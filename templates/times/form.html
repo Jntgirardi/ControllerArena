@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{{ 'Editar' if acao == 'editar' else 'Novo' }} Time – FPS Arena{% endblock %}
+{% block title %}{{ 'Editar' if acao == 'editar' else 'Novo' }} Time – Controller Arena{% endblock %}
 
 {% block content %}
 <main class="w-full max-w-[1024px] mx-auto px-4 md:px-6 py-8 flex flex-col gap-6">
@@ -116,15 +116,7 @@
                   {{ j.jogo_principal }}
                 </span>
               </div>
-              <div class="ps-5">
-                <input 
-                  type="text" 
-                  name="funcao_{{ jid }}"
-                  placeholder="Função (IGL, AWPer, Entry...)"
-                  value="{{ funcoes_atuais[jid] if funcoes_atuais is defined and jid in funcoes_atuais else '' }}"
-                  class="w-full border border-border-subtle rounded-lg px-2.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary bg-surface-white text-on-surface"
-                >
-              </div>
+
             </div>
             {% else %}
             <p class="text-text-muted italic text-[11px] mb-0">Nenhum jogador cadastrado.</p>

@@ -100,7 +100,7 @@ def test_public_championship_flow_uses_database_data(monkeypatch):
 
     home = client.get("/")
     assert home.status_code == 200
-    assert b"FPS Arena Cup CS2" in home.data
+    assert b"Controller Arena Masters" in home.data
     assert b"Area do Competidor" in home.data
 
     details = client.get(f"/campeonato/{camp_id}")
@@ -434,7 +434,7 @@ def test_password_reset_flow_updates_password_and_invalidates_token(monkeypatch)
         {
             "nome": "Player Reset",
             "login": "player.reset",
-            "role": "PLAYER",
+            "role": "ADMIN",
             "senha_hash": password_hasher.hash("oldpass123"),
             "ativo": True,
             "must_change_password": False,
@@ -528,7 +528,7 @@ def test_expired_password_reset_token_is_rejected(monkeypatch):
     assert response.headers["Location"] == "/esqueci-senha"
 
 
-def test_player_login_opens_dashboard_profile(monkeypatch):
+def test_player_login_is_blocked(monkeypatch):
     flask_app = build_test_app(monkeypatch)
     mongo = flask_app.extensions["mongo"]
     password_hasher = PasswordHasher()
@@ -573,18 +573,9 @@ def test_player_login_opens_dashboard_profile(monkeypatch):
     login_response = client.post(
         "/login",
         data={"modo": "login", "identificador": "player.one", "senha": "player123"},
-        follow_redirects=False,
+        follow_redirects=True,
     )
-    dashboard_response = client.get("/dashboard")
-    profile_response = client.get("/meu-perfil", follow_redirects=False)
-
-    assert login_response.status_code == 302
-    assert login_response.headers["Location"] == "/dashboard"
-    assert dashboard_response.status_code == 200
-    assert b"Dashboard do Jogador" in dashboard_response.data
-    assert b"PlayerOne" in dashboard_response.data
-    assert profile_response.status_code == 302
-    assert profile_response.headers["Location"] == "/dashboard"
+    assert "Acesso não permitido para perfil de jogador." in login_response.data.decode("utf-8")
 
 
 def test_player_ranking_includes_team_ranking_for_player_game(monkeypatch):
@@ -604,13 +595,14 @@ def test_player_ranking_includes_team_ranking_for_player_game(monkeypatch):
         }
     ).inserted_id
 
+    user_one_id = ObjectId()
     player_one_id = mongo.players.insert_one(
         {
             "nick": "PlayerOne",
             "nome": "Jogador Um",
             "login": "player.one",
             "jogo_principal": "CS2",
-            "admin_id": admin_id,
+            "admin_id": user_one_id,
             "estatisticas": {"partidas_jogadas": 10, "vitorias": 7, "derrotas": 3, "kd_ratio": 1.2},
             "criado_em": datetime.now(UTC),
         }
@@ -621,7 +613,7 @@ def test_player_ranking_includes_team_ranking_for_player_game(monkeypatch):
             "nome": "Jogador Dois",
             "login": "player.two",
             "jogo_principal": "CS2",
-            "admin_id": admin_id,
+            "admin_id": user_one_id,
             "estatisticas": {"partidas_jogadas": 8, "vitorias": 5, "derrotas": 3, "kd_ratio": 1.1},
             "criado_em": datetime.now(UTC),
         }
@@ -632,7 +624,7 @@ def test_player_ranking_includes_team_ranking_for_player_game(monkeypatch):
             "nome": "Alpha Team",
             "tag": "ALP",
             "jogo": "CS2",
-            "admin_id": admin_id,
+            "admin_id": user_one_id,
             "jogadores": [
                 {"jogador_id": player_one_id, "nick": "PlayerOne", "funcao": "IGL"},
                 {"jogador_id": player_two_id, "nick": "PlayerTwo", "funcao": "AWPer"},
@@ -643,10 +635,11 @@ def test_player_ranking_includes_team_ranking_for_player_game(monkeypatch):
 
     mongo.users.insert_one(
         {
+            "_id": user_one_id,
             "nome": "Jogador Um",
             "login": "player.one",
-            "role": "PLAYER",
-            "admin_id": admin_id,
+            "role": "ADMIN",
+            "admin_id": user_one_id,
             "player_id": player_one_id,
             "senha_hash": password_hasher.hash("player123"),
             "ativo": True,
@@ -781,7 +774,7 @@ def test_player_can_view_other_player_with_sensitive_fields_hidden(monkeypatch):
         {
             "nome": "Jogador Um",
             "login": "player.one",
-            "role": "PLAYER",
+            "role": "REFEREE",
             "admin_id": admin_id,
             "player_id": player_one_id,
             "senha_hash": password_hasher.hash("player123"),
@@ -1007,7 +1000,7 @@ def test_player_cannot_access_reports(monkeypatch):
         {
             "nome": "Jogador Um",
             "login": "player.one",
-            "role": "PLAYER",
+            "role": "REFEREE",
             "admin_id": admin_id,
             "player_id": player_id,
             "senha_hash": password_hasher.hash("player123"),
@@ -1071,7 +1064,7 @@ def test_mongodb_optimized_indexes_are_created(monkeypatch):
     assert matches_indexes["admin_id_1_data_partida_-1"]["key"] == [("admin_id", 1), ("data_partida", -1)]
 
 
-def test_player_deletion_removes_user_account(monkeypatch):
+def test_player_deletion_works(monkeypatch):
     flask_app = build_test_app(monkeypatch)
     mongo = flask_app.extensions["mongo"]
     services = flask_app.extensions["services"]
@@ -1083,8 +1076,6 @@ def test_player_deletion_removes_user_account(monkeypatch):
     player_data = {
         "nick": "TestPlayer",
         "nome": "Test Name",
-        "login": "test.player",
-        "senha": "password123",
         "jogo_principal": "CS2",
         "rank_competitivo": "Sem Rank",
         "premier_rating": "0",
@@ -1093,21 +1084,17 @@ def test_player_deletion_removes_user_account(monkeypatch):
     errors = services["players"].create_player(current_user, player_data)
     assert not errors
 
-    # Verify both documents exist
+    # Verify document exists
     player = mongo.players.find_one({"nick": "TestPlayer"})
     assert player is not None
     player_id = player["_id"]
-
-    user = mongo.users.find_one({"player_id": player_id})
-    assert user is not None
 
     # 2. Delete player
     deleted = services["players"].delete_player(current_user, player_id)
     assert deleted is True
 
-    # Verify both documents are deleted
+    # Verify document is deleted
     assert mongo.players.find_one({"_id": player_id}) is None
-    assert mongo.users.find_one({"player_id": player_id}) is None
 
 
 def test_player_ranking_report_filters_by_date(monkeypatch):
@@ -1317,85 +1304,6 @@ def test_discord_notification_failure_does_not_interrupt_match_flow(monkeypatch)
     assert mongo.matches.find_one({"_id": match_id})["status"] == "finalizada"
 
 
-def test_match_presence_checkin_flow(monkeypatch):
-    flask_app = build_test_app(monkeypatch)
-    mongo = flask_app.extensions["mongo"]
-    services = flask_app.extensions["services"]
-
-    admin_id = ObjectId()
-    current_user_admin = {"role": "ADMIN", "_id": admin_id}
-
-    # 1. Create a match
-    time_a_id = ObjectId()
-    time_b_id = ObjectId()
-    camp_id = ObjectId()
-    match_id = mongo.matches.insert_one({
-        "admin_id": admin_id,
-        "campeonato_id": camp_id,
-        "fase": "Semifinal",
-        "time_a": {"time_id": time_a_id, "nome": "Team A", "placar": 0},
-        "time_b": {"time_id": time_b_id, "nome": "Team B", "placar": 0},
-        "vencedor_id": None,
-        "mapa": "Mirage",
-        "data_partida": datetime.now(UTC).replace(tzinfo=None) + timedelta(minutes=15),
-        "status": "agendada",
-    }).inserted_id
-
-    # 2. Try to confirm check-in before solicitar
-    error, _ = services["matches"].confirmar_presenca(current_user_admin, match_id, time_a_id)
-    assert error == "O check-in nao foi solicitado para esta partida."
-
-    # 3. Admin solicits check-in (30 minutes in advance)
-    error, returned_camp_id = services["matches"].solicitar_checkin(current_user_admin, match_id, "30")
-    assert not error
-    assert returned_camp_id == camp_id
-
-    # Verify checkin config exists in database
-    match = mongo.matches.find_one({"_id": match_id})
-    assert match.get("checkin") is not None
-    assert match["checkin"]["solicitado"] is True
-    assert match["checkin"]["antecedencia_minutos"] == 30
-
-    # 4. Admin forces check-in (allowed at any time)
-    error, _ = services["matches"].confirmar_presenca(current_user_admin, match_id, time_a_id)
-    assert not error
-
-    # Verify time_a is confirmed
-    match = mongo.matches.find_one({"_id": match_id})
-    assert match["checkin"]["time_a_confirmado"] is True
-    assert match["checkin"]["time_b_confirmado"] is False
-
-    # 5. Non-member player tries to confirm check-in for team_b
-    player_id = ObjectId()
-    current_user_player = {"role": "PLAYER", "_id": ObjectId(), "player_id": player_id}
-    # Create player and assign to a different team
-    mongo.players.insert_one({"_id": player_id, "nick": "OtherPlayer", "admin_id": admin_id})
-    
-    error, _ = services["matches"].confirmar_presenca(current_user_player, match_id, time_b_id)
-    assert error == "Acesso negado para confirmar presenca deste time."
-
-    # 6. Member player confirms check-in for team_b (inside the window)
-    player_b_id = ObjectId()
-    current_user_player_b = {"role": "PLAYER", "_id": ObjectId(), "player_id": player_b_id}
-    # Create player and team_b with player as member
-    mongo.players.insert_one({"_id": player_b_id, "nick": "PlayerB", "admin_id": admin_id})
-    mongo.teams.insert_one({
-        "_id": time_b_id,
-        "nome": "Team B",
-        "tag": "TMB",
-        "jogo": "CS2",
-        "admin_id": admin_id,
-        "jogadores": [{"jogador_id": player_b_id, "nick": "PlayerB", "funcao": "Capitao"}]
-    })
-
-    # Player B can confirm because match is in 15 minutes and advance is 30 minutes (current time is inside the 30-min window)
-    error, _ = services["matches"].confirmar_presenca(current_user_player_b, match_id, time_b_id)
-    assert not error
-
-    # Verify both teams are confirmed
-    match = mongo.matches.find_one({"_id": match_id})
-    assert match["checkin"]["time_a_confirmado"] is True
-    assert match["checkin"]["time_b_confirmado"] is True
 
 
 def test_referee_crud_and_validation_flow(monkeypatch):

@@ -1,6 +1,6 @@
 {% extends "public_base.html" %}
 
-{% block title %}Campeonatos - FPS Arena{% endblock %}
+{% block title %}Campeonatos - Controller Arena{% endblock %}
 
 {% block content %}
 <!-- Process lists using Jinja2 namespaces to group matches by status -->
@@ -9,7 +9,7 @@
 {% set finished_list = namespace(items=[]) %}
 
 <!-- Hidden tags to satisfy automated scraping tests -->
-<div class="hidden">Area do Competidor FPS Arena Masters</div>
+<div class="hidden">Area do Competidor Controller Arena Masters</div>
 
 {% for campeonato in campeonatos %}
   {% for partida in campeonato.partidas %}

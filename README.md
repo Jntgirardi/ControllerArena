@@ -1,6 +1,6 @@
-# FPS Arena 🎮🔥
+# Controller Arena 🎮🔥
 
-O **FPS Arena** é uma plataforma web moderna de nível corporativo voltada para a gestão integrada de campeonatos de e-Sports, com foco específico em jogos de tiro em primeira pessoa (FPS) como *Counter-Strike 2 (CS2)* e *Valorant*.
+O **Controller Arena** é uma plataforma web moderna de nível corporativo voltada para a gestão integrada de campeonatos de e-Sports, com foco específico em jogos de tiro em primeira pessoa (FPS) como *Counter-Strike 2 (CS2)* e *Valorant*.
 
 O sistema centraliza a administração de competições, jogadores, equipes, chaves de partidas (brackets), confirmações de presença e arbitragem de rounds em tempo real, fornecendo um ecossistema seguro, auditável e de alto desempenho para organizadores e competidores.
 
@@ -15,13 +15,13 @@ A organização de campeonatos amadores e semiprofissionais de e-Sports é frequ
 * **Falta de Segurança:** Exposição de dados de contato de menores de idade e senhas vulneráveis.
 * **Ausência de Dados:** Dificuldade em compilar estatísticas de desempenho para gerar rankings justos e relatórios de audiência para patrocinadores.
 
-O **FPS Arena** foi projetado para resolver essas dores inserindo-se diretamente no setor de entretenimento competitivo digital. Ele atua como um sistema integrado que garante conformidade nas regras de torneio, automatiza súmulas e protege os dados dos participantes.
+O **Controller Arena** foi projetado para resolver essas dores inserindo-se diretamente no setor de entretenimento competitivo digital. Ele atua como um sistema integrado que garante conformidade nas regras de torneio, automatiza súmulas e protege os dados dos participantes.
 
 ### 1.2 Justificativa de Escolha do Tema
 O mercado global de e-Sports movimenta bilhões de dólares e atrai uma base de fãs engajada. A escolha de focar em jogos de FPS (*CS2* e *Valorant*) justifica-se pela complexidade estrutural dessas modalidades: elas exigem controle rígido de elencos, gerenciamento dinâmico de rounds com diferentes condições de vitória (eliminação, detonação, defuse) e súmulas detalhadas que geram engajamento para a comunidade gamer.
 
 ### 1.3 Identidade Visual Básica
-A identidade visual do **FPS Arena** foi projetada sob o conceito *Gamer Premium / Dark Theme*, transmitindo dinamismo, precisão e competitividade:
+A identidade visual do **Controller Arena** foi projetada sob o conceito *Gamer Premium / Dark Theme*, transmitindo dinamismo, precisão e competitividade:
 * **Paleta de Cores (Aesthetics):**
   - **Fundo Principal:** Slate Dark (`#0B0E14` / HSL `220, 30%, 6%`) - Tom escuro fosco que reduz a fadiga visual.
   - **Destaque Primário (Ação/Neon):** Target Red (`#FF3B30` / HSL `0, 100%, 59%`) - Tom de vermelho neon simbolizando precisão e mira.
@@ -132,7 +132,7 @@ O sistema foi mapeado com base nas diretrizes da engenharia de software ágil, e
 
 ## 🗄️ 4. Modelagem e Engenharia de Dados
 
-A modelagem do FPS Arena foi projetada para tirar proveito da escalabilidade do banco de dados orientado a documentos **MongoDB**, utilizando embutimento de documentos para alta velocidade de leitura e referências estratégicas para evitar concorrência e excesser limites físicos de armazenamento.
+A modelagem do Controller Arena foi projetada para tirar proveito da escalabilidade do banco de dados orientado a documentos **MongoDB**, utilizando embutimento de documentos para alta velocidade de leitura e referências estratégicas para evitar concorrência e excesser limites físicos de armazenamento.
 
 ### 4.1 Justificativa de Escolha da Stack Tecnológica
 * **Framework Python (Flask):** Escolhemos o Flask por ser um micro-framework extremamente leve e modular. Ao contrário de frameworks pesados e rígidos como Django, o Flask nos concedeu controle absoluto para aplicar a **Clean Architecture (Arquitetura Limpa)** de forma pura, implementando nossa própria estrutura conceitual de casos de uso (Domain Services), controladores abstratos e repositórios sem amarras de middlewares pré-configurados.
@@ -225,7 +225,7 @@ erDiagram
 
 ## 🎨 5. Experiência do Usuário (Wireframes) e Interface Premium
 
-O **FPS Arena** preocupa-se ativamente com a usabilidade profissional, estruturando fluxos visuais limpos focados no diferencial competitivo da súmula dinâmica de rounds e do check-in automático.
+O **Controller Arena** preocupa-se ativamente com a usabilidade profissional, estruturando fluxos visuais limpos focados no diferencial competitivo da súmula dinâmica de rounds e do check-in automático.
 
 ### 5.1 O Fluxo de Telas Core (Wireframe Blueprint)
 1. **Tela de Autenticação (Login/Alteração Obrigatória):** Interface limpa no centro com alertas claros. Usuários em primeiro acesso são direcionados obrigatoriamente a criar uma senha segura antes de navegar no sistema.
@@ -268,7 +268,7 @@ A nossa classe `RankingService` (`app/application/services.py`) encapsula a lóg
 
 ## 📐 8. Arquitetura do Sistema e Engenharia de Software
 
-O ecossistema do **FPS Arena** segue os princípios de arquitetura limpa (Clean Architecture) e Domain-Driven Design (DDD), separando as camadas físicas em:
+O ecossistema do **Controller Arena** segue os princípios de arquitetura limpa (Clean Architecture) e Domain-Driven Design (DDD), separando as camadas físicas em:
 * `app/domain/`: Entidades de negócios puras baseadas em `@dataclass` Python.
 * `app/application/`: Camada de regras de caso de uso e serviços centrais.
 * `app/infrastructure/`: Repositórios físicos do MongoDB, ODM MongoEngine, conexões ao Redis e hashes de segurança.
@@ -330,4 +330,4 @@ python -m pytest
 ```
 
 ---
-*FPS Arena - Desenvolvido como projeto prático de Banco de Dados NoSQL e Sistemas Web.*
+*Controller Arena - Desenvolvido como projeto prático de Banco de Dados NoSQL e Sistemas Web.*

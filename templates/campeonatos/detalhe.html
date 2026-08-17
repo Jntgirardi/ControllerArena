@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{{ camp.nome }} - FPS Arena{% endblock %}
+{% block title %}{{ camp.nome }} - Controller Arena{% endblock %}
 
 {% block content %}
 <main class="flex-grow w-full max-w-[1280px] mx-auto px-4 md:px-container-margin py-6 flex flex-col gap-6">
@@ -293,13 +293,7 @@
           </div>
           {% endif %}
 
-          <!-- W.O. Banner -->
-          {% if p.get('checkin') and p.checkin.wo_aplicado %}
-          <div class="bg-red-50 border border-red-200 rounded p-2 text-xs text-red-700 flex items-center gap-2">
-            <span class="material-symbols-outlined text-[16px]">warning</span>
-            <span>{{ p.checkin.mensagem_wo }}</span>
-          </div>
-          {% endif %}
+
 
           <!-- Manual Score Registration (Admin Only) -->
           {% if p.status != 'finalizada' and session.role == 'ADMIN' and camp.status != 'ARQUIVADO' %}
@@ -319,94 +313,12 @@
           {% if p.status != 'finalizada' and camp.status != 'ARQUIVADO' and (session.role in ('ADMIN', 'SUPER_ADMIN') or (session.role == 'REFEREE' and current_referee_id and p.arbitro_id|string == current_referee_id|string)) %}
           <div class="pt-2">
             <a href="{{ url_for('rounds_control', partida_id=p._id) }}" class="w-full py-2 bg-primary hover:bg-primary-container text-on-primary font-bold text-xs rounded shadow-sm text-center flex items-center justify-center gap-1.5 text-decoration-none">
-              <span class="material-symbols-outlined text-[16px]">controller</span> Controlar Súmula (Rounds)
+              <span class="material-symbols-outlined text-[16px]">sports_esports</span> Controlar Súmula (Rounds)
             </a>
           </div>
           {% endif %}
 
-          <!-- Check-in & WO Validation Panel -->
-          {% if p.status != 'finalizada' and camp.status != 'ARQUIVADO' %}
-          <div class="pt-2.5 border-t border-border-subtle/50 mt-1 flex flex-col gap-2">
-            {% if p.get('checkin') and p.checkin.solicitado %}
-              <div class="flex justify-between items-center flex-wrap gap-2 text-xs">
-                <span class="text-text-muted flex items-center gap-1"><span class="material-symbols-outlined text-sm">schedule</span> Check-in ({{ p.checkin.antecedencia_minutos }}m):</span>
-                <div class="flex gap-2">
-                  <span class="px-2 py-0.5 rounded text-[10px] font-bold border {{ 'bg-emerald-50 text-emerald-700 border-emerald-200' if p.checkin.time_a_confirmado else 'bg-amber-50 text-amber-700 border-amber-200' }}">
-                    {{ p.time_a.nome }}: {{ 'Confirmado' if p.checkin.time_a_confirmado else 'Pendente' }}
-                  </span>
-                  <span class="px-2 py-0.5 rounded text-[10px] font-bold border {{ 'bg-emerald-50 text-emerald-700 border-emerald-200' if p.checkin.time_b_confirmado else 'bg-amber-50 text-amber-700 border-amber-200' }}">
-                    {{ p.time_b.nome }}: {{ 'Confirmado' if p.checkin.time_b_confirmado else 'Pendente' }}
-                  </span>
-                </div>
-              </div>
 
-              {% if not p.checkin.time_a_confirmado or not p.checkin.time_b_confirmado %}
-              <div class="bg-red-50 border border-red-200 rounded p-2 text-[10px] text-red-700 font-bold flex items-center gap-1.5">
-                <span class="material-symbols-outlined text-xs pulse-animation">warning</span> Alerta: W.O. iminente devido a ausência!
-              </div>
-              {% endif %}
-
-              <!-- Force Presence actions -->
-              <div class="flex gap-2 flex-wrap">
-                {% if session.role == 'PLAYER' %}
-                  {% if not p.checkin.time_a_confirmado %}
-                  <form method="post" action="{{ url_for('confirmar_presenca', partida_id=p._id) }}" class="flex-1 m-0">
-                    <input type="hidden" name="time_id" value="{{ p.time_a.time_id }}">
-                    <button type="submit" class="w-full py-1 border border-success text-success hover:bg-success/5 font-bold text-[10px] rounded transition-all">Confirmar {{ p.time_a.nome }}</button>
-                  </form>
-                  {% endif %}
-                  {% if not p.checkin.time_b_confirmado %}
-                  <form method="post" action="{{ url_for('confirmar_presenca', partida_id=p._id) }}" class="flex-1 m-0">
-                    <input type="hidden" name="time_id" value="{{ p.time_b.time_id }}">
-                    <button type="submit" class="w-full py-1 border border-success text-success hover:bg-success/5 font-bold text-[10px] rounded transition-all">Confirmar {{ p.time_b.nome }}</button>
-                  </form>
-                  {% endif %}
-                {% endif %}
-
-                {% if session.role == 'ADMIN' %}
-                  {% if not p.checkin.time_a_confirmado %}
-                  <form method="post" action="{{ url_for('confirmar_presenca', partida_id=p._id) }}" class="flex-1 m-0">
-                    <input type="hidden" name="time_id" value="{{ p.time_a.time_id }}">
-                    <button type="submit" class="w-full py-1 border border-primary text-primary hover:bg-primary/5 font-bold text-[10px] rounded transition-all">Forçar {{ p.time_a.nome }}</button>
-                  </form>
-                  {% endif %}
-                  {% if not p.checkin.time_b_confirmado %}
-                  <form method="post" action="{{ url_for('confirmar_presenca', partida_id=p._id) }}" class="flex-1 m-0">
-                    <input type="hidden" name="time_id" value="{{ p.time_b.time_id }}">
-                    <button type="submit" class="w-full py-1 border border-primary text-primary hover:bg-primary/5 font-bold text-[10px] rounded transition-all">Forçar {{ p.time_b.nome }}</button>
-                  </form>
-                  {% endif %}
-                {% endif %}
-              </div>
-
-            {% elif session.role == 'ADMIN' %}
-              <!-- Request Check-in Setup (Collapsible) -->
-              <div class="hidden" id="checkinCollapse_{{ p._id }}">
-                <form method="post" action="{{ url_for('solicitar_checkin', partida_id=p._id) }}" class="flex gap-2 items-center mt-2">
-                  <select name="antecedencia_minutos" class="flex-1 rounded border-border-subtle text-xs p-1.5 bg-surface-white focus:ring-primary focus:border-primary">
-                    <option value="15">15 minutos</option>
-                    <option value="30" selected>30 minutos</option>
-                    <option value="45">45 minutos</option>
-                    <option value="60">60 minutos</option>
-                  </select>
-                  <button type="submit" class="px-4 py-1.5 bg-primary text-on-primary hover:opacity-90 font-bold text-xs rounded transition-all">Ativar</button>
-                </form>
-              </div>
-              <div class="flex gap-2">
-                <button onclick="document.getElementById('checkinCollapse_{{ p._id }}').classList.toggle('hidden')" class="flex-1 py-1.5 border border-border-subtle hover:bg-surface text-on-surface-variant font-bold text-[10px] rounded transition-all flex items-center justify-center gap-1">
-                  <span class="material-symbols-outlined text-xs">schedule</span> Configurar Check-in
-                </button>
-                {% if p.get('checkin') and p.checkin.solicitado and (not p.checkin.time_a_confirmado or not p.checkin.time_b_confirmado) %}
-                <form method="post" action="{{ url_for('verificar_checkin', partida_id=p._id) }}" class="flex-1 m-0">
-                  <button type="submit" class="w-full py-1.5 border border-error hover:bg-error-container hover:text-red-700 text-error font-bold text-[10px] rounded transition-all flex items-center justify-center gap-1">
-                    <span class="material-symbols-outlined text-xs">gavel</span> Validar W.O.
-                  </button>
-                </form>
-                {% endif %}
-              </div>
-            {% endif %}
-          </div>
-          {% endif %}
 
         </div>
         {% else %}

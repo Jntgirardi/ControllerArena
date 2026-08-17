@@ -77,7 +77,7 @@ class DiscordWebhookNotifier:
 
         payload = json.dumps(
             {
-                "username": "FPS Arena",
+                "username": "Controller Arena",
                 "content": content[:2000],
             }
         ).encode("utf-8")
@@ -198,11 +198,6 @@ class PlayerService:
             errors.append("Nome do jogador e obrigatorio.")
         if data.get("jogo_principal") not in ("CS2", "Valorant"):
             errors.append("Jogo principal invalido.")
-        if creating:
-            if not data.get("login", "").strip():
-                errors.append("Login do jogador e obrigatorio.")
-            if len(data.get("senha", "")) < 6:
-                errors.append("Senha do jogador deve ter ao menos 6 caracteres.")
         if data.get("jogo_principal") == "CS2":
             try:
                 if int(data.get("premier_rating") or 0) < 0:
@@ -219,9 +214,6 @@ class PlayerService:
         if errors:
             return errors
         admin_id = get_scope_admin_id(current_user)
-        login = data["login"].strip()
-        if self.user_repo.find_by_login(login):
-            return ["Login ja existe."]
         if self.player_repo.find_by_nick_case_insensitive(data["nick"].strip(), admin_id):
             return ["Este nick ja esta cadastrado para este organizador."]
 
@@ -229,7 +221,7 @@ class PlayerService:
             "nick": data["nick"].strip(),
             "nome": data["nome"].strip(),
             "nome_real": data["nome"].strip(),
-            "login": login,
+            "login": None,
             "jogo_principal": data["jogo_principal"],
             "contato": data.get("contato", "").strip(),
             "admin_id": admin_id,
@@ -245,19 +237,6 @@ class PlayerService:
             player_document["agente_principal"] = data.get("agente_principal", "").strip()
 
         player_id = self.player_repo.insert(player_document)
-        self.user_repo.insert(
-            {
-                "nome": data["nome"].strip(),
-                "login": login,
-                "senha_hash": self.password_hasher.hash(data["senha"]),
-                "role": ROLE_PLAYER,
-                "admin_id": admin_id,
-                "player_id": player_id,
-                "ativo": True,
-                "must_change_password": False,
-                "criado_em": utc_now_naive(),
-            }
-        )
         invalidate_ranking_cache(self.cache)
         return []
 
@@ -1285,21 +1264,21 @@ class RankingService:
         self.team_repo = team_repo
         self.cache = cache
 
-    def _cache_key(self, current_user: dict[str, Any], jogo: str) -> str:
+    def _cache_key(self, current_user: dict[str, Any] | None, jogo: str) -> str:
         scope = "global"
-        if current_user["role"] != ROLE_SUPER_ADMIN:
+        if current_user and current_user["role"] != ROLE_SUPER_ADMIN:
             scope = str(get_scope_admin_id(current_user))
         game = jogo or "todos"
         return f"{RANKING_CACHE_PREFIX}:{scope}:{game}"
 
-    def list_ranking(self, current_user: dict[str, Any], jogo: str):
+    def list_ranking(self, current_user: dict[str, Any] | None, jogo: str):
         cache_key = self._cache_key(current_user, jogo)
         cached = self.cache.get(cache_key)
         if cached is not None:
             return cached
 
         filtro = {}
-        if current_user["role"] != ROLE_SUPER_ADMIN:
+        if current_user and current_user["role"] != ROLE_SUPER_ADMIN:
             filtro["admin_id"] = get_scope_admin_id(current_user)
         if jogo:
             filtro["jogo_principal"] = jogo
@@ -1323,9 +1302,9 @@ class RankingService:
         self.cache.set(cache_key, ranking)
         return ranking
 
-    def list_team_ranking(self, current_user: dict[str, Any], jogo: str):
+    def list_team_ranking(self, current_user: dict[str, Any] | None, jogo: str):
         filtro = {}
-        if current_user["role"] != ROLE_SUPER_ADMIN:
+        if current_user and current_user["role"] != ROLE_SUPER_ADMIN:
             filtro["admin_id"] = get_scope_admin_id(current_user)
         if jogo:
             filtro["jogo"] = jogo

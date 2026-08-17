@@ -21,7 +21,7 @@ def ensure_dependencies() -> None:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Inicializador local do FPS Arena.")
+    parser = argparse.ArgumentParser(description="Inicializador local do Controller Arena.")
     parser.add_argument("--install", action="store_true", help="Instala/atualiza as dependencias antes de subir.")
     parser.add_argument("--seed", action="store_true", help="Recria a base de dados com dados de exemplo antes de subir.")
     parser.add_argument("--host", default="127.0.0.1", help="Host do servidor Flask.")

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{{ 'Editar' if acao == 'editar' else 'Novo' }} Jogador - FPS Arena{% endblock %}
+{% block title %}{{ 'Editar' if acao == 'editar' else 'Novo' }} Jogador - Controller Arena{% endblock %}
 
 {% block content %}
 <main class="w-full max-w-[1024px] mx-auto px-4 md:px-6 py-8 flex flex-col gap-6">
@@ -46,33 +46,7 @@
           </div>
         </div>
 
-        {% if acao != 'editar' %}
-        <!-- Login & Senha (apenas criação) -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label class="block font-bold text-xs text-on-surface mb-1" for="login">Login do Jogador *</label>
-            <input 
-              type="text" 
-              name="login" 
-              id="login"
-              value="{{ dados.get('login', '') }}" 
-              required
-              class="w-full border border-border-subtle rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary bg-surface-white transition-colors text-on-surface"
-            >
-          </div>
-          <div>
-            <label class="block font-bold text-xs text-on-surface mb-1" for="senha">Senha Inicial *</label>
-            <input 
-              type="password" 
-              name="senha" 
-              id="senha"
-              minlength="6"
-              required
-              class="w-full border border-border-subtle rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary bg-surface-white transition-colors text-on-surface"
-            >
-          </div>
-        </div>
-        {% endif %}
+
 
         <!-- Contato -->
         <div>
@@ -117,29 +91,10 @@
 
         <!-- Campos Extras CS2 -->
         <div id="campos_cs2" class="pt-2">
-          <label class="block font-bold text-xs text-on-surface mb-1" for="premier_rating">Premier Rating</label>
-          <input 
-            type="number" 
-            name="premier_rating" 
-            id="premier_rating"
-            value="{{ dados.get('premier_rating', 0) }}" 
-            min="0"
-            class="w-full border border-border-subtle rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary bg-surface-white transition-colors text-on-surface"
-          >
         </div>
 
         <!-- Campos Extras Valorant -->
         <div id="campos_valorant" class="pt-2" style="display:none">
-          <label class="block font-bold text-xs text-on-surface mb-1" for="rank_ato">Rank do Ato</label>
-          <select 
-            name="rank_ato" 
-            id="rank_ato"
-            class="w-full border border-border-subtle rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary bg-surface-white text-on-surface-variant cursor-pointer"
-          >
-            {% for r in ['Sem Rank','Iron 1','Iron 2','Iron 3','Bronze 1','Bronze 2','Bronze 3','Silver 1','Silver 2','Silver 3','Gold 1','Gold 2','Gold 3','Platinum 1','Platinum 2','Platinum 3','Diamond 1','Diamond 2','Diamond 3','Ascendant 1','Ascendant 2','Ascendant 3','Immortal 1','Immortal 2','Immortal 3','Radiant'] %}
-            <option {% if dados.get('rank_ato') == r %}selected{% endif %}>{{ r }}</option>
-            {% endfor %}
-          </select>
         </div>
 
         <!-- Submit Button -->

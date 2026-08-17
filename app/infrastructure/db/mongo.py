@@ -60,7 +60,7 @@ class MongoDatabase:
         # 1. Super Admin
         super_admin_id = db.usuarios.insert_one(
             {
-                "nome": "Plataforma FPS Arena",
+                "nome": "Plataforma Controller Arena",
                 "login": "superadmin",
                 "senha_hash": bcrypt.hashpw(b"super123", bcrypt.gensalt()),
                 "role": "SUPER_ADMIN",
@@ -171,21 +171,7 @@ class MongoDatabase:
                     p_id = db.jogadores.insert_one(player_doc).inserted_id
                     team_players.append({"jogador_id": p_id, "nick": p_nick, "funcao": "Capitão" if p_idx == 1 else "Jogador"})
                     
-                    # Create user account for player
-                    db.usuarios.insert_one(
-                        {
-                            "nome": p_name,
-                            "login": p_login,
-                            "senha_hash": bcrypt.hashpw(b"jogador123", bcrypt.gensalt()),
-                            "role": "PLAYER",
-                            "admin_id": adm_id,
-                            "player_id": p_id,
-                            "ativo": True,
-                            "must_change_password": False,
-                            "criado_em": utc_now(),
-                        }
-                    )
-                    
+
                 db.times.update_one({"_id": team_id}, {"$set": {"jogadores": team_players}})
         
             # 4 Running Championships (2 CS2, 2 Valorant)
@@ -199,7 +185,7 @@ class MongoDatabase:
                         "max_times": 8,
                         "premiacao": {"1_lugar": f"R$ {c_idx * 1000},00", "2_lugar": "R$ 400,00", "3_lugar": "R$ 100,00"},
                         "datas": {"inicio": hoje + timedelta(days=1), "fim": hoje + timedelta(days=15)},
-                        "status": "EM_ANDAMENTO",
+                        "status": "INSCRICAO",
                         "admin_id": adm_id,
                         "times_inscritos": cs2_team_ids,
                         "criado_por": adm_id,
@@ -216,7 +202,7 @@ class MongoDatabase:
                         "max_times": 8,
                         "premiacao": {"1_lugar": f"R$ {c_idx * 900},00", "2_lugar": "R$ 300,00", "3_lugar": "R$ 50,00"},
                         "datas": {"inicio": hoje + timedelta(days=2), "fim": hoje + timedelta(days=20)},
-                        "status": "EM_ANDAMENTO",
+                        "status": "INSCRICAO",
                         "admin_id": adm_id,
                         "times_inscritos": val_team_ids,
                         "criado_por": adm_id,
