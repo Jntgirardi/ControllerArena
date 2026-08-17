@@ -1,85 +1,165 @@
 {% extends "base.html" %}
-{% block title %}Campeonatos - FPS Arena{% endblock %}
+
+{% block title %}Campeonatos - Controller Arena{% endblock %}
+
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-  <h4 class="mb-0 page-title">Campeonatos</h4>
-  {% if session.role == 'ADMIN' %}
-  <a href="{{ url_for('novo_campeonato') }}" class="btn btn-primary btn-sm">Novo Campeonato</a>
-  {% endif %}
-</div>
-<form class="row g-2 mb-3">
-  <div class="col-12 col-sm-6 col-md-3">
-    <select name="status" class="form-select form-select-sm">
-      <option value="">Todos os status</option>
-      <option value="INSCRICAO" {% if filtro_status == 'INSCRICAO' %}selected{% endif %}>Inscricao</option>
-      <option value="EM_ANDAMENTO" {% if filtro_status == 'EM_ANDAMENTO' %}selected{% endif %}>Em andamento</option>
-      <option value="FINALIZADO" {% if filtro_status == 'FINALIZADO' %}selected{% endif %}>Finalizado</option>
-      <option value="ARQUIVADO" {% if filtro_status == 'ARQUIVADO' %}selected{% endif %}>Arquivado</option>
-    </select>
-  </div>
-  <div class="col-12 col-sm-6 col-md-3">
-    <select name="jogo" class="form-select form-select-sm">
-      <option value="">Todos os jogos</option>
-      <option value="CS2" {% if filtro_jogo == 'CS2' %}selected{% endif %}>CS2</option>
-      <option value="Valorant" {% if filtro_jogo == 'Valorant' %}selected{% endif %}>Valorant</option>
-    </select>
-  </div>
-  <div class="col-12 col-sm-6 col-md-2">
-    <button type="submit" class="btn btn-secondary btn-sm w-100">Filtrar</button>
-  </div>
-</form>
-<div class="row g-3">
-  {% for c in campeonatos %}
-  <div class="col-12 col-md-6">
-    <div class="card h-100">
-      <div class="card-header d-flex justify-content-between align-items-start flex-wrap">
-        <strong>{{ c.nome }}</strong>
-        <span class="badge {{ 'badge-cs2' if c.jogo == 'CS2' else 'badge-valorant' }}">{{ c.jogo }}</span>
-      </div>
-      <div class="card-body">
-        <div class="mb-2"><span class="badge bg-secondary">{{ c.status }}</span></div>
-        <div class="small text-muted">Formato: {{ c.formato }}</div>
-        <div class="small text-muted">Times: {{ c.times_inscritos|length }} / {{ c.max_times }}</div>
-        <div class="small text-muted">{{ c.datas.inicio.strftime('%d/%m/%Y') }} ate {{ c.datas.fim.strftime('%d/%m/%Y') }}</div>
-      </div>
-      <div class="card-footer">
-        <div class="d-grid gap-2">
-          <a href="{{ url_for('ver_campeonato', camp_id=c._id) }}" class="btn btn-sm btn-outline-info w-100">Ver detalhes</a>
-          {% if session.role == 'ADMIN' %}
-          <a href="{{ url_for('editar_campeonato', camp_id=c._id) }}" class="btn btn-sm btn-outline-primary w-100">Editar campeonato</a>
+<main class="w-full max-w-[1024px] mx-auto px-4 md:px-6 py-8 flex flex-col gap-8">
+  
+  <!-- Header Section -->
+  <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-border-subtle pb-4">
+    <div>
+      <h1 class="text-2xl font-headline font-bold text-on-surface">Campeonatos</h1>
+      <p class="text-xs text-text-muted mt-1">Gerencie torneios ativos, inscrições e históricos.</p>
+    </div>
+    {% if session.role == 'ADMIN' %}
+    <a href="{{ url_for('novo_campeonato') }}" class="bg-primary hover:bg-primary-container text-on-primary font-bold text-xs px-5 py-2.5 rounded-lg flex items-center justify-center gap-1.5 transition-all shadow-sm text-decoration-none sm:w-auto">
+      <span class="material-symbols-outlined text-[18px]">add</span> Novo Campeonato
+    </a>
+    {% endif %}
+  </header>
+
+  <!-- Filters Section -->
+  <form class="bg-surface-white border border-border-subtle rounded-xl p-card-padding shadow-sm flex flex-col sm:flex-row gap-4 items-end" method="get" action="{{ url_for('listar_campeonatos') }}">
+    <div class="w-full sm:flex-1">
+      <select name="status" class="w-full border border-border-subtle rounded-lg focus:ring-1 focus:ring-primary focus:border-primary text-xs py-2.5 px-4 bg-surface-white text-on-surface-variant">
+        <option value="">Todos os status</option>
+        <option value="INSCRICAO" {% if filtro_status == 'INSCRICAO' %}selected{% endif %}>Inscrição</option>
+        <option value="EM_ANDAMENTO" {% if filtro_status == 'EM_ANDAMENTO' %}selected{% endif %}>Em andamento</option>
+        <option value="FINALIZADO" {% if filtro_status == 'FINALIZADO' %}selected{% endif %}>Finalizado</option>
+        <option value="ARQUIVADO" {% if filtro_status == 'ARQUIVADO' %}selected{% endif %}>Arquivado</option>
+      </select>
+    </div>
+    <div class="w-full sm:w-48">
+      <select name="jogo" class="w-full border border-border-subtle rounded-lg focus:ring-1 focus:ring-primary focus:border-primary text-xs py-2.5 px-4 bg-surface-white text-on-surface-variant">
+        <option value="">Todos os jogos</option>
+        <option value="CS2" {% if filtro_jogo == 'CS2' %}selected{% endif %}>CS2</option>
+        <option value="Valorant" {% if filtro_jogo == 'Valorant' %}selected{% endif %}>Valorant</option>
+      </select>
+    </div>
+    <button type="submit" class="w-full sm:w-auto bg-surface-variant text-on-surface hover:bg-surface-dim px-6 py-2.5 rounded-lg font-bold text-xs transition-colors border border-outline-variant/30 flex items-center justify-center gap-1.5">
+      <span class="material-symbols-outlined text-[18px]">filter_list</span> Filtrar
+    </button>
+  </form>
+
+  <!-- Active Tournaments Bento Grid -->
+  <section class="w-full">
+    <h2 class="text-base font-bold text-on-surface mb-6 flex items-center gap-2 border-b border-border-subtle pb-2">
+      <span class="w-2.5 h-2.5 rounded-full bg-error animate-pulse"></span>
+      Campeonatos Ativos
+    </h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-gutter w-full">
+      {% for c in campeonatos %}
+      <article class="bg-surface-white border border-border-subtle rounded-xl overflow-hidden hover:-translate-y-[2px] hover:border-primary transition-all duration-200 group relative shadow-sm flex flex-col h-full">
+        <!-- Status Badge -->
+        <div class="absolute top-4 right-4 z-10 bg-black/40 backdrop-blur-sm border border-white/20 text-white font-bold text-[10px] px-3 py-1 rounded-full flex items-center gap-1.5 shadow-sm uppercase tracking-wider">
+          {% if c.status == 'EM_ANDAMENTO' or c.status == 'Em andamento' %}
+          <span class="w-1.5 h-1.5 rounded-full bg-error animate-pulse"></span>
+          Live
+          {% else %}
+          <span class="w-1.5 h-1.5 rounded-full bg-warning"></span>
+          Inscrições
           {% endif %}
         </div>
+        <!-- Cover Image -->
+        <div class="relative w-full aspect-video bg-surface-variant overflow-hidden border-b border-border-subtle flex-shrink-0">
+          {% if c.jogo == 'CS2' %}
+          <img alt="CS2 Arena" class="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500" src="https://images.unsplash.com/photo-1542751371-adc38448a05e?w=600&auto=format&fit=crop">
+          {% else %}
+          <img alt="Valorant Arena" class="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500" src="https://images.unsplash.com/photo-1553481187-be93c21490a9?w=600&auto=format&fit=crop">
+          {% endif %}
+          <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+          <div class="absolute bottom-4 left-4">
+            <span class="bg-white/20 backdrop-blur-md border border-white/30 text-white font-bold text-[10px] px-2 py-0.5 rounded uppercase tracking-wider font-mono">{{ c.jogo }}</span>
+          </div>
+        </div>
+        
+        <!-- Content -->
+        <div class="p-card-padding flex flex-col flex-grow">
+          <h3 class="font-headline font-bold text-on-surface text-sm mb-2 truncate">{{ c.nome }}</h3>
+          
+          <div class="flex flex-col gap-2.5 mt-2 flex-grow text-xs">
+            <div class="flex justify-between items-center">
+              <span class="text-text-muted font-semibold">Formato</span>
+              <span class="text-on-surface font-semibold bg-surface-container px-2.5 py-0.5 rounded capitalize">{{ c.formato }}</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-text-muted font-semibold">Equipes</span>
+              <span class="text-on-surface font-semibold font-mono"><span class="text-primary font-bold">{{ c.times_inscritos|length }}</span> / {{ c.max_times }}</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-text-muted font-semibold">Início</span>
+              <span class="text-text-muted font-semibold font-mono">{{ c.datas.inicio.strftime('%d/%m/%Y') }}</span>
+            </div>
+          </div>
+          
+          <div class="mt-6 pt-4 border-t border-border-subtle flex justify-between items-center w-full">
+            <a href="{{ url_for('ver_campeonato', camp_id=c._id) }}" class="text-primary font-bold text-xs hover:text-primary-container transition-colors flex items-center gap-1 text-decoration-none">
+              Gerenciar <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+            </a>
+            {% if session.role == 'ADMIN' %}
+            <a href="{{ url_for('editar_campeonato', camp_id=c._id) }}" class="bg-surface-white border border-border-subtle text-text-muted hover:text-primary hover:border-primary px-3 py-1.5 rounded-lg text-[10px] transition-colors text-decoration-none font-bold">
+              Editar
+            </a>
+            {% endif %}
+          </div>
+        </div>
+      </article>
+      {% else %}
+      <div class="col-span-full text-text-muted text-center py-8 italic bg-surface-white border border-border-subtle rounded-xl p-8 shadow-sm">
+        Nenhum campeonato ativo encontrado.
       </div>
+      {% endfor %}
     </div>
-  </div>
-  {% else %}
-  <div class="col-12 text-muted text-center py-4">Nenhum campeonato ativo encontrado.</div>
-  {% endfor %}
-</div>
+  </section>
 
-{% if campeonatos_arquivados %}
-<hr class="my-4" style="border-color: var(--border);">
-<h5 class="mb-3 text-muted"><i class="bi bi-archive-fill me-1"></i> Campeonatos Arquivados</h5>
-<div class="row g-3">
-  {% for c in campeonatos_arquivados %}
-  <div class="col-12 col-md-6">
-    <div class="card h-100 border-secondary" style="opacity: 0.72;">
-      <div class="card-header d-flex justify-content-between align-items-start flex-wrap" style="background: rgba(0,0,0,0.15);">
-        <strong class="text-muted">{{ c.nome }}</strong>
-        <span class="badge {{ 'badge-cs2' if c.jogo == 'CS2' else 'badge-valorant' }}">{{ c.jogo }}</span>
-      </div>
-      <div class="card-body">
-        <div class="mb-2"><span class="badge bg-dark text-muted">Arquivado</span></div>
-        <div class="small text-muted">Formato: {{ c.formato }}</div>
-        <div class="small text-muted">Times: {{ c.times_inscritos|length }} / {{ c.max_times }}</div>
-        <div class="small text-muted">{{ c.datas.inicio.strftime('%d/%m/%Y') }} ate {{ c.datas.fim.strftime('%d/%m/%Y') }}</div>
-      </div>
-      <div class="card-footer">
-        <a href="{{ url_for('ver_campeonato', camp_id=c._id) }}" class="btn btn-sm btn-outline-secondary w-100">Consultar historico</a>
+  <!-- Archived / Closed Tournaments Table -->
+  {% if campeonatos_arquivados %}
+  <section class="w-full">
+    <h2 class="text-base font-bold text-on-surface mb-6 flex items-center gap-2 border-b border-border-subtle pb-2">
+      <span class="material-symbols-outlined text-text-muted text-lg">history</span>
+      Campeonatos Encerrados
+    </h2>
+    <div class="bg-surface-white border border-border-subtle rounded-xl shadow-sm overflow-hidden w-full">
+      <div class="w-full overflow-x-auto no-scrollbar">
+        <table class="w-full text-left border-collapse text-xs min-w-[700px]">
+          <thead>
+            <tr class="bg-surface-container-low border-b border-border-subtle text-text-muted">
+              <th class="py-4 px-6 font-bold uppercase tracking-wider text-[10px]">Nome</th>
+              <th class="py-4 px-6 font-bold uppercase tracking-wider text-[10px]">Jogo</th>
+              <th class="py-4 px-6 font-bold uppercase tracking-wider text-[10px]">Vencedor</th>
+              <th class="py-4 px-6 font-bold uppercase tracking-wider text-[10px]">Data</th>
+              <th class="py-4 px-6 font-bold uppercase tracking-wider text-[10px] text-right">Ação</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-border-subtle font-body-md text-on-surface">
+            {% for c in campeonatos_arquivados %}
+            <tr class="hover:bg-surface-container-low transition-colors group">
+              <td class="py-4 px-6 text-on-surface font-bold">{{ c.nome }}</td>
+              <td class="py-4 px-6 text-text-muted font-semibold uppercase font-mono">{{ c.jogo }}</td>
+              <td class="py-4 px-6">
+                {% if c.vencedor or c.campeao %}
+                <div class="flex items-center gap-1 text-on-surface font-semibold">
+                  <span class="material-symbols-outlined text-warning text-[18px]">emoji_events</span>
+                  <span>{{ c.vencedor or c.campeao }}</span>
+                </div>
+                {% else %}
+                <span class="text-text-muted italic">-</span>
+                {% endif %}
+              </td>
+              <td class="py-4 px-6 text-text-muted font-mono font-semibold">{{ c.datas.fim.strftime('%d/%m/%Y') }}</td>
+              <td class="py-4 px-6 text-right">
+                <a class="text-primary font-bold hover:underline inline-flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity text-decoration-none" href="{{ url_for('ver_campeonato', camp_id=c._id) }}">
+                  Ver Detalhes <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
       </div>
     </div>
-  </div>
-  {% endfor %}
-</div>
-{% endif %}
+  </section>
+  {% endif %}
+
+</main>
 {% endblock %}

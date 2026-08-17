@@ -1,400 +1,361 @@
 {% extends "base.html" %}
-{% block title %}Dashboard - FPS Arena{% endblock %}
-{% block content %}
-{% if session.role == 'PLAYER' %}
-{% set data = player_data %}
-<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-  <div>
-    <h4 class="mb-1 page-title">Dashboard do Jogador</h4>
-    <div class="text-muted small">Seu perfil e desempenho em um unico lugar.</div>
-  </div>
-</div>
 
-{% if not data %}
-<div class="card" style="max-width:520px">
-  <div class="card-body text-center py-5">
-    <h5>Nenhum perfil de jogador vinculado</h5>
-    <p class="text-muted small mb-0">Seu acesso esta ativo, mas o cadastro do jogador ainda nao foi provisionado pelo organizador.</p>
-  </div>
-</div>
-{% else %}
-{% set jogador = data.jogador %}
-{% set time = data.time %}
-<div class="row g-3 mb-4">
-  <div class="col-12 col-lg-4">
-    <div class="card h-100">
-      <div class="card-header">Perfil do jogador</div>
-      <div class="card-body">
-        <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
-          <div>
-            <h5 class="fw-bold mb-1">{{ jogador.nick }}</h5>
-            <div class="text-muted small">{{ jogador.nome or jogador.nome_real }}</div>
-          </div>
-          <span class="badge {{ 'badge-cs2' if jogador.jogo_principal == 'CS2' else 'badge-valorant' }}">{{ jogador.jogo_principal }}</span>
+{% block title %}Dashboard - Controller Arena{% endblock %}
+
+{% block content %}
+
+<!-- ========================================================= -->
+<!-- 1. JOGADOR DASHBOARD (DashboardJogador mockup style)     -->
+<!-- ========================================================= -->
+{% if session.role == 'REFEREE' or session.get('modo_arbitro') %}
+{% set p_active = namespace(match=None) %}
+{% for p in stats.partidas %}
+  {% if not p_active.match and p.status != 'finalizada' %}
+    {% set p_active.match = p %}
+  {% endif %}
+{% endfor %}
+
+<div class="w-full max-w-[1024px] mx-auto px-4 md:px-6 py-8 flex flex-col gap-6">
+  
+  <!-- Referee Header -->
+  <div class="flex w-full items-center justify-between flex-wrap gap-4 border-b border-border-subtle pb-4">
+    <div class="flex flex-col items-start gap-1">
+      <span class="text-xl font-heading font-bold text-on-surface">
+        Painel do Árbitro
+      </span>
+      <span class="text-xs text-text-muted">
+        Bem-vindo de volta, {{ session.nome or session.login }}
+      </span>
+    </div>
+    
+    <div class="flex items-center gap-4">
+      <div class="flex h-10 w-10 flex-none items-center justify-center rounded-full bg-surface-container relative">
+        <span class="material-symbols-outlined text-on-surface-variant text-xl">notifications</span>
+        {% if stats.notificacoes %}
+        <div class="flex h-5 w-5 flex-none items-center justify-center rounded-full bg-error absolute -top-1 -right-1">
+          <span class="text-[9px] font-bold text-white">
+            {{ stats.notificacoes|length }}
+          </span>
         </div>
-        <div class="small mb-2"><strong>Login:</strong> <code>{{ jogador.login or '-' }}</code></div>
-        <div class="small mb-2"><strong>Contato:</strong> {{ jogador.contato or '-' }}</div>
-        <div class="small"><strong>Time atual:</strong> {{ time.nome if time else 'Sem time' }}</div>
+        {% endif %}
+      </div>
+      <div class="flex items-center gap-3">
+        <div class="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary border border-border-subtle font-bold"><span class="material-symbols-outlined text-sm">account_circle</span></div>
       </div>
     </div>
   </div>
-  <div class="col-12 order-3">
-    <div class="card h-100">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <span>Notificacoes de partidas</span>
+  
+  <!-- Priority Active Match for Referee -->
+  {% if p_active.match %}
+  {% set active_m = p_active.match %}
+  <div class="flex w-full flex-col items-start gap-4 rounded-lg border-2 border-solid border-primary bg-primary/5 px-6 py-6 shadow-sm w-full">
+    <div class="flex w-full items-center justify-between">
+      <span class="bg-primary text-white text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider">PRÓXIMA ARBITRAGEM</span>
+      <span class="text-xs font-bold text-primary">
+        Hoje, {{ active_m.data_partida.strftime('%H:%M') if active_m.get('data_partida') else '16:00' }}
+      </span>
+    </div>
+    <div class="flex flex-col items-start gap-1">
+      <span class="text-lg font-heading font-bold text-on-surface">
+        {{ active_m.time_a.nome }} vs {{ active_m.time_b.nome }}
+      </span>
+      <span class="text-xs text-text-muted">
+        Fase: {{ active_m.fase }}
+      </span>
+    </div>
+    <div class="flex items-center gap-4 text-xs text-text-muted">
+      <span>Mapa: <strong>{{ active_m.mapa or 'A definir' }}</strong></span>
+    </div>
+    <div class="flex items-center gap-3 pt-2">
+      <a href="{{ url_for('rounds_control', partida_id=active_m._id) }}" class="px-5 py-2.5 bg-primary hover:bg-primary-container text-white text-xs font-bold rounded shadow-sm text-decoration-none transition-all flex items-center gap-1.5">
+        <span class="material-symbols-outlined text-sm">controller</span> Iniciar Arbitragem
+      </a>
+      <a href="{{ url_for('ver_campeonato', camp_id=active_m.campeonato_id) }}" class="px-5 py-2.5 border border-border-subtle bg-surface-white text-on-surface-variant text-xs font-bold rounded hover:bg-surface transition-all text-decoration-none">
+        Ver Campeonato
+      </a>
+    </div>
+  </div>
+  {% endif %}
+  
+  <!-- Designated Matches Table -->
+  <div class="flex w-full flex-col items-start gap-4 bg-surface-white p-6 rounded-lg border border-border-subtle shadow-sm w-full">
+    <span class="text-base font-heading font-bold text-on-surface">
+      Partidas Designadas
+    </span>
+    <div class="w-full overflow-x-auto">
+      <table class="w-full border-collapse text-left text-xs">
+        <thead>
+          <tr class="border-b border-border-subtle text-text-muted">
+            <th class="py-3 px-4 font-bold uppercase tracking-wider text-[10px]">Partida</th>
+            <th class="py-3 px-4 font-bold uppercase tracking-wider text-[10px]">Fase</th>
+            <th class="py-3 px-4 font-bold uppercase tracking-wider text-[10px]">Data/Hora</th>
+            <th class="py-3 px-4 font-bold uppercase tracking-wider text-[10px]">Mapa</th>
+            <th class="py-3 px-4 font-bold uppercase tracking-wider text-[10px]">Status</th>
+            <th class="py-3 px-4 font-bold uppercase tracking-wider text-[10px] text-right">Ação</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in stats.partidas %}
+          <tr class="border-b border-neutral-100 last:border-0 hover:bg-surface-container-low transition">
+            <td class="py-3.5 px-4 font-bold text-on-surface">
+              {{ p.time_a.nome }} vs {{ p.time_b.nome }}
+            </td>
+            <td class="py-3.5 px-4 text-on-surface-variant">{{ p.fase }}</td>
+            <td class="py-3.5 px-4 text-on-surface font-mono font-semibold">{{ p.data_partida.strftime('%d/%m %H:%M') if p.get('data_partida') else 'A definir' }}</td>
+            <td class="py-3.5 px-4 text-on-surface">{{ p.mapa or '-' }}</td>
+            <td class="py-3.5 px-4">
+              {% if p.status == 'ao_vivo' or p.status == 'em_andamento' %}
+                <span class="inline-flex items-center gap-1 bg-red-50 text-red-700 border border-red-200 text-[10px] font-bold px-2 py-0.5 rounded"><span class="h-1.5 w-1.5 bg-red-600 rounded-full animate-pulse"></span> AO VIVO</span>
+              {% elif p.status == 'finalizada' %}
+                <span class="inline-flex items-center rounded bg-neutral-100 text-neutral-600 border border-border-subtle text-[10px] font-bold px-2 py-0.5">FINALIZADA</span>
+              {% else %}
+                <span class="inline-flex items-center rounded bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-bold px-2.5 py-0.5">AGENDADO</span>
+              {% endif %}
+            </td>
+            <td class="py-3.5 px-4 text-right">
+              {% if p.status != 'finalizada' %}
+                <a href="{{ url_for('rounds_control', partida_id=p._id) }}" class="inline-flex h-8 px-3 items-center justify-center rounded bg-primary text-[10px] font-bold text-white hover:bg-primary-container shadow transition text-decoration-none gap-1">
+                  <span class="material-symbols-outlined text-xs">controller</span> Arbitrar
+                </a>
+              {% else %}
+                <span class="text-text-muted text-[10px] font-bold">Finalizada</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="6" class="py-6 text-center text-text-muted italic">Nenhuma partida designada para você.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Notifications Section for Referee -->
+  <div class="flex w-full flex-col items-start gap-4 bg-surface-white p-6 rounded-lg border border-border-subtle shadow-sm w-full">
+    <div class="flex justify-between items-center w-full border-b pb-2">
+      <span class="text-base font-heading font-bold text-on-surface">Notificações e Alertas</span>
+      {% if stats.notificacoes %}
+      <form method="post" action="{{ url_for('marcar_todas_notificacoes_lidas') }}" class="m-0">
+        <button type="submit" class="text-xs text-primary font-bold hover:underline bg-transparent border-0 cursor-pointer">Limpar Tudo</button>
+      </form>
+      {% endif %}
+    </div>
+    <ul class="flex flex-col gap-2 w-full" id="referee-notifications-list">
+      {% for n in stats.notificacoes %}
+      <li class="flex justify-between items-start border border-border-subtle bg-surface-container-low rounded-lg p-3 text-xs" id="notif_{{ n._id }}">
+        <div class="flex flex-col gap-1">
+          <span class="font-semibold text-on-surface leading-snug">{{ n.mensagem }}</span>
+          <span class="text-[10px] text-text-muted font-mono">{{ n.criado_em.strftime('%d/%m %H:%M') if n.get('criado_em') else 'Agora' }}</span>
+        </div>
+        <button onclick="marcarComoLida('{{ n._id }}')" class="text-text-muted hover:text-on-surface transition"><span class="material-symbols-outlined text-sm">close</span></button>
+      </li>
+      {% else %}
+      <li class="py-4 text-center text-text-muted italic text-xs w-full">
+        Nenhum alerta pendente no momento.
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+
+</div>
+
+<!-- ========================================================= -->
+<!-- 3. ADMINISTRADOR DASHBOARD (DashboardAdmin mockup style) -->
+<!-- ========================================================= -->
+{% else %}
+<div class="w-full max-w-[1024px] mx-auto px-4 md:px-6 py-8 flex flex-col gap-8">
+  
+  <!-- Admin Header -->
+  <header class="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 border-b border-border-subtle pb-4">
+    <div>
+      <h1 class="font-headline-lg text-2xl font-bold text-on-surface tracking-tight">Dashboard</h1>
+      <p class="text-xs text-text-muted mt-1">Olá, {{ session.nome or session.login }}</p>
+    </div>
+    <div class="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
+      <!-- Optional Quick Action -->
+      <a href="{{ url_for('listar_campeonatos') }}" class="px-4 py-2 bg-primary hover:bg-primary-container text-on-primary font-bold text-xs rounded-lg flex items-center justify-center gap-1.5 hover:opacity-95 transition shadow-sm">
+        <span class="material-symbols-outlined text-[16px]">add</span> Novo Campeonato
+      </a>
+      
+      <div class="flex items-center gap-3">
+        <div class="flex h-10 w-10 flex-none items-center justify-center rounded-full bg-surface-container relative">
+          <span class="material-symbols-outlined text-on-surface-variant text-xl">notifications</span>
+          {% if notifications %}
+          <div class="flex h-5 w-5 flex-none items-center justify-center rounded-full bg-error absolute -top-1 -right-1">
+            <span class="text-[9px] font-bold text-white unread-count-span">
+              {{ notifications|length }}
+            </span>
+          </div>
+          {% endif %}
+        </div>
+        <div class="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary border border-border-subtle font-bold"><span class="material-symbols-outlined text-sm">account_circle</span></div>
+      </div>
+    </div>
+  </header>
+  
+  <!-- Stats Grid -->
+  <section class="grid grid-cols-2 lg:grid-cols-4 gap-gutter w-full">
+    <!-- Stat Card 1 -->
+    <div class="bg-surface-white border border-border-subtle rounded-xl p-card-padding flex flex-col gap-1 hover:-translate-y-1 hover:border-primary transition-all duration-300 shadow-sm">
+      <span class="text-[10px] font-bold text-text-muted uppercase tracking-[0.1em]">Jogadores</span>
+      <span class="font-['Chakra_Petch'] text-3xl font-black text-on-surface">{{ stats.get('jogadores') or 0 }}</span>
+    </div>
+    <!-- Stat Card 2 -->
+    <div class="bg-surface-white border border-border-subtle rounded-xl p-card-padding flex flex-col gap-1 hover:-translate-y-1 hover:border-primary transition-all duration-300 shadow-sm">
+      <span class="text-[10px] font-bold text-text-muted uppercase tracking-[0.1em]">Times</span>
+      <span class="font-['Chakra_Petch'] text-3xl font-black text-on-surface">{{ stats.get('times') or 0 }}</span>
+    </div>
+    <!-- Stat Card 3 -->
+    <div class="bg-surface-white border border-border-subtle rounded-xl p-card-padding flex flex-col gap-1 hover:-translate-y-1 hover:border-primary transition-all duration-300 shadow-sm">
+      <span class="text-[10px] font-bold text-text-muted uppercase tracking-[0.1em]">Campeonatos</span>
+      <span class="font-['Chakra_Petch'] text-3xl font-black text-on-surface">{{ stats.get('campeonatos') or 0 }}</span>
+    </div>
+    <!-- Stat Card 4 -->
+    <div class="bg-surface-white border border-border-subtle rounded-xl p-card-padding flex flex-col gap-1 hover:-translate-y-1 hover:border-primary transition-all duration-300 shadow-sm">
+      <span class="text-[10px] font-bold text-text-muted uppercase tracking-[0.1em]">Partidas</span>
+      <span class="font-['Chakra_Petch'] text-3xl font-black text-primary">{{ stats.get('partidas') or 0 }}</span>
+    </div>
+  </section>
+  
+  <!-- Recent Tournaments Table -->
+  <section class="bg-surface-white border border-border-subtle rounded-xl flex flex-col overflow-hidden shadow-sm w-full">
+    <div class="p-card-padding border-b border-border-subtle flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-surface-bright">
+      <h2 class="font-headline-md text-base text-on-surface">Campeonatos Recentes</h2>
+      <a href="{{ url_for('listar_campeonatos') }}" class="px-4 py-2 bg-primary hover:bg-primary-container text-white font-bold text-xs rounded-lg flex items-center justify-center gap-1.5 transition shadow-sm">
+        <span class="material-symbols-outlined text-[16px]">add</span> Novo Campeonato
+      </a>
+    </div>
+    <div class="w-full overflow-x-auto">
+      <table class="w-full text-left border-collapse text-xs">
+        <thead>
+          <tr class="border-b border-border-subtle text-text-muted bg-surface-container-low/20">
+            <th class="p-4 font-bold uppercase tracking-wider text-[10px] w-[30%]">Nome</th>
+            <th class="p-4 font-bold uppercase tracking-wider text-[10px]">Jogo</th>
+            <th class="p-4 font-bold uppercase tracking-wider text-[10px]">Formato</th>
+            <th class="p-4 font-bold uppercase tracking-wider text-[10px] text-center">Times</th>
+            <th class="p-4 font-bold uppercase tracking-wider text-[10px] text-center">Status</th>
+            <th class="p-4 font-bold uppercase tracking-wider text-[10px] text-right">Ação</th>
+          </tr>
+        </thead>
+        <tbody class="font-body-md text-on-surface">
+          {% for c in ultimos_camps %}
+          <tr class="border-b border-border-subtle last:border-0 hover:bg-surface-container-low transition-colors group">
+            <td class="p-4 font-bold text-on-surface">{{ c.nome }}</td>
+            <td class="p-4 text-text-muted font-semibold">{{ c.jogo }}</td>
+            <td class="p-4 text-text-muted font-semibold capitalize">{{ c.formato }}</td>
+            <td class="p-4 font-mono font-bold text-center text-on-surface">{{ c.times_inscritos|length }}</td>
+            <td class="p-4 text-center">
+              {% set status_color = 'bg-emerald-50 text-emerald-700 border-emerald-250/50' if c.status == 'Aberto' or c.status == 'Inscrição' or c.status == 'INSCRICAO' else 'bg-blue-50 text-blue-700 border-blue-200' if c.status == 'Em andamento' or c.status == 'EM_ANDAMENTO' else 'bg-neutral-100 text-neutral-600' %}
+              <span class="inline-flex items-center justify-center font-bold text-[9px] px-2.5 py-1 rounded border {{ status_color }} uppercase tracking-wider">
+                {{ c.status }}
+              </span>
+            </td>
+            <td class="p-4 text-right">
+              <a href="{{ url_for('ver_campeonato', camp_id=c._id) }}" class="text-primary hover:text-primary-container font-bold transition-colors flex items-center justify-end w-full gap-1 text-decoration-none">
+                Ver Painel <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+              </a>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="6" class="p-4 text-center text-text-muted italic">Nenhum campeonato cadastrado ainda.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Bottom Grid: Shortcuts & Alerts -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter items-start w-full">
+    
+    <!-- Quick Shortcuts -->
+    <section class="lg:col-span-7 bg-surface-white border border-border-subtle rounded-xl p-card-padding flex flex-col gap-6 shadow-sm w-full">
+      <h2 class="font-headline-md text-base text-on-surface">Atalhos Rápidos</h2>
+      <div class="flex flex-col gap-3">
+        
+        <!-- Shortcut Card 1 -->
+        <a href="{{ url_for('listar_campeonatos') }}" class="flex items-center gap-5 p-4 border border-border-subtle rounded-xl hover:border-primary hover:bg-surface-container-low transition-all cursor-pointer group hover:-translate-y-0.5 text-decoration-none w-full">
+          <div class="w-12 h-12 rounded-full bg-surface-container flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-on-primary transition-colors shrink-0">
+            <span class="material-symbols-outlined text-[24px]">emoji_events</span>
+          </div>
+          <div class="flex-1">
+            <h3 class="font-bold text-xs text-on-surface mb-0.5">Criar Campeonato</h3>
+            <p class="text-text-muted text-[11px] leading-tight font-semibold">Configurar nova competição e fases</p>
+          </div>
+          <span class="material-symbols-outlined text-outline-variant group-hover:text-primary transition-colors">arrow_forward</span>
+        </a>
+        
+        <!-- Shortcut Card 2 -->
+        <a href="{{ url_for('listar_jogadores') }}" class="flex items-center gap-5 p-4 border border-border-subtle rounded-xl hover:border-success hover:bg-surface-container-low transition-all cursor-pointer group hover:-translate-y-0.5 text-decoration-none w-full">
+          <div class="w-12 h-12 rounded-full bg-surface-container flex items-center justify-center text-success group-hover:bg-success group-hover:text-on-primary transition-colors shrink-0">
+            <span class="material-symbols-outlined text-[24px]">person_add</span>
+          </div>
+          <div class="flex-1">
+            <h3 class="font-bold text-xs text-on-surface mb-0.5">Cadastrar Jogador</h3>
+            <p class="text-text-muted text-[11px] leading-tight font-semibold">Criar nova conta de atleta</p>
+          </div>
+          <span class="material-symbols-outlined text-outline-variant group-hover:text-success transition-colors">arrow_forward</span>
+        </a>
+        
+        <!-- Shortcut Card 3 -->
+        <a href="{{ url_for('listar_times') }}" class="flex items-center gap-5 p-4 border border-border-subtle rounded-xl hover:border-warning hover:bg-surface-container-low transition-all cursor-pointer group hover:-translate-y-0.5 text-decoration-none w-full">
+          <div class="w-12 h-12 rounded-full bg-surface-container flex items-center justify-center text-warning group-hover:bg-warning group-hover:text-on-primary transition-colors shrink-0">
+            <span class="material-symbols-outlined text-[24px]">shield</span>
+          </div>
+          <div class="flex-1">
+            <h3 class="font-bold text-xs text-on-surface mb-0.5">Cadastrar Time</h3>
+            <p class="text-text-muted text-[11px] leading-tight font-semibold">Registrar nova equipe com elenco</p>
+          </div>
+          <span class="material-symbols-outlined text-outline-variant group-hover:text-warning transition-colors">arrow_forward</span>
+        </a>
+        
+      </div>
+    </section>
+    
+    <!-- Game Alerts -->
+    <section class="lg:col-span-5 bg-surface-white border border-border-subtle rounded-xl p-card-padding flex flex-col gap-6 shadow-sm h-full min-h-[300px] w-full">
+      <div class="flex justify-between items-center border-b pb-2.5">
+        <h2 class="font-headline-md text-base text-on-surface">Alertas de Jogos</h2>
         {% if notifications %}
-        <form method="post" action="{{ url_for('marcar_todas_notificacoes_lidas') }}" style="margin: 0;">
-          <button type="submit" class="btn btn-xs btn-outline-secondary py-0 px-2" style="font-size:0.68rem;">Limpar Tudo</button>
+        <form method="post" action="{{ url_for('marcar_todas_notificacoes_lidas') }}" class="m-0">
+          <button type="submit" class="text-xs text-primary font-bold hover:underline bg-transparent border-0 cursor-pointer">Limpar Tudo</button>
         </form>
         {% endif %}
       </div>
-      <div class="card-body p-0">
-        <ul class="list-group list-group-flush mb-0" id="player-notifications-list">
-          {% for n in notifications %}
-          <li class="list-group-item p-3 border-bottom border-secondary-subtle" style="background:transparent;" id="notif_{{ n._id }}">
-            <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
-              <span class="badge {{ 'badge-cs2' if n.jogo == 'CS2' else 'badge-valorant' }}">{{ n.jogo or 'Jogo' }}</span>
-              <button onclick="marcarComoLida('{{ n._id }}')" class="btn btn-xs btn-outline-secondary border-0 p-0 text-muted" style="font-size:0.75rem;"><i class="bi bi-x-lg"></i></button>
+      
+      <ul class="flex flex-col gap-2.5 w-full overflow-y-auto max-h-[300px] pr-1" id="admin-notifications-list">
+        {% for n in notifications %}
+        <li class="flex justify-between items-start border border-border-subtle bg-surface-container-low rounded-lg p-3 text-xs w-full" id="notif_{{ n._id }}">
+          <div class="flex flex-col gap-1 grow pr-2">
+            <div class="flex items-center gap-2">
+              <span class="badge {% if n.jogo == 'CS2' %}bg-brand-highlight text-white{% else %}bg-brand-primary text-white{% endif %} text-[8px] font-bold uppercase px-1.5 py-0.5 rounded">{{ n.jogo or 'Jogo' }}</span>
+              <span class="text-[9px] text-text-muted font-mono">{{ n.criado_em.strftime('%d/%m %H:%M') if n.get('criado_em') else 'Agora' }}</span>
             </div>
-            <div class="small fw-semibold text-wrap mb-2">{{ n.mensagem }}</div>
-            <div class="d-flex justify-content-between align-items-center gap-2">
-              <div class="small text-muted" style="font-size:0.68rem;">{{ n.criado_em.strftime('%d/%m %H:%M') if n.get('criado_em') else 'Agora' }}</div>
-              {% if n.get('link') %}
-              <a href="{{ n.link }}" class="btn btn-sm btn-outline-primary py-1 px-2">Ver partida</a>
-              {% endif %}
-            </div>
-          </li>
-          {% else %}
-          <li class="list-group-item text-center text-muted py-5" style="background:transparent;">
-            <i class="bi bi-bell-slash fs-3 d-block mb-2 text-muted"></i>
-            <span class="small">Nenhuma partida agendada para o seu jogo no momento.</span>
-          </li>
-          {% endfor %}
-        </ul>
-      </div>
-    </div>
-  </div>
-  <div class="col-12 col-lg-8 order-2">
-    <div class="row g-3">
-      <div class="col-6 col-md-3">
-        <div class="card p-3 h-100">
-          <div class="text-muted small mb-1">Partidas</div>
-          <div class="fs-2 fw-bold text-info">{{ jogador.estatisticas.partidas_jogadas }}</div>
-        </div>
-      </div>
-      <div class="col-6 col-md-3">
-        <div class="card p-3 h-100">
-          <div class="text-muted small mb-1">Vitorias</div>
-          <div class="fs-2 fw-bold text-success">{{ jogador.estatisticas.vitorias }}</div>
-        </div>
-      </div>
-      <div class="col-6 col-md-3">
-        <div class="card p-3 h-100">
-          <div class="text-muted small mb-1">Derrotas</div>
-          <div class="fs-2 fw-bold text-danger">{{ jogador.estatisticas.derrotas }}</div>
-        </div>
-      </div>
-      <div class="col-6 col-md-3">
-        <div class="card p-3 h-100">
-          <div class="text-muted small mb-1">K/D</div>
-          <div class="fs-2 fw-bold" style="color:var(--accent)">{{ "%.2f"|format(jogador.estatisticas.kd_ratio) }}</div>
-        </div>
-      </div>
-      <div class="col-12">
-        <div class="card h-100">
-          <div class="card-header">Meu time</div>
-          <div class="card-body">
-            {% if time %}
-            <div class="d-flex justify-content-between align-items-center gap-3 flex-wrap">
-              <div class="d-flex align-items-center gap-3">
-                {% if time.logo_path %}
-                <img class="team-logo" src="{{ url_for('static', filename=time.logo_path) }}" alt="Logo de {{ time.nome }}">
-                {% else %}
-                <span class="team-logo team-logo-placeholder"><i class="bi bi-shield-fill"></i></span>
-                {% endif %}
-                <div>
-                  <h5 class="fw-bold mb-1">{{ time.nome }}</h5>
-                  <div class="text-muted small">{{ time.tag }} • {{ time.jogo }}</div>
-                </div>
-              </div>
-              <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#meuTimeModal">
-                Ver composicao
-              </button>
-            </div>
-            {% else %}
-            <p class="text-muted mb-0">Voce ainda nao pertence a nenhum time.</p>
+            <span class="font-semibold text-on-surface mt-1 leading-snug">{{ n.mensagem }}</span>
+            {% if n.get('link') %}
+            <a href="{{ n.link }}" class="text-[10px] font-bold text-primary hover:underline mt-1 inline-block text-decoration-none">Abrir Partida</a>
             {% endif %}
           </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-{% if time %}
-<div class="modal fade" id="meuTimeModal" tabindex="-1" aria-labelledby="meuTimeModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-centered">
-    <div class="modal-content" style="background:var(--bg-card); border:1px solid var(--border); color:var(--text-main)">
-      <div class="modal-header" style="border-bottom:1px solid var(--border); background:var(--bg-card-hd)">
-        <h5 class="modal-title" id="meuTimeModalLabel">Composicao do meu time</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
-      </div>
-      <div class="modal-body p-0">
-        <div class="p-3 border-bottom" style="border-color:var(--border)!important">
-          <div class="fw-bold">{{ time.nome }}</div>
-          <div class="text-muted small">{{ time.tag }} • {{ time.jogo }}</div>
-        </div>
-        <div class="table-responsive">
-          <table class="table mb-0">
-            <thead>
-              <tr>
-                <th>Nick</th>
-                <th>Nome</th>
-                <th>Funcao</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for membro in time.jogadores %}
-              <tr>
-                <td>
-                  <span class="fw-semibold">{{ membro.nick }}</span>
-                  {% if membro.jogador_id == jogador._id %}
-                  <span class="badge bg-primary ms-1" style="font-size:.6rem">Voce</span>
-                  {% endif %}
-                </td>
-                <td class="text-muted small">{{ membro.get('nome_real', jogador.nome if membro.jogador_id == jogador._id else '-') }}</td>
-                <td class="text-muted small">{{ membro.get('funcao', '-') }}</td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      </div>
-      <div class="modal-footer" style="border-top:1px solid var(--border)">
-        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Fechar</button>
-      </div>
-    </div>
+          <button onclick="marcarComoLida('{{ n._id }}')" class="text-text-muted hover:text-on-surface transition"><span class="material-symbols-outlined text-sm">close</span></button>
+        </li>
+        {% else %}
+        <li class="flex-1 flex flex-col items-center justify-center p-8 border-2 border-dashed border-border-subtle rounded-xl bg-surface-bright/50 text-center w-full">
+          <div class="w-16 h-16 rounded-full bg-surface flex items-center justify-center mb-4">
+            <span class="material-symbols-outlined text-[32px] text-outline-variant">event_busy</span>
+          </div>
+          <p class="text-xs text-text-muted italic max-w-[200px]">Nenhum alerta de partida no momento.</p>
+        </li>
+        {% endfor %}
+      </ul>
+    </section>
+    
   </div>
 </div>
 {% endif %}
-{% endif %}
-{% else %}
-{% if stats and stats.get('referee_mode') %}
-<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-  <div>
-    <h4 class="mb-1 page-title">Painel do Árbitro</h4>
-    <div class="text-muted small">Gerencie as partidas que você está mediando e acompanhe alertas de W.O.</div>
-  </div>
-</div>
 
-<div class="row g-3 mb-4">
-  <div class="col-12 col-lg-8">
-    <div class="card h-100">
-      <div class="card-header">Minhas Partidas Designadas</div>
-      <div class="card-body p-0">
-        <div class="table-responsive">
-          <table class="table mb-0">
-            <thead>
-              <tr>
-                <th>Partida / Fase</th>
-                <th>Data e Hora</th>
-                <th>Check-in Status</th>
-                <th class="text-end">Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for p in stats.partidas %}
-              <tr>
-                <td>
-                  <div class="fw-bold">{{ p.time_a.nome }} x {{ p.time_b.nome }}</div>
-                  <span class="badge bg-secondary" style="font-size:0.68rem;">{{ p.fase }}</span>
-                  <span class="small text-muted ms-1">{{ p.mapa or 'Sem mapa' }}</span>
-                </td>
-                <td class="small text-muted">{{ p.data_partida.strftime('%d/%m/%Y %H:%M') if p.get('data_partida') else 'A definir' }}</td>
-                <td>
-                  {% if p.get('checkin') and p.checkin.solicitado %}
-                    {% if p.checkin.wo_aplicado %}
-                      <span class="badge bg-danger">W.O. Aplicado</span>
-                    {% else %}
-                      <div class="d-flex flex-column gap-1">
-                        <span class="badge {{ 'bg-success' if p.checkin.time_a_confirmado else 'bg-warning text-dark' }}" style="font-size: 0.65rem;">
-                          {{ p.time_a.nome }}: {{ 'Confirmado' if p.checkin.time_a_confirmado else 'Pendente' }}
-                        </span>
-                        <span class="badge {{ 'bg-success' if p.checkin.time_b_confirmado else 'bg-warning text-dark' }}" style="font-size: 0.65rem;">
-                          {{ p.time_b.nome }}: {{ 'Confirmado' if p.checkin.time_b_confirmado else 'Pendente' }}
-                        </span>
-                      </div>
-                    {% endif %}
-                  {% else %}
-                    <span class="badge bg-secondary">Não Solicitado</span>
-                  {% endif %}
-                </td>
-                <td class="text-end">
-                  <div class="d-flex justify-content-end gap-1">
-                    <a href="{{ url_for('ver_campeonato', camp_id=p.campeonato_id) }}" class="btn btn-sm btn-outline-primary">Súmula / Sala</a>
-                    {% if p.status != 'finalizada' %}
-                    <a href="{{ url_for('rounds_control', partida_id=p._id) }}" class="btn btn-sm btn-primary"><i class="bi bi-controller"></i> Controlar Rounds</a>
-                    {% endif %}
-                  </div>
-                </td>
-              </tr>
-              {% else %}
-              <tr>
-                <td colspan="4" class="text-center text-muted py-4">Nenhuma partida atribuída a você no momento.</td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="col-12 col-lg-4">
-    <div class="card h-100">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <span>Notificações / Alertas</span>
-        {% if stats.notificacoes %}
-        <form method="post" action="{{ url_for('marcar_todas_notificacoes_lidas') }}" style="margin: 0;">
-          <button type="submit" class="btn btn-xs btn-outline-secondary py-0 px-2" style="font-size:0.68rem;">Limpar Tudo</button>
-        </form>
-        {% endif %}
-      </div>
-      <div class="card-body p-0">
-        <ul class="list-group list-group-flush mb-0" id="referee-notifications-list">
-          {% for n in stats.notificacoes %}
-          <li class="list-group-item p-3 border-bottom border-secondary-subtle" style="background:transparent;" id="notif_{{ n._id }}">
-            <div class="d-flex justify-content-between align-items-start gap-2 mb-1">
-              <span class="small fw-semibold text-wrap text-white">{{ n.mensagem }}</span>
-              <button onclick="marcarComoLida('{{ n._id }}')" class="btn btn-xs btn-outline-secondary border-0 p-0 text-muted" style="font-size:0.75rem;"><i class="bi bi-x-lg"></i></button>
-            </div>
-            <div class="small text-white-50" style="font-size:0.68rem;">{{ n.criado_em.strftime('%d/%m %H:%M') if n.get('criado_em') else 'Agora' }}</div>
-          </li>
-          {% else %}
-          <li class="list-group-item text-center text-muted py-5" style="background:transparent;">
-            <i class="bi bi-bell-slash fs-3 d-block mb-2 text-muted"></i>
-            <span class="small">Nenhuma notificação pendente no momento.</span>
-          </li>
-          {% endfor %}
-        </ul>
-      </div>
-    </div>
-  </div>
-</div>
-
-<script>
-function marcarComoLida(notifId) {
-  fetch(`/notificacoes/${notifId}/ler`, {
-    method: 'POST'
-  }).then(response => {
-    if (response.ok) {
-      const el = document.getElementById(`notif_${notifId}`);
-      if (el) {
-        el.style.opacity = '0';
-        setTimeout(() => el.remove(), 200);
-      }
-    }
-  });
-}
-</script>
-{% else %}
-<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-  <h4 class="mb-0 page-title">Dashboard</h4>
-</div>
-<div class="row g-3 mb-4">
-  {% for label, value, color in [
-    ('Admins', stats.get('admins'), 'danger'),
-    ('Jogadores', stats.get('jogadores'), 'primary'),
-    ('Times', stats.get('times'), 'warning'),
-    ('Campeonatos', stats.get('campeonatos'), 'success'),
-    ('Partidas', stats.get('partidas'), 'info'),
-    ('Inscricao', stats.get('camp_inscricao'), 'secondary'),
-    ('Em andamento', stats.get('camp_andamento'), 'dark')
-  ] %}
-    {% if value is not none %}
-    <div class="col-6 col-md-3">
-      <div class="card p-3">
-        <div class="text-muted small mb-1">{{ label }}</div>
-        <div class="fs-2 fw-bold text-{{ color }}">{{ value }}</div>
-      </div>
-    </div>
-    {% endif %}
-  {% endfor %}
-</div>
-
-<div class="card">
-  <div class="row g-0">
-    <div class="col-12 col-xl-8">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <span>Ultimos Campeonatos</span>
-        <a href="{{ url_for('listar_campeonatos') }}" class="btn btn-sm btn-outline-secondary">Ver todos</a>
-      </div>
-      <div class="card-body p-0">
-        <table class="table mb-0">
-          <thead>
-            <tr>
-              <th>Nome</th>
-              <th>Status</th>
-              <th>Inicio</th>
-              <th class="text-end">Detalhes</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for c in ultimos_camps %}
-            <tr>
-              <td>
-                <div class="fw-bold">{{ c.nome }}</div>
-                <span class="badge {{ 'badge-cs2' if c.jogo == 'CS2' else 'badge-valorant' }}">{{ c.jogo }}</span>
-              </td>
-              <td><span class="badge bg-secondary">{{ c.status }}</span></td>
-              <td class="small text-muted">{{ c.datas.inicio.strftime('%d/%m/%Y') if c.get('datas') else '-' }}</td>
-              <td class="text-end"><a href="{{ url_for('ver_campeonato', camp_id=c._id) }}" class="btn btn-sm btn-outline-primary">Ver</a></td>
-            </tr>
-            {% else %}
-            <tr><td colspan="4" class="text-center text-muted py-4">Nenhum campeonato cadastrado.</td></tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </div>
-    <div class="col-12 col-xl-4" style="border-left:1px solid var(--border)">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <span>Alertas de partidas</span>
-        {% if notifications %}
-        <form method="post" action="{{ url_for('marcar_todas_notificacoes_lidas') }}" style="margin: 0;">
-          <button type="submit" class="btn btn-xs btn-outline-secondary py-0 px-2" style="font-size:0.68rem;">Limpar Tudo</button>
-        </form>
-        {% endif %}
-      </div>
-      <div class="card-body p-0">
-        <ul class="list-group list-group-flush mb-0" id="admin-notifications-list">
-          {% for n in notifications %}
-          <li class="list-group-item p-3 border-bottom border-secondary-subtle" style="background:transparent;" id="notif_{{ n._id }}">
-            <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
-              <span class="badge {{ 'badge-cs2' if n.jogo == 'CS2' else 'badge-valorant' }}">{{ n.jogo or 'Jogo' }}</span>
-              <button onclick="marcarComoLida('{{ n._id }}')" class="btn btn-xs btn-outline-secondary border-0 p-0 text-muted" style="font-size:0.75rem;"><i class="bi bi-x-lg"></i></button>
-            </div>
-            <div class="small fw-semibold text-wrap mb-2">{{ n.mensagem }}</div>
-            <div class="d-flex justify-content-between align-items-center gap-2">
-              <div class="small text-muted" style="font-size:0.68rem;">{{ n.criado_em.strftime('%d/%m %H:%M') if n.get('criado_em') else 'Agora' }}</div>
-              {% if n.get('link') %}
-              <a href="{{ n.link }}" class="btn btn-sm btn-outline-primary py-1 px-2">Abrir</a>
-              {% endif %}
-            </div>
-          </li>
-          {% else %}
-          <li class="list-group-item text-center text-muted py-5" style="background:transparent;">
-            <i class="bi bi-bell-slash fs-3 d-block mb-2 text-muted"></i>
-            <span class="small">Nenhum jogo agendado para comecar em ate 1 hora.</span>
-          </li>
-          {% endfor %}
-        </ul>
-      </div>
-    </div>
-  </div>
-</div>
-{% endif %}
-{% endif %}
 <script>
 function marcarComoLida(notifId) {
   fetch(`/notificacoes/${notifId}/ler`, {
@@ -421,11 +382,11 @@ function escapeHtml(value) {
 }
 
 function updateTopbarNotificationCount(count) {
-  const badge = document.getElementById('notifications-unread-badge');
-  const countEl = document.getElementById('notifications-unread-count');
-  if (!badge || !countEl) return;
-  countEl.textContent = String(count);
-  badge.classList.toggle('d-none', count === 0);
+  const countEl = document.querySelector('.unread-count-span');
+  if (countEl) {
+    countEl.textContent = String(count);
+    countEl.parentElement.classList.toggle('hidden', count === 0);
+  }
 }
 
 function renderNotificationList(listId, notifications, emptyMessage, linkLabel) {
@@ -434,25 +395,24 @@ function renderNotificationList(listId, notifications, emptyMessage, linkLabel) 
 
   if (!notifications.length) {
     list.innerHTML = `
-      <li class="list-group-item text-center text-muted py-5" style="background:transparent;">
-        <i class="bi bi-bell-slash fs-3 d-block mb-2 text-muted"></i>
-        <span class="small text-white">${escapeHtml(emptyMessage)}</span>
+      <li class="py-4 text-center text-text-muted italic text-xs w-full border border-dashed border-border-subtle bg-white rounded p-4">
+        <span>${escapeHtml(emptyMessage)}</span>
       </li>
     `;
     return;
   }
 
   list.innerHTML = notifications.map(n => `
-    <li class="list-group-item p-3 border-bottom border-secondary-subtle" style="background:transparent;" id="notif_${escapeHtml(n.id)}">
-      <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
-        ${n.jogo ? `<span class="badge ${n.jogo === 'CS2' ? 'badge-cs2' : 'badge-valorant'}">${escapeHtml(n.jogo)}</span>` : '<span></span>'}
-        <button onclick="marcarComoLida('${escapeHtml(n.id)}')" class="btn btn-xs btn-outline-secondary border-0 p-0 text-muted" style="font-size:0.75rem;"><i class="bi bi-x-lg"></i></button>
+    <li class="flex justify-between items-start border border-border-subtle bg-surface-container-low rounded-lg p-3 text-xs w-full" id="notif_${escapeHtml(n.id)}">
+      <div class="flex flex-col gap-1 grow pr-2">
+        <div class="flex items-center gap-2">
+          ${n.jogo ? `<span class="badge ${n.jogo === 'CS2' ? 'bg-brand-highlight text-white' : 'bg-brand-primary text-white'} text-[8px] font-bold uppercase px-1.5 py-0.5 rounded">${escapeHtml(n.jogo)}</span>` : ''}
+          <span class="text-[9px] text-text-muted font-mono">${escapeHtml(n.criado_em || 'Agora')}</span>
+        </div>
+        <span class="font-semibold text-on-surface mt-1 leading-snug">${escapeHtml(n.mensagem)}</span>
+        ${n.link ? `<a href="${escapeHtml(n.link)}" class="text-[10px] font-bold text-primary hover:underline mt-1 inline-block text-decoration-none">${escapeHtml(linkLabel)}</a>` : ''}
       </div>
-      <div class="small fw-semibold text-wrap mb-2 text-white">${escapeHtml(n.mensagem)}</div>
-      <div class="d-flex justify-content-between align-items-center gap-2">
-        <div class="small text-white-50" style="font-size:0.68rem;">${escapeHtml(n.criado_em || 'Agora')}</div>
-        ${n.link ? `<a href="${escapeHtml(n.link)}" class="btn btn-sm btn-outline-primary py-1 px-2">${escapeHtml(linkLabel)}</a>` : ''}
-      </div>
+      <button onclick="marcarComoLida('${escapeHtml(n.id)}')" class="text-text-muted hover:text-on-surface transition"><span class="material-symbols-outlined text-sm">close</span></button>
     </li>
   `).join('');
 }
@@ -478,7 +438,7 @@ async function refreshNotifications() {
         'player-notifications-list',
         data.notifications || [],
         'Nenhuma partida agendada para o seu jogo no momento.',
-        'Ver partida'
+        'Confirmar Presença (Check-in)'
       );
     }
     if (adminList) {
@@ -486,19 +446,19 @@ async function refreshNotifications() {
         'admin-notifications-list',
         data.notifications || [],
         'Nenhum jogo agendado no momento.',
-        'Abrir'
+        'Abrir Partida'
       );
     }
     if (refereeList) {
       renderNotificationList(
         'referee-notifications-list',
         data.notifications || [],
-        'Nenhuma notificacao pendente no momento.',
+        'Nenhuma notificação pendente no momento.',
         'Abrir'
       );
     }
   } catch (error) {
-    console.error('Erro ao atualizar notificacoes:', error);
+    console.error('Erro ao atualizar notificações:', error);
   }
 }
 

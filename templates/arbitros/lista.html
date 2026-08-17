@@ -1,60 +1,106 @@
 {% extends "base.html" %}
-{% block title %}Árbitros - FPS Arena{% endblock %}
+
+{% block title %}Árbitros - Controller Arena{% endblock %}
+
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-  <h4 class="mb-0 page-title">Árbitros</h4>
-  {% if session.role == 'ADMIN' %}
-  <a href="{{ url_for('novo_arbitro') }}" class="btn btn-primary btn-sm">
-    <i class="bi bi-plus-lg"></i> Novo Árbitro
-  </a>
-  {% endif %}
-</div>
+<main class="w-full max-w-[1024px] mx-auto px-4 md:px-6 py-8 flex flex-col gap-6">
 
-<form class="row g-2 mb-3" method="get" action="{{ url_for('listar_arbitros') }}">
-  <div class="col-12 col-md-9">
-    <input type="text" name="busca" class="form-control form-control-sm" placeholder="Buscar por nome ou e-mail..." value="{{ busca or '' }}">
+  <!-- Header Section -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border-subtle pb-4">
+    <div>
+      <h1 class="text-2xl font-headline font-bold text-on-surface">Árbitros</h1>
+      <p class="text-xs text-text-muted mt-1">Gerencie a escala e escalas ativas de arbitragem.</p>
+    </div>
+    {% if session.role == 'ADMIN' %}
+    <a href="{{ url_for('novo_arbitro') }}" class="bg-primary hover:bg-primary-container text-on-primary font-bold text-xs px-5 py-2.5 rounded-lg flex items-center justify-center gap-1.5 transition-all shadow-sm text-decoration-none sm:w-auto">
+      <span class="material-symbols-outlined text-[18px]">add</span> Novo Árbitro
+    </a>
+    {% endif %}
   </div>
-  <div class="col-12 col-md-3">
-    <button type="submit" class="btn btn-secondary btn-sm w-100">Filtrar</button>
-  </div>
-</form>
 
-<div class="card">
-  <div class="card-body p-0">
-    <div class="table-responsive">
-      <table class="table mb-0">
+  <!-- Search and Filter Section -->
+  <form class="flex flex-col sm:flex-row gap-4 w-full" method="get" action="{{ url_for('listar_arbitros') }}">
+    <div class="relative flex-grow">
+      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+        <span class="material-symbols-outlined text-outline text-lg">search</span>
+      </div>
+      <input 
+        type="text" 
+        name="busca" 
+        value="{{ busca or '' }}" 
+        placeholder="Buscar por nome ou e-mail..." 
+        class="block w-full pl-10 pr-3 py-2.5 border border-border-subtle rounded-lg bg-surface-white text-xs placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-primary focus:border-transparent transition-all"
+      >
+    </div>
+    <button type="submit" class="bg-surface-white border border-border-subtle text-on-surface hover:bg-surface font-bold text-xs px-5 py-2.5 rounded-lg transition-colors flex items-center justify-center gap-1.5 whitespace-nowrap">
+      <span class="material-symbols-outlined text-[18px]">filter_list</span> Filtrar
+    </button>
+  </form>
+
+  <!-- Table Section -->
+  <div class="bg-surface-white border border-border-subtle rounded-xl shadow-sm overflow-hidden w-full">
+    <div class="w-full overflow-x-auto no-scrollbar">
+      <table class="w-full text-left border-collapse text-xs min-w-[800px]">
         <thead>
-          <tr>
-            <th>Nome</th>
-            <th>E-mail</th>
-            <th>Contato</th>
-            <th>Disponibilidade</th>
-            <th>Campeonatos</th>
+          <tr class="bg-surface border-b border-border-subtle text-text-muted">
+            <th class="py-4 px-6 font-bold uppercase tracking-wider text-[10px]">Nome</th>
+            <th class="py-4 px-6 font-bold uppercase tracking-wider text-[10px]">E-mail</th>
+            <th class="py-4 px-6 font-bold uppercase tracking-wider text-[10px]">Contato</th>
+            <th class="py-4 px-6 font-bold uppercase tracking-wider text-[10px]">Disponibilidade</th>
+            <th class="py-4 px-6 font-bold uppercase tracking-wider text-[10px]">Campeonatos</th>
             {% if session.role == 'ADMIN' %}
-            <th class="text-end">Ações</th>
+            <th class="py-4 px-6 font-bold uppercase tracking-wider text-[10px] text-right">Ações</th>
             {% endif %}
           </tr>
         </thead>
-        <tbody>
+        <tbody class="divide-y divide-border-subtle font-body-md text-on-surface">
           {% for a in arbitros %}
-          <tr>
-            <td class="fw-bold">{{ a.nome }}</td>
-            <td><code>{{ a.email }}</code></td>
-            <td>{{ a.contato or '-' }}</td>
-            <td class="text-wrap" style="max-width: 250px;">{{ a.disponibilidade }}</td>
-            <td>
-              {% if a.campeonatos_vinculados %}
-                <span class="badge bg-info text-dark">{{ a.campeonatos_vinculados|length }} campeonato(s)</span>
+          <tr class="hover:bg-inverse-on-surface transition-colors group">
+            <td class="py-4 px-6 text-on-surface font-bold">
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full bg-surface-variant flex items-center justify-center text-primary font-bold text-[11px]">
+                  {{ a.nome[:2].upper() if a.nome else 'AR' }}
+                </div>
+                <span>{{ a.nome }}</span>
+              </div>
+            </td>
+            <td class="py-4 px-6 text-on-surface-variant font-medium"><code>{{ a.email }}</code></td>
+            <td class="py-4 px-6 text-on-surface-variant font-mono">{{ a.contato or '-' }}</td>
+            <td class="py-4 px-6">
+              {% if not a.disponibilidade or 'dispon' in a.disponibilidade.lower() or 'livre' in a.disponibilidade.lower() %}
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-container text-success font-semibold border border-success/20 text-[10px]">
+                <span class="w-1.5 h-1.5 rounded-full bg-success"></span>
+                Disponível
+              </span>
+              {% elif 'partida' in a.disponibilidade.lower() or 'alocado' in a.disponibilidade.lower() %}
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-container text-warning font-semibold border border-warning/20 text-[10px]">
+                <span class="w-1.5 h-1.5 rounded-full bg-warning animate-pulse"></span>
+                Em Partida
+              </span>
               {% else %}
-                <span class="text-muted small">Nenhum</span>
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-container text-on-surface-variant font-semibold border border-outline-variant/50 text-[10px]">
+                <span class="w-1.5 h-1.5 rounded-full bg-outline-variant"></span>
+                {{ a.disponibilidade }}
+              </span>
+              {% endif %}
+            </td>
+            <td class="py-4 px-6">
+              {% if a.campeonatos_vinculados %}
+                <span class="inline-flex items-center bg-primary/10 text-primary border border-primary/20 font-bold px-2 py-0.5 rounded text-[10px] uppercase">
+                  {{ a.campeonatos_vinculados|length }} Vinculado(s)
+                </span>
+              {% else %}
+                <span class="text-text-muted italic text-[11px]">Nenhum</span>
               {% endif %}
             </td>
             {% if session.role == 'ADMIN' %}
-            <td class="text-end">
-              <div class="d-flex justify-content-end gap-1">
-                <a href="{{ url_for('editar_arbitro', arbitro_id=a._id) }}" class="btn btn-sm btn-outline-primary">Editar</a>
-                <form method="post" action="{{ url_for('remover_arbitro', arbitro_id=a._id) }}" onsubmit="return confirm('Deseja realmente remover este árbitro?');" style="margin: 0;">
-                  <button type="submit" class="btn btn-sm btn-outline-danger">Remover</button>
+            <td class="py-4 px-6 text-right">
+              <div class="flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity font-bold">
+                <a href="{{ url_for('editar_arbitro', arbitro_id=a._id) }}" class="text-primary hover:text-primary-container text-decoration-none">Editar</a>
+                <form method="post" action="{{ url_for('remover_arbitro', arbitro_id=a._id) }}" class="m-0 flex inline" onsubmit="return confirm('Deseja realmente remover este árbitro?');">
+                  <button type="submit" class="text-error hover:text-on-error-container bg-transparent border-0 p-0 font-bold cursor-pointer transition">
+                    Remover
+                  </button>
                 </form>
               </div>
             </td>
@@ -62,12 +108,13 @@
           </tr>
           {% else %}
           <tr>
-            <td colspan="6" class="text-center text-muted py-4">Nenhum árbitro encontrado.</td>
+            <td colspan="6" class="py-8 text-center text-text-muted italic">Nenhum árbitro encontrado.</td>
           </tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
   </div>
-</div>
+
+</main>
 {% endblock %}

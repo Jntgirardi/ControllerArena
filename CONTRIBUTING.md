@@ -1,6 +1,6 @@
 # Guia de Contribuição
 
-Bem-vindo(a) ao repositório da FPS Arena! Este guia define o fluxo de trabalho com Git e GitHub para manter a `main` sempre estável e o histórico limpo.
+Bem-vindo(a) ao repositório da Controller Arena! Este guia define o fluxo de trabalho com Git e GitHub para manter a `main` sempre estável e o histórico limpo.
 
 ## Fluxo de Branches
 

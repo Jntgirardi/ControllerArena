@@ -3,176 +3,366 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}FPS Arena{% endblock %}</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <title>{% block title %}Controller Arena{% endblock %}</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'brand-primary': '#5c59f2',
+            'brand-primary-light': 'rgba(92, 89, 242, 0.08)',
+            'brand-highlight': '#f59e0b',
+            'brand-highlight-dark': '#b45309',
+            'card-background': '#ffffff',
+            'default-background': '#f5f5f5',
+            'default-border': '#e5e5e5',
+            'default-font': '#171717',
+            'subtext': '#737373',
+            'live': '#ef4444',
+            'success': '#10b981',
+            'success-light': '#d1fae5',
+            'warning': '#f59e0b',
+            'warning-light': '#fef3c7',
+            'error': '#ef4444',
+            
+            // Stitch design system tokens
+            'primary': '#5c59f2',
+            'primary-container': '#5c59f2',
+            'surface-white': '#FFFFFF',
+            'background': '#f9f9ff',
+            'border-border-subtle': '#E5E7EB',
+            'border-subtle': '#E5E7EB',
+            'surface-container': '#e9edff',
+            'surface-container-low': '#f1f3ff',
+            'text-muted': '#6B7280',
+            'on-surface': '#141b2b',
+            'on-surface-variant': '#434656',
+          },
+          spacing: {
+            'base': '4px',
+            'card-padding': '20px',
+            'gutter': '16px',
+            'section-gap': '40px',
+          },
+          screens: {
+            'mobile': {'max': '991px'},
+          }
+        }
+      }
+    }
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    :root {
-      color-scheme: dark;
-      --bg-main: #0b1018;
-      --bg-topbar: #101827;
-      --bg-card: #141d2b;
-      --bg-card-hd: #182338;
-      --bg-input: #0f1724;
-      --border: #28364d;
-      --text-main: #e6edf7;
-      --text-muted: #9aa8bc;
-      --text-nav: #c7d2e5;
-      --accent: #4ea8f5;
-      --accent-strong: #2f81d0;
-      --accent-soft: rgba(78,168,245,.16);
-      --nav-hover: rgba(78,168,245,.14);
-      --nav-active: rgba(78,168,245,.24);
-      --table-hover: #18253a;
-      --badge-cs2: #f39c35;
-      --badge-val: #ff5c6c;
+    body {
+      font-family: 'Inter', sans-serif;
     }
-    html { overflow-x: hidden; }
-    body { margin: 0; background: var(--bg-main); color: var(--text-main); font-family: "Segoe UI", system-ui, sans-serif; min-height: 100vh; overflow-x: hidden; }
-    a { color: var(--accent); }
-    .layout { min-height: 100vh; }
-    .top-nav { position: sticky; top: 0; z-index: 1030; background: rgba(16,24,39,.96); border-bottom: 1px solid var(--border); box-shadow: 0 12px 28px rgba(0,0,0,.22); backdrop-filter: blur(10px); }
-    .navbar-brand { color: #fff; font-weight: 800; letter-spacing: .2px; display: flex; align-items: center; gap: 10px; }
-    .navbar-brand:hover { color: #fff; }
-    .navbar .nav-link { color: var(--text-nav); border-radius: 8px; padding: 8px 12px; display: flex; align-items: center; gap: 7px; }
-    .navbar .nav-link:hover { background: var(--nav-hover); color: #fff; }
-    .navbar .nav-link.active { background: var(--nav-active); color: #fff; font-weight: 600; }
-    .navbar-toggler { border-color: var(--border); color: var(--text-main); }
-    .navbar-toggler:focus { box-shadow: 0 0 0 3px var(--accent-soft); }
-    .navbar-toggler-icon { filter: invert(1) grayscale(1); }
-    .user-menu { position: relative; }
-    .user-trigger { border: 1px solid var(--border); border-radius: 999px; color: var(--text-main); background: var(--bg-card); padding: 6px 10px; display: flex; align-items: center; gap: 8px; text-decoration: none; }
-    .user-trigger:hover, .user-trigger.active { color: #fff; border-color: var(--accent); background: var(--accent-soft); }
-    .user-trigger .bi { color: var(--accent); font-size: 1.1rem; }
-    .user-dropdown { position: absolute; right: 0; top: calc(100% + 8px); min-width: 180px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 16px 36px rgba(0,0,0,.35); padding: 6px; opacity: 0; visibility: hidden; transform: translateY(-4px); transition: opacity .15s ease, transform .15s ease, visibility .15s ease; }
-    .user-menu:hover .user-dropdown, .user-menu:focus-within .user-dropdown { opacity: 1; visibility: visible; transform: translateY(0); }
-    .user-dropdown a { color: var(--text-main); display: flex; align-items: center; gap: 8px; text-decoration: none; border-radius: 6px; padding: 8px 10px; }
-    .user-dropdown a:hover, .user-dropdown a.active { background: var(--nav-hover); color: #fff; }
-    .main-content { min-width: 0; }
-    .page-body { padding: 28px 32px; }
-    .page-title, h4, h5 { overflow-wrap: anywhere; }
-    .card { --bs-card-bg: var(--bg-card); --bs-card-color: var(--text-main); --bs-card-border-color: var(--border); background: var(--bg-card); border: 1px solid var(--border); color: var(--text-main); }
-    .card-body { color: var(--text-main); }
-    .card-body strong, .card-body label, .card-body .fw-bold { color: #fff; }
-    .card-header { --bs-card-cap-bg: var(--bg-card-hd); background: var(--bg-card-hd); border-bottom: 1px solid var(--border); color: #fff; font-weight: 600; gap: 10px; }
-    .card-footer { background: transparent; border-top: 1px solid var(--border); }
-    .card-body.p-0 { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    .table { --bs-table-bg: transparent; --bs-table-color: var(--text-main); --bs-table-border-color: var(--border); color: var(--text-main); }
-    .card-body.p-0 > .table { min-width: 620px; }
-    .table thead th { background: var(--bg-card-hd); color: var(--accent); font-size: .78rem; text-transform: uppercase; }
-    .table tbody tr:hover td { background: var(--table-hover); }
-    .table th, .table td { vertical-align: middle; }
-    .form-control, .form-select { background-color: var(--bg-input); border-color: var(--border); color: var(--text-main); }
-    .form-control:focus, .form-select:focus { background-color: var(--bg-input); color: var(--text-main); border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
-    .form-control::placeholder { color: #718096; }
-    .form-label { color: var(--text-muted); }
-    .btn-primary { background: var(--accent-strong); border-color: var(--accent-strong); }
-    .btn-outline-secondary { color: var(--text-nav); border-color: var(--border); }
-    .btn-outline-secondary:hover { background: var(--nav-hover); border-color: var(--accent); color: #fff; }
-    .btn-outline-primary { color: var(--accent); border-color: var(--accent); }
-    .nav-tabs { border-bottom-color: var(--border); }
-    .nav-tabs .nav-link { background: transparent; color: var(--text-main) !important; border-radius: 8px 8px 0 0; font-weight: 600; }
-    .nav-tabs .nav-link:hover { background: var(--nav-hover); border-color: var(--border); color: #fff !important; }
-    .nav-tabs .nav-link.active { background: var(--bg-card); border-color: var(--border) var(--border) var(--bg-card); color: #fff !important; }
-    .badge-cs2 { background: var(--badge-cs2) !important; }
-    .badge-valorant { background: var(--badge-val) !important; }
-    .team-logo { width: 48px; height: 48px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-input); flex: 0 0 auto; }
-    .team-logo-sm { width: 34px; height: 34px; border-radius: 7px; }
-    .team-logo-lg { width: 72px; height: 72px; }
-    .team-logo-placeholder { display: inline-flex; align-items: center; justify-content: center; color: var(--accent); }
-    .text-muted { color: var(--text-muted) !important; }
-    .btn { min-height: 34px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
-    .btn-sm { min-height: 31px; }
-    @media (max-width: 991px) {
-      .top-nav .container-fluid { align-items: flex-start; }
-      .navbar-brand { min-height: 38px; }
-      .navbar-collapse { width: 100%; padding-top: 8px; }
-      .navbar .nav-link { margin: 2px 0; }
-      .user-menu { margin-top: 10px; width: 100%; }
-      .user-trigger { width: 100%; justify-content: flex-start; border-radius: 8px; }
-      .user-dropdown { position: static; display: block; margin-top: 8px; opacity: 1; visibility: visible; transform: none; box-shadow: none; width: 100%; }
-      .page-body { padding: 20px 16px; }
+    h1, h2, h3, h4, h5, h6, .font-heading {
+      font-family: 'Chakra Petch', sans-serif;
     }
-    @media (max-width: 575px) {
-      .page-body { padding: 16px 12px 22px; }
-      .card { border-radius: 8px; }
-      .card-header { align-items: flex-start !important; flex-wrap: wrap; }
-      .card-body { padding: 14px; }
-      .card-body.p-0 { padding: 0; }
-      .card-body.p-0 > .table { min-width: 560px; }
-      .nav-tabs { flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; padding-bottom: 1px; }
-      .nav-tabs .nav-link { white-space: nowrap; }
-      .btn { width: 100%; }
-      .navbar .btn, .table .btn, .card-header .btn { width: auto; }
-      .d-flex.justify-content-between { align-items: flex-start !important; flex-wrap: wrap; gap: 10px; }
-      .d-flex.justify-content-between > .btn,
-      .d-flex.justify-content-between > a.btn { width: 100%; }
-      .fs-2 { font-size: 1.65rem !important; }
+    
+    /* Bootstrap compatibility layers styled beautifully with Tailwind values */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      font-weight: 600;
+      border-radius: 0.5rem;
+      padding: 0.5rem 1rem;
+      font-size: 0.875rem;
+      transition: all 0.2s;
+      border: 1px solid transparent;
+      cursor: pointer;
+      text-decoration: none;
     }
+    .btn-primary {
+      background-color: #5c59f2;
+      color: white;
+    }
+    .btn-primary:hover {
+      background-color: #4f46e5;
+      color: white;
+    }
+    .btn-secondary {
+      background-color: #e5e5e5;
+      color: #171717;
+    }
+    .btn-secondary:hover {
+      background-color: #d4d4d4;
+      color: #171717;
+    }
+    .btn-outline-primary {
+      border-color: #5c59f2;
+      color: #5c59f2;
+      background: transparent;
+    }
+    .btn-outline-primary:hover {
+      background-color: rgba(92, 89, 242, 0.08);
+      color: #5c59f2;
+    }
+    .btn-outline-secondary {
+      border-color: #e5e5e5;
+      color: #737373;
+      background: transparent;
+    }
+    .btn-outline-secondary:hover {
+      background-color: #f5f5f5;
+      color: #171717;
+      border-color: #d4d4d4;
+    }
+    .btn-danger {
+      background-color: #ef4444;
+      color: white;
+    }
+    .btn-danger:hover {
+      background-color: #dc2626;
+      color: white;
+    }
+    .btn-sm {
+      padding: 0.25rem 0.5rem;
+      font-size: 0.75rem;
+      min-height: auto;
+    }
+    .card {
+      background-color: #ffffff;
+      border: 1px solid #e5e5e5;
+      border-radius: 0.5rem;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      margin-bottom: 1.5rem;
+      display: flex;
+      flex-direction: column;
+    }
+    .card-header {
+      border-bottom: 1px solid #e5e5e5;
+      padding: 1rem 1.5rem;
+      font-weight: 700;
+      color: #171717;
+      background-color: #fcfcfc;
+      font-family: 'Chakra Petch', sans-serif;
+    }
+    .card-body {
+      padding: 1.5rem;
+    }
+    .form-control, .form-select {
+      width: 100%;
+      border-radius: 0.5rem;
+      border: 1px solid #e5e5e5;
+      background-color: #ffffff;
+      padding: 0.5rem 0.75rem;
+      font-size: 0.875rem;
+      color: #171717;
+      outline: none;
+      transition: all 0.2s;
+    }
+    .form-control:focus, .form-select:focus {
+      border-color: #5c59f2;
+      box-shadow: 0 0 0 3px rgba(92, 89, 242, 0.12);
+    }
+    .form-label {
+      display: inline-block;
+      margin-bottom: 0.5rem;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: #737373;
+    }
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.875rem;
+    }
+    .table th {
+      border-bottom: 2px solid #e5e5e5;
+      padding: 0.75rem 1rem;
+      font-weight: 600;
+      color: #737373;
+      font-family: 'Chakra Petch', sans-serif;
+    }
+    .table td {
+      border-bottom: 1px solid #e5e5e5;
+      padding: 0.75rem 1rem;
+      vertical-align: middle;
+    }
+    .table tbody tr:hover td {
+      background-color: #fafafa;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 9999px;
+      padding: 0.25rem 0.625rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      line-height: 1;
+    }
+    .bg-primary { background-color: #5c59f2; color: white; }
+    .bg-secondary { background-color: #737373; color: white; }
+    .bg-success { background-color: #10b981; color: white; }
+    .bg-danger { background-color: #ef4444; color: white; }
+    .bg-warning { background-color: #f59e0b; color: #171717; }
+    .text-success { color: #10b981 !important; }
+    .text-danger { color: #ef4444 !important; }
+    .text-muted { color: #737373 !important; }
+    
+    .team-logo { width: 48px; height: 48px; object-fit: cover; border-radius: 8px; border: 1px solid #e5e5e5; background: #fafafa; }
+    .team-logo-sm { width: 34px; height: 34px; border-radius: 6px; }
+    .team-logo-placeholder { display: inline-flex; align-items: center; justify-content: center; color: #5c59f2; background-color: rgba(92, 89, 242, 0.08); }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
   </style>
 </head>
-<body>
-{% if session.user_id %}
-<nav class="navbar navbar-expand-lg top-nav">
-  <div class="container-fluid px-3 px-lg-4">
-    <a class="navbar-brand" href="{{ url_for('dashboard') }}">
-      <i class="bi bi-controller"></i> FPS Arena
-    </a>
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar" aria-controls="mainNavbar" aria-expanded="false" aria-label="Alternar navegacao">
-      <span class="navbar-toggler-icon"></span>
-    </button>
-    <div class="collapse navbar-collapse" id="mainNavbar">
-      <ul class="navbar-nav me-auto mb-2 mb-lg-0 gap-lg-1">
-        <li class="nav-item"><a class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
-        {% if session.role == 'ADMIN' %}
-        <li class="nav-item"><a class="nav-link {% if request.endpoint in ('listar_jogadores','novo_jogador','ver_jogador','editar_jogador') %}active{% endif %}" href="{{ url_for('listar_jogadores') }}"><i class="bi bi-person-badge"></i> Jogadores</a></li>
-        <li class="nav-item"><a class="nav-link {% if request.endpoint in ('listar_times','novo_time','editar_time') %}active{% endif %}" href="{{ url_for('listar_times') }}"><i class="bi bi-people-fill"></i> Times</a></li>
-        <li class="nav-item"><a class="nav-link {% if request.endpoint in ('listar_arbitros','novo_arbitro','editar_arbitro') %}active{% endif %}" href="{{ url_for('listar_arbitros') }}"><i class="bi bi-person-check"></i> Árbitros</a></li>
-        {% endif %}
-        {% if session.role in ('SUPER_ADMIN', 'ADMIN') %}
-        <li class="nav-item"><a class="nav-link {% if request.endpoint and 'campeonato' in request.endpoint %}active{% endif %}" href="{{ url_for('listar_campeonatos') }}"><i class="bi bi-trophy-fill"></i> Campeonatos</a></li>
-        {% endif %}
-        <li class="nav-item"><a class="nav-link {% if request.endpoint == 'ranking' %}active{% endif %}" href="{{ url_for('ranking') }}"><i class="bi bi-bar-chart-fill"></i> Ranking</a></li>
-      </ul>
-      <div class="user-menu">
-        <a class="user-trigger {% if session.role in ('SUPER_ADMIN', 'ADMIN') and (request.endpoint == 'relatorios' or (request.endpoint and 'usuario' in request.endpoint)) %}active{% endif %}" href="{{ url_for('dashboard') }}">
-          <i class="bi bi-person-circle"></i>
-          <span>{{ session.nome or session.login }}</span>
-          <span class="badge bg-danger rounded-pill {% if notifications_unread_count == 0 %}d-none{% endif %}" id="notifications-unread-badge"><i class="bi bi-bell-fill"></i> <span id="notifications-unread-count">{{ notifications_unread_count }}</span></span>
-          <span class="badge bg-secondary">{{ session.role }}</span>
-        </a>
-        <div class="user-dropdown">
-          {% if session.role == 'SUPER_ADMIN' %}
-          <a class="{% if request.endpoint and 'usuario' in request.endpoint %}active{% endif %}" href="{{ url_for('listar_usuarios') }}"><i class="bi bi-shield-lock"></i> Admins</a>
-          {% endif %}
-          {% if session.role in ('SUPER_ADMIN', 'ADMIN') %}
-          <a class="{% if request.endpoint == 'relatorios' %}active{% endif %}" href="{{ url_for('relatorios') }}"><i class="bi bi-file-earmark-bar-graph"></i> Relatorios</a>
-          {% endif %}
-          <a href="{{ url_for('logout') }}"><i class="bi bi-box-arrow-right"></i> Sair</a>
-        </div>
-      </div>
-    </div>
-  </div>
-</nav>
-{% endif %}
+<body class="bg-neutral-100 text-default-font min-h-screen flex flex-col {% if session.user_id %}pb-36{% endif %}">
 
-<div class="layout">
-  <div class="main-content">
-    <div class="page-body">
-      {% with messages = get_flashed_messages(with_categories=true) %}
+
+<main class="flex-grow w-full">
+  <div class="fixed top-4 right-4 z-[9999] flex flex-col gap-3 max-w-sm w-full pointer-events-none">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
         {% for category, message in messages %}
-          <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          {% set alert_bg = 'bg-emerald-50 border-emerald-200 text-emerald-800' if category == 'success' else 'bg-red-50 border-red-200 text-red-800' if category == 'danger' else 'bg-amber-50 border-amber-200 text-amber-800' if category == 'warning' else 'bg-blue-50 border-blue-200 text-blue-800' %}
+          <div class="pointer-events-auto flex items-center justify-between rounded-lg border p-4 text-xs font-semibold {{ alert_bg }} shadow-lg transition-all duration-300 transform translate-x-0" id="toast-message-{{ loop.index }}">
+            <div class="flex items-center gap-2">
+              {% if category == 'success' %}
+                <i class="bi bi-check-circle-fill text-emerald-500 text-sm"></i>
+              {% elif category == 'danger' %}
+                <i class="bi bi-exclamation-triangle-fill text-red-500 text-sm"></i>
+              {% else %}
+                <i class="bi bi-info-circle-fill text-blue-500 text-sm"></i>
+              {% endif %}
+              <span>{{ message }}</span>
+            </div>
+            <button type="button" class="text-neutral-400 hover:text-neutral-600 transition ml-3 cursor-pointer" onclick="dismissToast('toast-message-{{ loop.index }}')">
+              <i class="bi bi-x-lg"></i>
+            </button>
           </div>
         {% endfor %}
-      {% endwith %}
-      {% block content %}{% endblock %}
+      {% endif %}
+    {% endwith %}
+  </div>
+  {% block content %}{% endblock %}
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  function toggleMobileMenu() {
+    const el = document.getElementById('mobile-menu');
+    el.classList.toggle('hidden');
+  }
+
+  function toggleProfileDropdown(event) {
+    if (event) {
+      event.stopPropagation();
+    }
+    const dropdown = document.getElementById('profile-dropdown');
+    const btn = document.getElementById('profile-menu-btn');
+    if (dropdown && btn) {
+      const rect = btn.getBoundingClientRect();
+      // Dynamically calculate and apply fixed position coordinates
+      dropdown.style.position = 'fixed';
+      dropdown.style.bottom = (window.innerHeight - rect.top + 12) + 'px';
+      dropdown.style.left = (rect.left + rect.width - 192) + 'px';
+      
+      dropdown.classList.toggle('opacity-0');
+      dropdown.classList.toggle('pointer-events-none');
+    }
+  }
+
+  document.addEventListener('click', (e) => {
+    const dropdown = document.getElementById('profile-dropdown');
+    const btn = document.getElementById('profile-menu-btn');
+    if (dropdown && btn && !dropdown.contains(e.target) && !btn.contains(e.target)) {
+      dropdown.classList.add('opacity-0');
+      dropdown.classList.add('pointer-events-none');
+    }
+  });
+
+  window.addEventListener('resize', () => {
+    const dropdown = document.getElementById('profile-dropdown');
+    if (dropdown && !dropdown.classList.contains('opacity-0')) {
+      dropdown.classList.add('opacity-0');
+      dropdown.classList.add('pointer-events-none');
+    }
+  });
+
+  function dismissToast(id) {
+    const toast = document.getElementById(id);
+    if (toast) {
+      toast.classList.add('opacity-0', 'translate-x-8');
+      setTimeout(() => {
+        toast.remove();
+      }, 300);
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const toasts = document.querySelectorAll('[id^="toast-message-"]');
+    toasts.forEach(toast => {
+      setTimeout(() => {
+        dismissToast(toast.id);
+      }, 5000);
+    });
+  });
+</script>
+{% block scripts %}{% endblock %}
+
+{% if session.user_id %}
+<!-- Floating Bottom Navigation Bar (Stitch Design System) -->
+<div class="fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] w-max max-w-[calc(100vw-2rem)] overflow-x-auto no-scrollbar">
+  <div class="bg-surface-white rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-border-subtle pl-6 pr-2 py-2 flex items-center gap-6">
+    <!-- Brand -->
+    <div class="flex items-center">
+      <span class="text-[16px] font-bold text-primary uppercase tracking-tight whitespace-nowrap">Controller Arena</span>
+    </div>
+    <!-- Nav Links -->
+    <div class="flex items-center gap-1">
+      <a class="px-4 py-2 rounded-full text-label-sm font-label-sm {% if request.endpoint == 'dashboard' %}text-primary bg-surface-container/60 font-bold{% else %}text-on-surface-variant hover:bg-surface-container-low{% endif %} whitespace-nowrap text-decoration-none transition-all duration-150" href="{{ url_for('dashboard') }}">Dashboard</a>
+      
+      {% if session.role == 'ADMIN' %}
+      <a class="px-4 py-2 rounded-full text-label-sm font-label-sm {% if request.endpoint in ('listar_jogadores','novo_jogador','ver_jogador','editar_jogador') %}text-primary bg-surface-container/60 font-bold{% else %}text-on-surface-variant hover:bg-surface-container-low{% endif %} whitespace-nowrap text-decoration-none transition-all duration-150" href="{{ url_for('listar_jogadores') }}">Jogadores</a>
+      <a class="px-4 py-2 rounded-full text-label-sm font-label-sm {% if request.endpoint in ('listar_times','novo_time','editar_time') %}text-primary bg-surface-container/60 font-bold{% else %}text-on-surface-variant hover:bg-surface-container-low{% endif %} whitespace-nowrap text-decoration-none transition-all duration-150" href="{{ url_for('listar_times') }}">Times</a>
+      <a class="px-4 py-2 rounded-full text-label-sm font-label-sm {% if request.endpoint in ('listar_arbitros','novo_arbitro','editar_arbitro') %}text-primary bg-surface-container/60 font-bold{% else %}text-on-surface-variant hover:bg-surface-container-low{% endif %} whitespace-nowrap text-decoration-none transition-all duration-150" href="{{ url_for('listar_arbitros') }}">Árbitros</a>
+      {% endif %}
+      
+      {% if session.role in ('SUPER_ADMIN', 'ADMIN') %}
+      <a class="px-4 py-2 rounded-full text-label-sm font-label-sm {% if request.endpoint and 'campeonato' in request.endpoint %}text-primary bg-surface-container/60 font-bold{% else %}text-on-surface-variant hover:bg-surface-container-low{% endif %} whitespace-nowrap text-decoration-none transition-all duration-150" href="{{ url_for('listar_campeonatos') }}">Campeonatos</a>
+      {% endif %}
+      
+      <a class="px-4 py-2 rounded-full text-label-sm font-label-sm {% if request.endpoint == 'ranking' %}text-primary bg-surface-container/60 font-bold{% else %}text-on-surface-variant hover:bg-surface-container-low{% endif %} whitespace-nowrap text-decoration-none transition-all duration-150" href="{{ url_for('ranking') }}">Ranking</a>
+    </div>
+    
+    <div class="h-6 w-px bg-border-subtle shrink-0"></div>
+    
+    <!-- Icons & Profile Dropdown -->
+    <div class="flex items-center gap-3 shrink-0 relative">
+
+      
+      <!-- Profile Button and Dropdown -->
+      <div class="relative">
+        <button id="profile-menu-btn" onclick="toggleProfileDropdown(event)" class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center border border-border-subtle cursor-pointer focus:outline-none hover:bg-surface-container-high transition-colors">
+          <span class="material-symbols-outlined text-primary text-[20px] pointer-events-none">person</span>
+        </button>
+      </div>
     </div>
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-{% block scripts %}{% endblock %}
+<!-- Profile Dropdown (rendered outside the transformed navbar container to prevent overflow clipping!) -->
+<div id="profile-dropdown" class="fixed w-48 rounded-lg border border-default-border bg-white p-1 shadow-lg opacity-0 pointer-events-none transition-all duration-150 ease-in-out z-[200]">
+  <div class="px-3 py-1.5 text-xs font-semibold text-text-muted border-b border-default-border mb-1">
+    {{ session.nome or session.login }}
+  </div>
+  {% if session.role == 'SUPER_ADMIN' %}
+  <a class="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-default-font hover:bg-neutral-100 text-decoration-none" href="{{ url_for('listar_usuarios') }}"><span class="material-symbols-outlined text-sm">shield_lock</span> Admins</a>
+  {% endif %}
+  {% if session.role in ('SUPER_ADMIN', 'ADMIN') %}
+  <a class="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-default-font hover:bg-neutral-100 text-decoration-none" href="{{ url_for('relatorios') }}"><span class="material-symbols-outlined text-sm">analytics</span> Relatórios</a>
+  {% endif %}
+  <a class="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-error hover:bg-red-50 text-decoration-none text-red-600 font-bold" href="{{ url_for('logout') }}"><span class="material-symbols-outlined text-sm">logout</span> Sair</a>
+</div>
+{% endif %}
+
 </body>
 </html>

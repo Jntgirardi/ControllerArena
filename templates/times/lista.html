@@ -1,76 +1,93 @@
 {% extends "base.html" %}
-{% block title %}Times – FPS Arena{% endblock %}
-{% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-  <h4 class="mb-0" style="color:var(--text-main)">Times</h4>
-  {% if session.role == 'ADMIN' %}
-  <a href="{{ url_for('novo_time') }}" class="btn btn-primary btn-sm">
-    <i class="bi bi-plus-lg"></i> Novo Time
-  </a>
-  {% endif %}
-</div>
 
-{% if times %}
-<div class="row g-3">
-  {% for t in times %}
-  <div class="col-12 col-md-6 col-xl-4">
-    <div class="card h-100">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <div class="d-flex align-items-center gap-2">
-          {% if t.logo_path %}
-          <img class="team-logo team-logo-sm" src="{{ url_for('static', filename=t.logo_path) }}" alt="Logo de {{ t.nome }}">
-          {% else %}
-          <span class="team-logo team-logo-sm team-logo-placeholder"><i class="bi bi-shield-fill"></i></span>
-          {% endif %}
-          <div>
-            <strong>{{ t.nome }}</strong>
-            <span class="badge bg-secondary ms-1">{{ t.tag }}</span>
-          </div>
-        </div>
-        <span class="badge {{ 'badge-cs2' if t.jogo == 'CS2' else 'badge-valorant' }}">{{ t.jogo }}</span>
+{% block title %}Times – Controller Arena{% endblock %}
+
+{% block content %}
+<main class="flex-grow w-full max-w-[1024px] mx-auto px-4 md:px-6 py-8 flex flex-col gap-6">
+  
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border-subtle pb-4">
+    <div>
+      <h1 class="text-2xl font-headline font-bold text-on-surface">Equipes</h1>
+      <p class="text-xs text-text-muted mt-1">Gerencie os elencos e tags dos times cadastrados.</p>
+    </div>
+    {% if session.role == 'ADMIN' %}
+    <a href="{{ url_for('novo_time') }}" class="bg-primary hover:bg-primary-container text-on-primary font-bold text-xs px-5 py-2.5 rounded-lg flex items-center justify-center gap-1.5 transition-all shadow-sm text-decoration-none sm:w-auto">
+      <span class="material-symbols-outlined text-[18px]">add</span> Novo Time
+    </a>
+    {% endif %}
+  </div>
+
+  <!-- Teams Grid -->
+  {% if times %}
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    {% for t in times %}
+    <div class="bg-surface-white border border-border-subtle rounded-xl p-card-padding flex flex-col items-center text-center hover:shadow-md hover:border-primary/20 transition-all duration-200">
+      
+      <!-- Logo Container -->
+      <div class="w-16 h-16 rounded-lg bg-surface-container-low flex items-center justify-center border border-border-subtle mb-4 flex-shrink-0">
+        {% if t.logo_path %}
+        <img class="w-full h-full object-cover rounded-lg" src="{{ url_for('static', filename=t.logo_path) }}" alt="Logo de {{ t.nome }}">
+        {% else %}
+        <span class="material-symbols-outlined text-primary text-[32px]">shield</span>
+        {% endif %}
       </div>
-      <div class="card-body">
-        <p class="small text-muted mb-2">
-          <i class="bi bi-people-fill me-1"></i>{{ t.jogadores|length }} jogador(es)
-        </p>
-        <ul class="list-unstyled mb-0">
+
+      <!-- Info -->
+      <div class="mb-4 w-full">
+        <div class="flex items-center justify-center gap-2 mb-1">
+          <h3 class="font-headline font-bold text-on-surface truncate text-base">{{ t.nome }}</h3>
+          <span class="text-[9px] font-extrabold text-surface-white bg-on-surface px-2 py-0.5 rounded uppercase font-mono tracking-wider">{{ t.tag }}</span>
+        </div>
+        <span class="text-[10px] font-bold text-text-muted uppercase tracking-wider">{{ t.jogo }}</span>
+      </div>
+
+      <!-- Roster / Relação de Jogadores -->
+      <div class="w-full border-t border-border-subtle pt-4 mb-6">
+        <div class="flex items-center justify-center gap-1.5 text-text-muted mb-2 text-xs font-semibold">
+          <span class="material-symbols-outlined text-[16px]">group</span>
+          <span>{{ t.jogadores|length }} jogador(es)</span>
+        </div>
+        <ul class="space-y-1.5 text-xs text-on-surface">
           {% for j in t.jogadores %}
-          <li class="small mb-1">
-            <i class="bi bi-person-fill me-1" style="color:var(--accent)"></i>
-            <strong>{{ j.nick }}</strong>
-            <span class="text-muted">({{ j.funcao }})</span>
+          <li class="text-on-surface-variant font-medium">
+            <span>{{ j.nick }}</span>
+            <span class="text-text-muted font-normal">({{ j.funcao }})</span>
           </li>
+          {% else %}
+          <li class="text-text-muted italic text-[11px]">Nenhum jogador vinculado</li>
           {% endfor %}
         </ul>
       </div>
+
+      <!-- Actions -->
       {% if session.role == 'ADMIN' %}
-      <div class="card-footer d-grid gap-2 d-sm-flex">
-        <a href="{{ url_for('editar_time', time_id=t._id) }}"
-           class="btn btn-sm btn-outline-warning flex-fill">
-          <i class="bi bi-pencil-fill"></i> Editar
+      <div class="mt-auto w-full flex border-t border-border-subtle pt-4 gap-2 text-xs">
+        <a href="{{ url_for('editar_time', time_id=t._id) }}" class="flex-1 flex items-center justify-center gap-1 text-on-surface-variant hover:text-primary transition-colors py-2 text-decoration-none font-bold">
+          <span class="material-symbols-outlined text-[16px]">edit</span> Editar
         </a>
-        <form method="post" action="{{ url_for('remover_time', time_id=t._id) }}"
-              class="flex-fill"
-              onsubmit="return confirm('Remover {{ t.nome }} e desvincular jogadores?')">
-          <button type="submit" class="btn btn-sm btn-outline-danger w-100">
-            <i class="bi bi-trash-fill"></i> Remover
+        <form method="post" action="{{ url_for('remover_time', time_id=t._id) }}" class="flex-1 m-0 flex" onsubmit="return confirm('Remover {{ t.nome }} e desvincular jogadores?')">
+          <button type="submit" class="w-full flex items-center justify-center gap-1 text-text-muted hover:text-error transition-colors py-2 bg-transparent border-0 font-bold">
+            <span class="material-symbols-outlined text-[16px]">delete</span> Remover
           </button>
         </form>
       </div>
       {% endif %}
     </div>
+    {% endfor %}
   </div>
-  {% endfor %}
-</div>
-{% else %}
-<div class="card p-5 text-center text-muted">
-  <i class="bi bi-people display-4 mb-3"></i>
-  <p class="mb-2">Nenhum time cadastrado ainda.</p>
-  {% if session.role == 'ADMIN' %}
-  <a href="{{ url_for('novo_time') }}" class="btn btn-primary btn-sm mx-auto" style="max-width:160px">
-    Criar primeiro time
-  </a>
+  {% else %}
+  <div class="bg-surface-white border border-border-subtle rounded-xl p-8 text-center text-text-muted shadow-sm flex flex-col items-center justify-center gap-3">
+    <span class="material-symbols-outlined text-4xl text-outline-variant">groups</span>
+    <h3 class="font-headline font-bold text-on-surface text-base">Nenhum time cadastrado</h3>
+    <p class="text-xs text-text-muted max-w-xs">Não há equipes registradas no sistema no momento.</p>
+    {% if session.role == 'ADMIN' %}
+    <a href="{{ url_for('novo_time') }}" class="bg-primary hover:bg-primary-container text-on-primary font-bold text-xs px-4 py-2 rounded shadow-sm text-decoration-none mt-1">
+      Criar primeiro time
+    </a>
+    {% endif %}
+  </div>
   {% endif %}
-</div>
-{% endif %}
+
+</main>
 {% endblock %}

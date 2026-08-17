@@ -1,66 +1,109 @@
 {% extends "base.html" %}
-{% block title %}{{ jogador.nick }} - FPS Arena{% endblock %}
+{% block title %}{{ jogador.nick }} - Controller Arena{% endblock %}
 {% block content %}
-<div class="d-flex align-items-center gap-2 mb-4 flex-wrap">
-  <a href="{{ url_for('ranking') if session.role == 'PLAYER' else url_for('listar_jogadores') }}" class="btn btn-outline-secondary btn-sm">Voltar</a>
-  <h4 class="mb-0">{{ jogador.nick }}</h4>
-  <span class="badge {{ 'badge-cs2' if jogador.jogo_principal == 'CS2' else 'badge-valorant' }}">{{ jogador.jogo_principal }}</span>
-  {% if session.role == 'ADMIN' %}
-  <div class="ms-sm-auto d-grid gap-2 d-sm-flex">
-    <a href="{{ url_for('editar_jogador', jogador_id=jogador._id) }}" class="btn btn-warning btn-sm">Editar</a>
-    <form method="post" action="{{ url_for('remover_jogador', jogador_id=jogador._id) }}" onsubmit="return confirm('Remover {{ jogador.nick }}?')">
-      <button type="submit" class="btn btn-danger btn-sm">Remover</button>
-    </form>
+<main class="max-w-4xl mx-auto mt-6 px-4 flex flex-col gap-6">
+  <!-- Top Bar / Actions -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border-subtle pb-4">
+    <div class="flex items-center gap-3">
+      <a href="{{ url_for('listar_jogadores') }}" class="bg-surface-white border border-border-subtle text-on-surface px-3 py-1.5 rounded font-label-sm text-xs hover:bg-surface-container-low transition-colors text-decoration-none">
+        Voltar
+      </a>
+      <h1 class="font-headline-md text-xl font-bold text-on-surface">{{ jogador.nick }}</h1>
+      {% set game_bg = 'bg-warning/15 text-warning border-warning/30' if jogador.jogo_principal == 'CS2' else 'bg-error/10 text-error border-error/20' %}
+      <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold border {{ game_bg }} font-mono tracking-wide uppercase">
+        {{ jogador.jogo_principal }}
+      </span>
+    </div>
+    {% if session.role == 'ADMIN' %}
+    <div class="flex gap-2">
+      <a href="{{ url_for('editar_jogador', jogador_id=jogador._id) }}" class="bg-surface-white border border-border-subtle text-on-surface px-4 py-2 rounded font-label-sm text-xs hover:bg-surface-container-low transition-colors text-decoration-none text-center">
+        Editar
+      </a>
+      <form method="post" action="{{ url_for('remover_jogador', jogador_id=jogador._id) }}" onsubmit="return confirm('Remover {{ jogador.nick }}?')" class="m-0">
+        <button type="submit" class="bg-error text-on-error px-4 py-2 rounded font-label-sm text-xs hover:opacity-90 transition-opacity cursor-pointer">
+          Remover
+        </button>
+      </form>
+    </div>
+    {% endif %}
   </div>
-  {% endif %}
-</div>
 
-<div class="row g-3">
-  <div class="col-md-4">
-    <div class="card h-100">
-      <div class="card-header">Perfil</div>
-      <div class="card-body">
-        <div><strong>Nome:</strong> {{ jogador.nome or jogador.nome_real }}</div>
-        {% if can_view_sensitive %}
-        <div><strong>Login:</strong> <code>{{ jogador.login or '-' }}</code></div>
-        <div><strong>Contato:</strong> {{ jogador.contato or '-' }}</div>
-        {% endif %}
-        <div><strong>Campeonato:</strong> {{ jogador.get('campeonato_id') or '-' }}</div>
+  <!-- Perfil Card -->
+  <section class="bg-surface-white rounded-lg border border-border-subtle overflow-hidden">
+    <div class="bg-surface-container-low px-card-padding py-3 border-b border-border-subtle">
+      <h2 class="font-label-sm text-xs font-bold uppercase text-on-surface">Perfil</h2>
+    </div>
+    <div class="p-card-padding flex flex-col gap-3">
+      <div class="flex items-center gap-2">
+        <span class="font-label-sm text-xs font-bold text-on-surface-variant w-24">Nome:</span>
+        <span class="font-body-md text-sm text-on-surface">{{ jogador.nome or jogador.nome_real }}</span>
+      </div>
+      {% if can_view_sensitive %}
+      <div class="flex items-center gap-2">
+        <span class="font-label-sm text-xs font-bold text-on-surface-variant w-24">Login:</span>
+        <span class="font-body-md text-sm text-on-surface font-mono">{{ jogador.login or '-' }}</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="font-label-sm text-xs font-bold text-on-surface-variant w-24">Contato:</span>
+        <span class="font-body-md text-sm text-on-surface">{{ jogador.contato or '-' }}</span>
+      </div>
+      {% endif %}
+      <div class="flex items-center gap-2">
+        <span class="font-label-sm text-xs font-bold text-on-surface-variant w-24">Campeonato:</span>
+        <span class="font-body-md text-sm text-on-surface">{{ jogador.get('campeonato_id') or '-' }}</span>
       </div>
     </div>
-  </div>
-  <div class="col-md-4">
-    <div class="card h-100">
-      <div class="card-header">Time atual</div>
-      <div class="card-body">
-        {% if time %}
-        <div class="d-flex align-items-center gap-2">
-          {% if time.logo_path %}
-          <img class="team-logo team-logo-sm" src="{{ url_for('static', filename=time.logo_path) }}" alt="Logo de {{ time.nome }}">
-          {% else %}
-          <span class="team-logo team-logo-sm team-logo-placeholder"><i class="bi bi-shield-fill"></i></span>
-          {% endif %}
-          <div>
-            <div class="fw-bold">{{ time.nome }}</div>
-            <div class="text-muted">{{ time.tag }} - {{ time.jogo }}</div>
-          </div>
-        </div>
-        {% else %}
-        <div class="text-muted">Jogador sem time no momento.</div>
-        {% endif %}
+  </section>
+
+  <!-- Time atual Card -->
+  <section class="bg-surface-white rounded-lg border border-border-subtle overflow-hidden">
+    <div class="bg-surface-container-low px-card-padding py-3 border-b border-border-subtle">
+      <h2 class="font-label-sm text-xs font-bold uppercase text-on-surface">Time atual</h2>
+    </div>
+    {% if time %}
+    <div class="p-card-padding flex items-center gap-4 hover:bg-surface-container-low transition-colors rounded-b-lg">
+      {% if time.logo_path %}
+      <img class="w-12 h-12 rounded border border-border-subtle object-cover" src="{{ url_for('static', filename=time.logo_path) }}" alt="Logo de {{ time.nome }}">
+      {% else %}
+      <div class="w-12 h-12 rounded bg-surface-container-highest flex items-center justify-center text-primary border border-border-subtle">
+        <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">security</span>
+      </div>
+      {% endif %}
+      <div>
+        <h3 class="font-label-sm text-sm font-bold text-on-surface mb-0.5">{{ time.nome }}</h3>
+        <p class="font-body-md text-xs text-text-muted mb-0">{{ time.tag }} - {{ time.jogo }}</p>
       </div>
     </div>
-  </div>
-  <div class="col-md-4">
-    <div class="card h-100">
-      <div class="card-header">Estatisticas</div>
-      <div class="card-body">
-        <div><strong>Partidas:</strong> {{ jogador.estatisticas.partidas_jogadas }}</div>
-        <div><strong>Vitorias:</strong> {{ jogador.estatisticas.vitorias }}</div>
-        <div><strong>Derrotas:</strong> {{ jogador.estatisticas.derrotas }}</div>
-        <div><strong>K/D:</strong> {{ "%.2f"|format(jogador.estatisticas.kd_ratio) }}</div>
+    {% else %}
+    <div class="p-card-padding text-text-muted italic text-xs">
+      Jogador sem time no momento.
+    </div>
+    {% endif %}
+  </section>
+
+  <!-- Estatísticas Card -->
+  <section class="bg-surface-white rounded-lg border border-border-subtle overflow-hidden mb-8">
+    <div class="bg-surface-container-low px-card-padding py-3 border-b border-border-subtle">
+      <h2 class="font-label-sm text-xs font-bold uppercase text-on-surface">Estatísticas</h2>
+    </div>
+    <div class="p-card-padding grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="flex flex-col gap-1">
+        <span class="font-label-sm text-xs text-on-surface-variant font-semibold">Partidas</span>
+        <span class="font-stats-mono text-lg font-bold text-on-surface">{{ jogador.estatisticas.partidas_jogadas }}</span>
+      </div>
+      <div class="flex flex-col gap-1">
+        <span class="font-label-sm text-xs text-on-surface-variant font-semibold">Vitórias</span>
+        <span class="font-stats-mono text-lg font-bold text-success">{{ jogador.estatisticas.vitorias }}</span>
+      </div>
+      <div class="flex flex-col gap-1">
+        <span class="font-label-sm text-xs text-on-surface-variant font-semibold">Derrotas</span>
+        <span class="font-stats-mono text-lg font-bold text-error">{{ jogador.estatisticas.derrotas }}</span>
+      </div>
+      <div class="flex flex-col gap-1">
+        <span class="font-label-sm text-xs text-on-surface-variant font-semibold">K/D</span>
+        <span class="font-stats-mono text-lg font-bold text-on-surface">{{ "%.2f"|format(jogador.estatisticas.kd_ratio) }}</span>
       </div>
     </div>
-  </div>
-</div>
+  </section>
+</main>
 {% endblock %}

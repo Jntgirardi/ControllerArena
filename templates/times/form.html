@@ -1,96 +1,143 @@
 {% extends "base.html" %}
-{% block title %}{{ 'Editar' if acao == 'editar' else 'Novo' }} Time – FPS Arena{% endblock %}
+
+{% block title %}{{ 'Editar' if acao == 'editar' else 'Novo' }} Time – Controller Arena{% endblock %}
+
 {% block content %}
-<div class="d-flex align-items-center mb-3 flex-wrap gap-2">
-  <a href="{{ url_for('listar_times') }}" class="btn btn-outline-secondary btn-sm me-3">← Voltar</a>
-  <h4 class="mb-0 page-title">{{ 'Editar Time' if acao == 'editar' else 'Criar Time' }}</h4>
-  {% if acao == 'editar' and time %}
-    <span class="badge bg-secondary ms-2">{{ time.tag }}</span>
-  {% endif %}
-</div>
+<main class="w-full max-w-[1024px] mx-auto px-4 md:px-6 py-8 flex flex-col gap-6">
 
-<div class="card" style="max-width:620px">
-  <div class="card-body">
-    <form method="post" enctype="multipart/form-data">
-      <div class="row g-3 mb-3">
-        <div class="col-12 col-sm-8">
-          <label class="form-label">Nome do Time *</label>
-          <input type="text" name="nome" class="form-control"
-                 value="{{ dados.get('nome', '') }}" required>
-        </div>
-        <div class="col-12 col-sm-4">
-          <label class="form-label">TAG *</label>
-          <input type="text" name="tag" class="form-control" maxlength="5"
-                 value="{{ dados.get('tag', '') }}" required placeholder="SHD"
-                 style="text-transform:uppercase">
-        </div>
-      </div>
+  <!-- Header with Back Button -->
+  <div class="flex items-center gap-4 border-b border-border-subtle pb-4">
+    <a href="{{ url_for('listar_times') }}" class="bg-surface-white border border-border-subtle hover:bg-surface text-text-muted hover:text-on-surface font-bold text-xs px-4 py-2 rounded-lg transition-colors flex items-center gap-1.5 text-decoration-none shadow-sm">
+      <span class="material-symbols-outlined text-[16px]">arrow_back</span> Voltar
+    </a>
+    <h1 class="text-2xl font-headline font-bold text-on-surface">
+      {{ 'Editar Time' if acao == 'editar' else 'Criar Time' }}
+    </h1>
+    {% if acao == 'editar' and time %}
+      <span class="text-[10px] font-extrabold text-surface-white bg-on-surface px-2.5 py-0.5 rounded uppercase tracking-wider font-mono">{{ time.tag }}</span>
+    {% endif %}
+  </div>
 
-      <div class="mb-3">
-        <label class="form-label">Jogo *</label>
-        <select name="jogo" class="form-select" required>
-          <option value="">Selecione...</option>
-          <option value="CS2"     {% if dados.get('jogo') == 'CS2'     %}selected{% endif %}>CS2</option>
-          <option value="Valorant"{% if dados.get('jogo') == 'Valorant'%}selected{% endif %}>Valorant</option>
-        </select>
-      </div>
-
-      <div class="mb-3">
-        <label class="form-label">Logo do Time</label>
-        <div class="d-flex align-items-center gap-3 flex-wrap">
-          {% if acao == 'editar' and time and time.logo_path %}
-          <img class="team-logo team-logo-lg" src="{{ url_for('static', filename=time.logo_path) }}" alt="Logo de {{ time.nome }}">
-          {% else %}
-          <span class="team-logo team-logo-lg team-logo-placeholder"><i class="bi bi-shield-fill fs-2"></i></span>
-          {% endif %}
-          <div class="flex-fill">
-            <input type="file" name="logo" class="form-control" accept="image/png,image/jpeg">
-            <small class="text-muted">PNG ou JPG ate 2 MB. A imagem sera ajustada para o padrao do sistema.</small>
+  <!-- Form Card Container -->
+  <div class="w-full max-w-[500px]">
+    <div class="bg-surface-white rounded-xl border border-border-subtle shadow-sm p-card-padding">
+      <form method="post" enctype="multipart/form-data" class="space-y-5">
+        
+        <!-- Nome & TAG -->
+        <div class="grid grid-cols-3 gap-4">
+          <div class="col-span-2">
+            <label class="block font-bold text-xs text-on-surface mb-1" for="nome">Nome do Time *</label>
+            <input 
+              type="text" 
+              name="nome" 
+              id="nome"
+              value="{{ dados.get('nome', '') }}" 
+              required
+              class="w-full border border-border-subtle rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary bg-surface-white transition-colors text-on-surface"
+            >
+          </div>
+          <div>
+            <label class="block font-bold text-xs text-on-surface mb-1" for="tag">TAG *</label>
+            <input 
+              type="text" 
+              name="tag" 
+              id="tag"
+              maxlength="5"
+              value="{{ dados.get('tag', '') }}" 
+              required 
+              placeholder="SHD"
+              style="text-transform:uppercase"
+              class="w-full border border-border-subtle rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary bg-surface-white transition-colors text-on-surface font-mono"
+            >
           </div>
         </div>
-      </div>
 
-      <div class="mb-3">
-        <label class="form-label">Selecione os Jogadores *</label>
-        <div class="border rounded p-2" style="max-height:300px; overflow-y:auto; background:var(--bg-card-hd);">
-          {% for j in todos_jogadores %}
-          {% set jid = j._id|string %}
-          <div class="border rounded p-2 mb-2" style="background:var(--bg-card)">
-            <div class="form-check mb-1">
-              <input class="form-check-input" type="checkbox"
-                     name="jogadores_ids" value="{{ jid }}"
-                     id="j_{{ jid }}"
-                     {% if ids_atuais is defined and jid in ids_atuais %}checked{% endif %}>
-              <label class="form-check-label" for="j_{{ jid }}" style="color:var(--text-main)">
-                <strong>{{ j.nick }}</strong>
-                <span class="badge ms-1 {{ 'badge-cs2' if j.jogo_principal == 'CS2' else 'badge-valorant' }}">
+        <!-- Jogo -->
+        <div>
+          <label class="block font-bold text-xs text-on-surface mb-1" for="jogo">Jogo *</label>
+          <select 
+            name="jogo" 
+            id="jogo" 
+            required
+            class="w-full border border-border-subtle rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary bg-surface-white text-on-surface-variant cursor-pointer"
+          >
+            <option value="">Selecione...</option>
+            <option value="CS2" {% if dados.get('jogo') == 'CS2' %}selected{% endif %}>CS2</option>
+            <option value="Valorant" {% if dados.get('jogo') == 'Valorant' %}selected{% endif %}>Valorant</option>
+          </select>
+        </div>
+
+        <!-- Logo do Time -->
+        <div>
+          <label class="block font-bold text-xs text-on-surface mb-2">Logo do Time</label>
+          <div class="flex flex-col gap-3">
+            <div class="flex items-center gap-3">
+              {% if acao == 'editar' and time and time.logo_path %}
+              <img class="w-12 h-12 rounded-lg object-cover border border-border-subtle" src="{{ url_for('static', filename=time.logo_path) }}" alt="Logo de {{ time.nome }}">
+              {% else %}
+              <div class="w-12 h-12 rounded-lg bg-surface-container flex items-center justify-center text-primary border border-surface-container-highest flex-shrink-0">
+                <span class="material-symbols-outlined text-[24px]">shield</span>
+              </div>
+              {% endif %}
+              <div class="flex-grow">
+                <input 
+                  type="file" 
+                  name="logo" 
+                  accept="image/png,image/jpeg"
+                  class="w-full border border-border-subtle rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary bg-surface-white text-on-surface-variant file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-surface file:text-on-surface hover:file:bg-surface-container-high file:cursor-pointer cursor-pointer"
+                >
+              </div>
+            </div>
+            <p class="text-[10px] text-text-muted leading-tight font-semibold">PNG ou JPG até 2 MB. A imagem será ajustada para o padrão do sistema.</p>
+          </div>
+        </div>
+
+        <!-- Selecione os Jogadores -->
+        <div>
+          <label class="block font-bold text-xs text-on-surface mb-2">Selecione os Jogadores *</label>
+          <div class="border border-border-subtle rounded-lg p-3 max-h-[300px] overflow-y-auto bg-surface-container-low/20 no-scrollbar">
+            {% for j in todos_jogadores %}
+            {% set jid = j._id|string %}
+            <div class="border border-border-subtle rounded-lg p-3 mb-2 bg-surface-white">
+              <div class="flex items-center justify-between mb-1.5">
+                <label for="j_{{ jid }}" class="flex items-center gap-1.5 cursor-pointer text-xs font-bold text-on-surface">
+                  <input 
+                    type="checkbox"
+                    name="jogadores_ids" 
+                    value="{{ jid }}"
+                    id="j_{{ jid }}"
+                    {% if ids_atuais is defined and jid in ids_atuais %}checked{% endif %}
+                    class="rounded border-border-subtle text-primary focus:ring-primary h-4 w-4"
+                  >
+                  <span>{{ j.nick }}</span>
+                </label>
+                {% set game_bg = 'bg-warning/15 text-warning border-warning/30' if j.jogo_principal == 'CS2' else 'bg-error/10 text-error border-error/20' %}
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-[9px] font-bold border {{ game_bg }} font-mono tracking-wide uppercase">
                   {{ j.jogo_principal }}
                 </span>
-              </label>
-            </div>
-            <div class="ps-4">
-              <input type="text" name="funcao_{{ jid }}"
-                     class="form-control form-control-sm"
-                     placeholder="Função (IGL, AWPer, Entry...)"
-                     value="{{ funcoes_atuais[jid] if funcoes_atuais is defined and jid in funcoes_atuais else '' }}"
-                     style="max-width:100%">
-            </div>
-          </div>
-          {% else %}
-          <p class="text-muted small mb-0">Nenhum jogador cadastrado.</p>
-          {% endfor %}
-        </div>
-        <small class="text-muted">Marque os jogadores que fazem parte deste time.</small>
-      </div>
+              </div>
 
-      <div class="d-grid gap-2 d-sm-flex mt-3">
-        <button type="submit" class="btn btn-primary flex-fill">
-          <i class="bi bi-{{ 'floppy' if acao == 'editar' else 'plus-lg' }}"></i>
-          {{ 'Salvar Alterações' if acao == 'editar' else 'Criar Time' }}
-        </button>
-        <a href="{{ url_for('listar_times') }}" class="btn btn-outline-secondary">Cancelar</a>
-      </div>
-    </form>
+            </div>
+            {% else %}
+            <p class="text-text-muted italic text-[11px] mb-0">Nenhum jogador cadastrado.</p>
+            {% endfor %}
+          </div>
+          <p class="text-[10px] text-text-muted leading-tight font-semibold mt-2">Marque os jogadores que fazem parte deste time.</p>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex items-center gap-3 mt-4 pt-4 border-t border-border-subtle">
+          <button type="submit" class="bg-primary hover:bg-primary-container text-on-primary font-bold text-xs px-6 py-2.5 rounded-lg transition-colors flex items-center justify-center gap-1.5 shadow-sm cursor-pointer flex-1">
+            <span class="material-symbols-outlined text-[18px]">{% if acao == 'editar' %}save{% else %}add{% endif %}</span>
+            {{ 'Salvar Alterações' if acao == 'editar' else 'Criar Time' }}
+          </button>
+          <a href="{{ url_for('listar_times') }}" class="bg-surface-white hover:bg-surface border border-outline-variant text-on-surface font-bold text-xs px-6 py-2.5 rounded-lg transition-colors shadow-sm text-decoration-none text-center">
+            Cancelar
+          </a>
+        </div>
+      </form>
+    </div>
   </div>
-</div>
+
+</main>
 {% endblock %}
