@@ -2,7 +2,7 @@
 {% block title %}{{ jogador.nick }} - FPS Arena{% endblock %}
 {% block content %}
 <div class="d-flex align-items-center gap-2 mb-4 flex-wrap">
-  <a href="{{ url_for('ranking') if session.role == 'PLAYER' else url_for('listar_jogadores') }}" class="btn btn-outline-secondary btn-sm">Voltar</a>
+  <a href="{{ url_for('listar_jogadores') }}" class="btn btn-outline-secondary btn-sm">Voltar</a>
   <h4 class="mb-0">{{ jogador.nick }}</h4>
   <span class="badge {{ 'badge-cs2' if jogador.jogo_principal == 'CS2' else 'badge-valorant' }}">{{ jogador.jogo_principal }}</span>
   {% if session.role == 'ADMIN' %}

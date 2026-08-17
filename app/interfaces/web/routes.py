@@ -562,6 +562,9 @@ def register_routes(app, services):
             password = request.form.get("senha", "")
             user = services["auth"].authenticate(identity, password, mode)
             if user:
+                if user.get("role") == ROLE_PLAYER:
+                    flash("Acesso não permitido para perfil de jogador.", "danger")
+                    return render_template("login.html")
                 _store_session_user(user)
                 if session.get("must_change_password"):
                     flash("Primeiro acesso confirmado. Defina sua nova senha.", "warning")
@@ -1289,21 +1292,7 @@ def register_routes(app, services):
         redirect_id = str(camp_id) if camp_id else None
         return redirect(url_for("ver_campeonato", camp_id=redirect_id) if redirect_id else url_for("listar_campeonatos"))
 
-    @app.route("/meu-time", endpoint="meu_time")
-    @login_required
-    @roles_required(ROLE_PLAYER)
-    def meu_time():
-        data = services["player_profile"].get_profile(session["user_id"])
-        if not data or not data.get("time"):
-            flash("Voce nao pertence a nenhum time.", "warning")
-            return redirect(url_for("meu_perfil"))
-        return render_template("operador/meu_time.html", time=data["time"], jogador=data["jogador"])
 
-    @app.route("/meu-perfil", endpoint="meu_perfil")
-    @login_required
-    @roles_required(ROLE_PLAYER)
-    def meu_perfil():
-        return redirect(url_for("dashboard"))
 
     @app.route("/ranking", endpoint="ranking")
     @login_required

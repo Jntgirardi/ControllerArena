@@ -348,20 +348,7 @@
 
               <!-- Force Presence actions -->
               <div class="flex gap-2 flex-wrap">
-                {% if session.role == 'PLAYER' %}
-                  {% if not p.checkin.time_a_confirmado %}
-                  <form method="post" action="{{ url_for('confirmar_presenca', partida_id=p._id) }}" class="flex-1 m-0">
-                    <input type="hidden" name="time_id" value="{{ p.time_a.time_id }}">
-                    <button type="submit" class="w-full py-1 border border-success text-success hover:bg-success/5 font-bold text-[10px] rounded transition-all">Confirmar {{ p.time_a.nome }}</button>
-                  </form>
-                  {% endif %}
-                  {% if not p.checkin.time_b_confirmado %}
-                  <form method="post" action="{{ url_for('confirmar_presenca', partida_id=p._id) }}" class="flex-1 m-0">
-                    <input type="hidden" name="time_id" value="{{ p.time_b.time_id }}">
-                    <button type="submit" class="w-full py-1 border border-success text-success hover:bg-success/5 font-bold text-[10px] rounded transition-all">Confirmar {{ p.time_b.nome }}</button>
-                  </form>
-                  {% endif %}
-                {% endif %}
+
 
                 {% if session.role == 'ADMIN' %}
                   {% if not p.checkin.time_a_confirmado %}

@@ -237,7 +237,7 @@ def test_password_reset_flow_updates_password_and_invalidates_token(monkeypatch)
         {
             "nome": "Player Reset",
             "login": "player.reset",
-            "role": "PLAYER",
+            "role": "ADMIN",
             "senha_hash": password_hasher.hash("oldpass123"),
             "ativo": True,
             "must_change_password": False,
@@ -331,7 +331,7 @@ def test_expired_password_reset_token_is_rejected(monkeypatch):
     assert response.headers["Location"] == "/esqueci-senha"
 
 
-def test_player_login_opens_dashboard_profile(monkeypatch):
+def test_player_login_is_blocked(monkeypatch):
     flask_app = build_test_app(monkeypatch)
     mongo = flask_app.extensions["mongo"]
     password_hasher = PasswordHasher()
@@ -376,18 +376,9 @@ def test_player_login_opens_dashboard_profile(monkeypatch):
     login_response = client.post(
         "/login",
         data={"modo": "login", "identificador": "player.one", "senha": "player123"},
-        follow_redirects=False,
+        follow_redirects=True,
     )
-    dashboard_response = client.get("/dashboard")
-    profile_response = client.get("/meu-perfil", follow_redirects=False)
-
-    assert login_response.status_code == 302
-    assert login_response.headers["Location"] == "/dashboard"
-    assert dashboard_response.status_code == 200
-    assert b"Dashboard do Jogador" in dashboard_response.data
-    assert b"PlayerOne" in dashboard_response.data
-    assert profile_response.status_code == 302
-    assert profile_response.headers["Location"] == "/dashboard"
+    assert "Acesso não permitido para perfil de jogador." in login_response.data.decode("utf-8")
 
 
 def test_player_ranking_includes_team_ranking_for_player_game(monkeypatch):
@@ -407,13 +398,14 @@ def test_player_ranking_includes_team_ranking_for_player_game(monkeypatch):
         }
     ).inserted_id
 
+    user_one_id = ObjectId()
     player_one_id = mongo.players.insert_one(
         {
             "nick": "PlayerOne",
             "nome": "Jogador Um",
             "login": "player.one",
             "jogo_principal": "CS2",
-            "admin_id": admin_id,
+            "admin_id": user_one_id,
             "estatisticas": {"partidas_jogadas": 10, "vitorias": 7, "derrotas": 3, "kd_ratio": 1.2},
             "criado_em": datetime.now(UTC),
         }
@@ -424,7 +416,7 @@ def test_player_ranking_includes_team_ranking_for_player_game(monkeypatch):
             "nome": "Jogador Dois",
             "login": "player.two",
             "jogo_principal": "CS2",
-            "admin_id": admin_id,
+            "admin_id": user_one_id,
             "estatisticas": {"partidas_jogadas": 8, "vitorias": 5, "derrotas": 3, "kd_ratio": 1.1},
             "criado_em": datetime.now(UTC),
         }
@@ -435,7 +427,7 @@ def test_player_ranking_includes_team_ranking_for_player_game(monkeypatch):
             "nome": "Alpha Team",
             "tag": "ALP",
             "jogo": "CS2",
-            "admin_id": admin_id,
+            "admin_id": user_one_id,
             "jogadores": [
                 {"jogador_id": player_one_id, "nick": "PlayerOne", "funcao": "IGL"},
                 {"jogador_id": player_two_id, "nick": "PlayerTwo", "funcao": "AWPer"},
@@ -446,10 +438,11 @@ def test_player_ranking_includes_team_ranking_for_player_game(monkeypatch):
 
     mongo.users.insert_one(
         {
+            "_id": user_one_id,
             "nome": "Jogador Um",
             "login": "player.one",
-            "role": "PLAYER",
-            "admin_id": admin_id,
+            "role": "ADMIN",
+            "admin_id": user_one_id,
             "player_id": player_one_id,
             "senha_hash": password_hasher.hash("player123"),
             "ativo": True,
@@ -584,7 +577,7 @@ def test_player_can_view_other_player_with_sensitive_fields_hidden(monkeypatch):
         {
             "nome": "Jogador Um",
             "login": "player.one",
-            "role": "PLAYER",
+            "role": "REFEREE",
             "admin_id": admin_id,
             "player_id": player_one_id,
             "senha_hash": password_hasher.hash("player123"),
@@ -810,7 +803,7 @@ def test_player_cannot_access_reports(monkeypatch):
         {
             "nome": "Jogador Um",
             "login": "player.one",
-            "role": "PLAYER",
+            "role": "REFEREE",
             "admin_id": admin_id,
             "player_id": player_id,
             "senha_hash": password_hasher.hash("player123"),
@@ -874,7 +867,7 @@ def test_mongodb_optimized_indexes_are_created(monkeypatch):
     assert matches_indexes["admin_id_1_data_partida_-1"]["key"] == [("admin_id", 1), ("data_partida", -1)]
 
 
-def test_player_deletion_removes_user_account(monkeypatch):
+def test_player_deletion_works(monkeypatch):
     flask_app = build_test_app(monkeypatch)
     mongo = flask_app.extensions["mongo"]
     services = flask_app.extensions["services"]
@@ -886,8 +879,6 @@ def test_player_deletion_removes_user_account(monkeypatch):
     player_data = {
         "nick": "TestPlayer",
         "nome": "Test Name",
-        "login": "test.player",
-        "senha": "password123",
         "jogo_principal": "CS2",
         "rank_competitivo": "Sem Rank",
         "premier_rating": "0",
@@ -896,21 +887,17 @@ def test_player_deletion_removes_user_account(monkeypatch):
     errors = services["players"].create_player(current_user, player_data)
     assert not errors
 
-    # Verify both documents exist
+    # Verify document exists
     player = mongo.players.find_one({"nick": "TestPlayer"})
     assert player is not None
     player_id = player["_id"]
-
-    user = mongo.users.find_one({"player_id": player_id})
-    assert user is not None
 
     # 2. Delete player
     deleted = services["players"].delete_player(current_user, player_id)
     assert deleted is True
 
-    # Verify both documents are deleted
+    # Verify document is deleted
     assert mongo.players.find_one({"_id": player_id}) is None
-    assert mongo.users.find_one({"player_id": player_id}) is None
 
 
 def test_player_ranking_report_filters_by_date(monkeypatch):
