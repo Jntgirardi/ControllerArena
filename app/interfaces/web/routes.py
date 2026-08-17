@@ -1260,37 +1260,7 @@ def register_routes(app, services):
             "redirect_url": url_for("ver_campeonato", camp_id=str(camp_id)) if camp_id else "/dashboard"
         }
 
-    @app.route("/partidas/<partida_id>/checkin/solicitar", methods=["POST"], endpoint="solicitar_checkin")
-    @login_required
-    @roles_required(ROLE_ADMIN)
-    def solicitar_checkin(partida_id):
-        current_user = build_current_user()
-        oid = to_oid(partida_id)
-        if not oid:
-            flash("ID invalido.", "danger")
-            return redirect(url_for("listar_campeonatos"))
-        minutos = request.form.get("antecedencia_minutos", "30")
-        error, camp_id = services["matches"].solicitar_checkin(current_user, oid, minutos)
-        flash(error or "Check-in solicitado com sucesso!", "danger" if error else "success")
-        redirect_id = str(camp_id) if camp_id else None
-        return redirect(url_for("ver_campeonato", camp_id=redirect_id) if redirect_id else url_for("listar_campeonatos"))
 
-    @app.route("/partidas/<partida_id>/checkin/confirmar", methods=["POST"], endpoint="confirmar_presenca")
-    @login_required
-    def confirmar_presenca(partida_id):
-        current_user = build_current_user()
-        oid = to_oid(partida_id)
-        if not oid:
-            flash("ID invalido.", "danger")
-            return redirect(url_for("listar_campeonatos"))
-        tid = to_oid(request.form.get("time_id", ""))
-        if not tid:
-            flash("Time invalido.", "danger")
-            return redirect(url_for("listar_campeonatos"))
-        error, camp_id = services["matches"].confirmar_presenca(current_user, oid, tid)
-        flash(error or "Presenca confirmada com sucesso!", "danger" if error else "success")
-        redirect_id = str(camp_id) if camp_id else None
-        return redirect(url_for("ver_campeonato", camp_id=redirect_id) if redirect_id else url_for("listar_campeonatos"))
 
 
 
@@ -1398,19 +1368,7 @@ def register_routes(app, services):
         flash("Usuario removido.", "success")
         return redirect(url_for("listar_usuarios"))
 
-    @app.route("/partidas/<partida_id>/checkin/verificar", methods=["POST"], endpoint="verificar_checkin")
-    @login_required
-    @roles_required(ROLE_SUPER_ADMIN, ROLE_ADMIN)
-    def verificar_checkin(partida_id):
-        current_user = build_current_user()
-        oid = to_oid(partida_id)
-        if not oid:
-            flash("ID invalido.", "danger")
-            return redirect(url_for("listar_campeonatos"))
-        error, camp_id = services["matches"].verificar_limite_checkin(current_user, oid)
-        flash(error or "Verificacao de check-in / W.O. realizada com sucesso!", "danger" if error else "success")
-        redirect_id = str(camp_id) if camp_id else None
-        return redirect(url_for("ver_campeonato", camp_id=redirect_id) if redirect_id else url_for("listar_campeonatos"))
+
 
     @app.route("/notificacoes/ler_todas", methods=["POST"], endpoint="marcar_todas_notificacoes_lidas")
     @login_required
