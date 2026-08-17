@@ -93,7 +93,7 @@ def build_pdf_bytes(report: dict) -> bytes:
         commands.extend(draw_rect(0, 0, PAGE_WIDTH, PAGE_HEIGHT, COLOR_BG))
         commands.extend(draw_rect(0, PAGE_HEIGHT - 88, PAGE_WIDTH, 88, COLOR_TOPBAR))
         commands.extend(draw_rect(MARGIN_X, PAGE_HEIGHT - 84, 138, 30, COLOR_ACCENT))
-        commands.append(draw_text(MARGIN_X + 16, PAGE_HEIGHT - 64, "FPS Arena", size=16, color=(1, 1, 1), font="F2"))
+        commands.append(draw_text(MARGIN_X + 16, PAGE_HEIGHT - 64, "Controller Arena", size=16, color=(1, 1, 1), font="F2"))
         commands.append(draw_text(MARGIN_X, PAGE_HEIGHT - 114, report["title"], size=22, color=COLOR_TEXT, font="F2"))
         commands.append(draw_text(MARGIN_X, PAGE_HEIGHT - 148, "Relatorio completo exportado do sistema", size=10, color=COLOR_MUTED))
 

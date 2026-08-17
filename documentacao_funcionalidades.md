@@ -1,7 +1,7 @@
-# FPS Arena 🎮🔥
+# Controller Arena 🎮🔥
 ## Guia de Funcionalidades e Específicações de Interface (UI/UX)
 
-Este documento descreve detalhadamente todas as funcionalidades do **FPS Arena**, seus fluxos de operação passo a passo e as especificações de tela. Ele foi estruturado para servir como um guia completo para o designer responsável pelo remodelamento da interface (frontend) do sistema.
+Este documento descreve detalhadamente todas as funcionalidades do **Controller Arena**, seus fluxos de operação passo a passo e as especificações de tela. Ele foi estruturado para servir como um guia completo para o designer responsável pelo remodelamento da interface (frontend) do sistema.
 
 ---
 
@@ -54,7 +54,7 @@ Abaixo estão descritos os 5 fluxos centrais da aplicação que demandam transi�
 ### Tela 1: Lobby Público (HLTV-style Home)
 *   **Finalidade:** Apresentação da liga e lobby de jogos para visitantes e torcedores.
 *   **Componentes Visuais:**
-    *   **Hero Section:** Banner gamer contendo a logo do FPS Arena, slogan e dois botões rápidos ("Ver Campeonatos" e "Partidas Ao Vivo").
+    *   **Hero Section:** Banner gamer contendo a logo do Controller Arena, slogan e dois botões rápidos ("Ver Campeonatos" e "Partidas Ao Vivo").
     *   **Grid de Campeonatos Ativos:** Cards contendo imagem de capa do jogo (CS2 ou Valorant), título do campeonato, status destacado (Inscrição, Em Andamento, Finalizado), total de equipes inscritas e valor da premiação.
     *   **Partidas Ao Vivo:** Cards em destaque contendo uma bolinha vermelha piscando (**"AO VIVO"**), fase da partida, nome das equipes com placares em destaque vermelho neon e botão discreto "Ver Súmula".
     *   **Próximas Partidas:** Lista horizontal ou vertical de partidas com a tag azul "AGENDADO", exibindo equipes, mapa, data e hora em fonte monoespaçada.

@@ -34,7 +34,7 @@ def test_public_championship_flow_uses_mock_data(monkeypatch):
 
     home = client.get("/")
     assert home.status_code == 200
-    assert b"FPS Arena Masters" in home.data
+    assert b"Controller Arena Masters" in home.data
     assert b"Area do Competidor" in home.data
     assert b"/campeonato/1" in home.data
 

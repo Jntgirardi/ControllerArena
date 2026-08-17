@@ -25,7 +25,7 @@ print("Banco limpo para reinício da semeadura.")
 # 1. Super Admin
 super_admin_id = db.usuarios.insert_one(
     {
-        "nome": "Plataforma FPS Arena",
+        "nome": "Plataforma Controller Arena",
         "login": "superadmin",
         "senha_hash": bcrypt.hashpw(b"super123", bcrypt.gensalt()),
         "role": "SUPER_ADMIN",

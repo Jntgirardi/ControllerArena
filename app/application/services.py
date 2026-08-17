@@ -77,7 +77,7 @@ class DiscordWebhookNotifier:
 
         payload = json.dumps(
             {
-                "username": "FPS Arena",
+                "username": "Controller Arena",
                 "content": content[:2000],
             }
         ).encode("utf-8")

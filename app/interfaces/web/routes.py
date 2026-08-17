@@ -92,7 +92,7 @@ def _session_user_for_logs():
 PUBLIC_CHAMPIONSHIPS = [
     {
         "id": 1,
-        "nome": "FPS Arena Masters",
+        "nome": "Controller Arena Masters",
         "jogo": "CS2",
         "status": "Em andamento",
         "regiao": "Sudeste",
