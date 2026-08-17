@@ -1,0 +1,55 @@
+name: Auto Merge Develop to Main
+
+on:
+  push:
+    branches: [develop]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - run: python -m pytest
+
+  auto-merge:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: develop
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Create or update PR develop -> main
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          existing=$(gh pr list --repo "$GITHUB_REPOSITORY" --base main --head develop --state open --json number --jq '.[0].number')
+          if [ -n "$existing" ]; then
+            echo "PR already open: $existing"
+            gh pr edit "$existing" --repo "$GITHUB_REPOSITORY" --title "release: promo develop para main"
+          else
+            gh pr create --repo "$GITHUB_REPOSITORY" --base main --head develop --title "release: promo develop para main" --body "PR automatico: integracao de develop para producao."
+          fi
+      - name: Merge PR develop -> main
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          pr_num=$(gh pr list --repo "$GITHUB_REPOSITORY" --base main --head develop --state open --json number --jq '.[0].number')
+          if [ -n "$pr_num" ]; then
+            gh pr merge "$pr_num" --repo "$GITHUB_REPOSITORY" --merge --admin
+          else
+            echo "No open PR to merge."
+          fi

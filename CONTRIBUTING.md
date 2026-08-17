@@ -37,7 +37,7 @@ chore/zzz  ───┘
 
 4. **Abra um Pull Request para a `develop`** (é a branch padrão do repo). Descreva o que foi feito e, se possível, cole o resultado dos testes.
 
-5. **Depois de revisado e testado na `develop`**, a integração para a `main` é feita por um PR de `develop` → `main`.
+5. **A integração `develop` → `main` é automática.** A GitHub Action `auto-merge-develop` roda os testes a cada push na `develop`; se passarem, abre e mergea sozinha o PR de `develop` → `main`. Você não precisa fazer nada manualmente.
 
 ## Padrão de Commits
 
@@ -65,4 +65,10 @@ Use mensagens curtas e claras no formato convencional:
 
 ## Resumo
 
-**Nunca subir direto pra `main`.** Trabalhe em branches, integre na `develop`, teste, e só então promova pra `main` via PR.
+**Nunca subir direto pra `main`.** O fluxo é:
+
+```
+feature/xxx -> develop (via PR) -> main (auto via GitHub Action)
+```
+
+Basta trabalhar em uma branch, abrir PR para a `develop` e mergear. A Action cuida do resto.
