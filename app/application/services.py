@@ -1395,12 +1395,11 @@ class AuditLogService:
 class ReportService:
     SUMMARY_PREVIEW_LIMIT = 5
 
-    def __init__(self, championship_repo, match_repo, player_repo, team_repo, event_repo, log_repo):
+    def __init__(self, championship_repo, match_repo, player_repo, team_repo, log_repo):
         self.championship_repo = championship_repo
         self.match_repo = match_repo
         self.player_repo = player_repo
         self.team_repo = team_repo
-        self.event_repo = event_repo
         self.log_repo = log_repo
         self.report_builders = {
             "system-logs": self._build_system_logs_report,
@@ -2145,7 +2144,6 @@ def build_services(repositories: dict[str, Any], password_hasher, cache):
             repositories["matches"],
             repositories["players"],
             repositories["teams"],
-            repositories["events"],
             repositories["logs"],
         ),
         "users": UserService(repositories["users"], password_hasher),

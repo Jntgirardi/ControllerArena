@@ -33,7 +33,6 @@ class MongoDatabase:
         self.teams = self.db["times"]
         self.championships = self.db["campeonatos"]
         self.matches = self.db["partidas"]
-        self.events = self.db["eventos"]
         self.logs = self.db["logs"]
         self.arbitros = self.db["arbitros"]
         self.notifications = self.db["notificacoes"]
@@ -340,10 +339,6 @@ class MongoDatabase:
         self._ensure_index(self.matches, "campeonato_id", "campeonato_id_1")
         self._ensure_index(self.matches, [("campeonato_id", 1), ("data_partida", 1)], "campeonato_id_1_data_partida_1")
         self._ensure_index(self.matches, [("admin_id", 1), ("data_partida", DESCENDING)], "admin_id_1_data_partida_-1")
-
-        # eventos
-        self._ensure_index(self.events, "admin_id", "admin_id_1")
-        self._ensure_index(self.events, "data_evento", "data_evento_1")
 
         # logs
         self._ensure_index(self.logs, "user_id", "user_id_1")
