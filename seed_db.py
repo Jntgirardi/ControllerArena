@@ -17,7 +17,7 @@ def utc_now():
     return datetime.now(UTC)
 
 # Clean all collections
-for col in ["usuarios", "jogadores", "times", "campeonatos", "partidas", "logs", "notificacoes"]:
+for col in ["usuarios", "jogadores", "times", "campeonatos", "partidas", "eventos", "logs", "notificacoes"]:
     db[col].drop()
 
 print("Banco limpo para reinício da semeadura.")

@@ -16,7 +16,6 @@ TEAM_LOGO_SIZE = (256, 256)
 TEAM_LOGO_UPLOAD_DIR = Path("uploads") / "team_logos"
 TEAM_LOGO_ALLOWED_FORMATS = {"PNG", "JPEG"}
 
-
 def _team_logo_absolute_path(logo_path: str | None) -> Path | None:
     if not logo_path:
         return None
@@ -26,12 +25,10 @@ def _team_logo_absolute_path(logo_path: str | None) -> Path | None:
         return None
     return candidate
 
-
 def _delete_team_logo(logo_path: str | None) -> None:
     logo_file = _team_logo_absolute_path(logo_path)
     if logo_file and logo_file.exists():
         logo_file.unlink()
-
 
 def _save_team_logo(upload) -> tuple[str | None, list[str]]:
     if not upload or not upload.filename:
@@ -67,7 +64,6 @@ def _save_team_logo(upload) -> tuple[str | None, list[str]]:
 
     return f"{TEAM_LOGO_UPLOAD_DIR.as_posix()}/{filename}", []
 
-
 def _store_session_user(user):
     session.clear()
     session["user_id"] = str(user["_id"])
@@ -76,7 +72,6 @@ def _store_session_user(user):
     session["role"] = user["role"]
     session["admin_id"] = str(user["admin_id"]) if user.get("admin_id") else ""
     session["must_change_password"] = bool(user.get("must_change_password"))
-
 
 def _session_user_for_logs():
     if "user_id" not in session:
@@ -457,7 +452,6 @@ def map_championship_to_public(camp_doc, services):
         "partidas": partidas,
         "times_inscritos": [{"nome": t["nome"], "tag": t["tag"]} for t in times_inscritos_docs]
     }
-
 
 def register_routes(app, services):
     @app.context_processor
@@ -899,7 +893,6 @@ def register_routes(app, services):
             filtro_jogo=jogo,
         )
 
-
     @app.route("/campeonatos/novo", methods=["GET", "POST"], endpoint="novo_campeonato")
     @login_required
     @roles_required(ROLE_ADMIN)
@@ -1059,7 +1052,6 @@ def register_routes(app, services):
         else:
             flash("Partidas e chaves geradas automaticamente com sucesso!", "success")
         return redirect(url_for("ver_campeonato", camp_id=camp_id))
-
 
     @app.route("/campeonatos/<camp_id>/partidas/nova", methods=["POST"], endpoint="nova_partida")
     @login_required
