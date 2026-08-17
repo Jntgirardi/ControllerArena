@@ -1,0 +1,60 @@
+name: Rollback Main
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_ref:
+        description: "Commit (ou ref) para onde a main deve voltar. Vazio = desfaz o ultimo merge."
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 20
+
+      - name: Choose rollback target
+        id: target
+        shell: bash
+        env:
+          INPUT_REF: ${{ github.event.inputs.target_ref }}
+        run: |
+          if [ -n "$INPUT_REF" ]; then
+            echo "target=$INPUT_REF" >> "$GITHUB_OUTPUT"
+          else
+            # Undo the most recent merge commit on main
+            last_merge=$(git log --merges --first-parent -1 --format=%H)
+            echo "target=$last_merge" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Revert last merge on main
+        shell: bash
+        env:
+          TARGET: ${{ steps.target.outputs.target }}
+        run: |
+          set -e
+          if ! git rev-parse "$TARGET" >/dev/null 2>&1; then
+            echo "Ref '$TARGET' nao existe." >&2
+            exit 1
+          fi
+          # Revert only the last merge (single -m 1), keep main history linear-ish
+          if git log --merges --first-parent -1 --format=%H | grep -q "$TARGET"; then
+            git revert --no-edit -m 1 "$TARGET"
+          else
+            # Non-merge commit: plain revert
+            git revert --no-edit "$TARGET"
+          fi
+          git push origin main
+
+      - name: Summary
+        shell: bash
+        env:
+          TARGET: ${{ steps.target.outputs.target }}
+        run: echo "Main revertida para $TARGET"
