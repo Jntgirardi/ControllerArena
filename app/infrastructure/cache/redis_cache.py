@@ -89,16 +89,6 @@ def build_cache(url: str, ttl: int, enabled: bool) -> RedisCache | NoCache:
         logger.info("Redis cache disabled by REDIS_ENABLED=false.")
         return NoCache()
 
-    try:
-        cache = RedisCache(url=url, ttl=ttl)
-        if cache.ping():
-            logger.info("Redis cache connected at '%s'.", url)
-            return cache
-        raise RedisError("ping returned False")
-    except RedisError as exc:
-        logger.warning(
-            "Could not connect to Redis at '%s': %s. Continuing without cache.",
-            url,
-            exc,
-        )
-        return NoCache()
+    # RedisCache initialization is lazy in redis-py and does not block.
+    # We return the client directly to avoid blocking pings during startup.
+    return RedisCache(url=url, ttl=ttl)

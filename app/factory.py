@@ -30,9 +30,11 @@ def create_app():
         app.config["REDIS_ENABLED"],
     )
 
+    import os
     mongo = MongoDatabase(app.config["MONGO_URI"], app.config["MONGO_DB_NAME"])
-    mongo.ensure_indexes()
-    migrate_legacy_data(mongo)
+    if os.environ.get("VERCEL") != "1":
+        mongo.ensure_indexes()
+        migrate_legacy_data(mongo)
 
     repositories = {
         "users": MongoUserRepository(mongo.users),

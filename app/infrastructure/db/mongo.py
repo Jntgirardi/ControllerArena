@@ -4,17 +4,21 @@ from pymongo.errors import ServerSelectionTimeoutError
 
 class MongoDatabase:
     def __init__(self, uri: str, db_name: str):
-        try:
-            self.client = MongoClient(uri, serverSelectionTimeoutMS=2000)
-            self.client.admin.command("ping")
-            is_mock = False
-        except Exception as exc:
-            import mongomock
-            print("==========================================================================")
-            print("MongoDB nao disponivel no host local. Utilizando banco em memoria (mongomock)!")
-            print("==========================================================================")
-            self.client = mongomock.MongoClient()
-            is_mock = True
+        import os
+        is_mock = False
+        if os.environ.get("VERCEL") == "1" or os.environ.get("FLASK_ENV") == "production" or uri.startswith("mongodb+srv://"):
+            self.client = MongoClient(uri)
+        else:
+            try:
+                self.client = MongoClient(uri, serverSelectionTimeoutMS=2000)
+                self.client.admin.command("ping")
+            except Exception as exc:
+                import mongomock
+                print("==========================================================================")
+                print("MongoDB nao disponivel no host local. Utilizando banco em memoria (mongomock)!")
+                print("==========================================================================")
+                self.client = mongomock.MongoClient()
+                is_mock = True
 
         self.db = self.client[db_name]
 
