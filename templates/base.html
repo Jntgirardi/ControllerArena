@@ -317,26 +317,39 @@
 {% if session.user_id %}
 <!-- Floating Bottom Navigation Bar (Stitch Design System) -->
 <div class="fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] w-max max-w-[calc(100vw-2rem)] overflow-x-auto no-scrollbar">
-  <div class="bg-surface-white rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-border-subtle pl-6 pr-2 py-2 flex items-center gap-6">
+  <div class="bg-surface-white rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-border-subtle pl-4 pr-2 py-2 flex items-center gap-3">
     <!-- Brand -->
-    <div class="flex items-center">
-      <span class="text-[16px] font-bold text-primary uppercase tracking-tight whitespace-nowrap">Controller Arena</span>
+    <div class="flex items-center pl-2">
+      <span class="material-symbols-outlined text-primary text-[22px]">sports_esports</span>
+      <span class="hidden md:inline text-[14px] font-bold text-primary uppercase tracking-tight whitespace-nowrap ml-1">Controller Arena</span>
     </div>
     <!-- Nav Links -->
     <div class="flex items-center gap-1">
-      <a class="px-4 py-2.5 rounded-full text-label-sm font-label-sm {% if request.endpoint == 'dashboard' %}text-primary bg-surface-container/60 font-bold{% else %}text-on-surface-variant hover:bg-surface-container-low{% endif %} whitespace-nowrap text-decoration-none transition-all duration-150 min-h-[44px] flex items-center" href="{{ url_for('dashboard') }}">Dashboard</a>
+      <a title="Dashboard" class="w-11 h-11 rounded-full {% if request.endpoint == 'dashboard' %}text-primary bg-surface-container/60{% else %}text-on-surface-variant hover:bg-surface-container-low{% endif %} text-decoration-none transition-all duration-150 flex items-center justify-center" href="{{ url_for('dashboard') }}">
+        <span class="material-symbols-outlined text-[20px]">dashboard</span>
+      </a>
       
       {% if session.role == 'ADMIN' %}
-      <a class="px-4 py-2.5 rounded-full text-label-sm font-label-sm {% if request.endpoint in ('listar_jogadores','novo_jogador','ver_jogador','editar_jogador') %}text-primary bg-surface-container/60 font-bold{% else %}text-on-surface-variant hover:bg-surface-container-low{% endif %} whitespace-nowrap text-decoration-none transition-all duration-150 min-h-[44px] flex items-center" href="{{ url_for('listar_jogadores') }}">Jogadores</a>
-      <a class="px-4 py-2.5 rounded-full text-label-sm font-label-sm {% if request.endpoint in ('listar_times','novo_time','editar_time') %}text-primary bg-surface-container/60 font-bold{% else %}text-on-surface-variant hover:bg-surface-container-low{% endif %} whitespace-nowrap text-decoration-none transition-all duration-150 min-h-[44px] flex items-center" href="{{ url_for('listar_times') }}">Times</a>
-      <a class="px-4 py-2.5 rounded-full text-label-sm font-label-sm {% if request.endpoint in ('listar_arbitros','novo_arbitro','editar_arbitro') %}text-primary bg-surface-container/60 font-bold{% else %}text-on-surface-variant hover:bg-surface-container-low{% endif %} whitespace-nowrap text-decoration-none transition-all duration-150 min-h-[44px] flex items-center" href="{{ url_for('listar_arbitros') }}">Árbitros</a>
+      <a title="Jogadores" class="w-11 h-11 rounded-full {% if request.endpoint in ('listar_jogadores','novo_jogador','ver_jogador','editar_jogador') %}text-primary bg-surface-container/60{% else %}text-on-surface-variant hover:bg-surface-container-low{% endif %} text-decoration-none transition-all duration-150 flex items-center justify-center" href="{{ url_for('listar_jogadores') }}">
+        <span class="material-symbols-outlined text-[20px]">group</span>
+      </a>
+      <a title="Times" class="w-11 h-11 rounded-full {% if request.endpoint in ('listar_times','novo_time','editar_time') %}text-primary bg-surface-container/60{% else %}text-on-surface-variant hover:bg-surface-container-low{% endif %} text-decoration-none transition-all duration-150 flex items-center justify-center" href="{{ url_for('listar_times') }}">
+        <span class="material-symbols-outlined text-[20px]">shield</span>
+      </a>
+      <a title="Árbitros" class="w-11 h-11 rounded-full {% if request.endpoint in ('listar_arbitros','novo_arbitro','editar_arbitro') %}text-primary bg-surface-container/60{% else %}text-on-surface-variant hover:bg-surface-container-low{% endif %} text-decoration-none transition-all duration-150 flex items-center justify-center" href="{{ url_for('listar_arbitros') }}">
+        <span class="material-symbols-outlined text-[20px]">gavel</span>
+      </a>
       {% endif %}
       
       {% if session.role in ('SUPER_ADMIN', 'ADMIN') %}
-      <a class="px-4 py-2.5 rounded-full text-label-sm font-label-sm {% if request.endpoint and 'campeonato' in request.endpoint %}text-primary bg-surface-container/60 font-bold{% else %}text-on-surface-variant hover:bg-surface-container-low{% endif %} whitespace-nowrap text-decoration-none transition-all duration-150 min-h-[44px] flex items-center" href="{{ url_for('listar_campeonatos') }}">Campeonatos</a>
+      <a title="Campeonatos" class="w-11 h-11 rounded-full {% if request.endpoint and 'campeonato' in request.endpoint %}text-primary bg-surface-container/60{% else %}text-on-surface-variant hover:bg-surface-container-low{% endif %} text-decoration-none transition-all duration-150 flex items-center justify-center" href="{{ url_for('listar_campeonatos') }}">
+        <span class="material-symbols-outlined text-[20px]">emoji_events</span>
+      </a>
       {% endif %}
       
-      <a class="px-4 py-2.5 rounded-full text-label-sm font-label-sm {% if request.endpoint == 'ranking' %}text-primary bg-surface-container/60 font-bold{% else %}text-on-surface-variant hover:bg-surface-container-low{% endif %} whitespace-nowrap text-decoration-none transition-all duration-150 min-h-[44px] flex items-center" href="{{ url_for('ranking') }}">Ranking</a>
+      <a title="Ranking" class="w-11 h-11 rounded-full {% if request.endpoint == 'ranking' %}text-primary bg-surface-container/60{% else %}text-on-surface-variant hover:bg-surface-container-low{% endif %} text-decoration-none transition-all duration-150 flex items-center justify-center" href="{{ url_for('ranking') }}">
+        <span class="material-symbols-outlined text-[20px]">leaderboard</span>
+      </a>
     </div>
     
     <div class="h-6 w-px bg-border-subtle shrink-0"></div>
