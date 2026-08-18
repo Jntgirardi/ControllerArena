@@ -24,8 +24,8 @@
       <form method="post" enctype="multipart/form-data" class="space-y-5">
         
         <!-- Nome & TAG -->
-        <div class="grid grid-cols-3 gap-4">
-          <div class="col-span-2">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div class="col-span-1 sm:col-span-2">
             <label class="block font-bold text-xs text-on-surface mb-1" for="nome">Nome do Time *</label>
             <input 
               type="text" 
@@ -127,11 +127,11 @@
 
         <!-- Actions -->
         <div class="flex items-center gap-3 mt-4 pt-4 border-t border-border-subtle">
-          <button type="submit" class="bg-primary hover:bg-primary-container text-on-primary font-bold text-xs px-6 py-2.5 rounded-lg transition-colors flex items-center justify-center gap-1.5 shadow-sm cursor-pointer flex-1">
+          <button type="submit" class="bg-primary hover:bg-primary-container text-on-primary font-bold text-xs px-6 py-2.5 rounded-lg transition-colors flex items-center justify-center gap-1.5 shadow-sm cursor-pointer flex-1 min-h-[44px]">
             <span class="material-symbols-outlined text-[18px]">{% if acao == 'editar' %}save{% else %}add{% endif %}</span>
             {{ 'Salvar Alterações' if acao == 'editar' else 'Criar Time' }}
           </button>
-          <a href="{{ url_for('listar_times') }}" class="bg-surface-white hover:bg-surface border border-outline-variant text-on-surface font-bold text-xs px-6 py-2.5 rounded-lg transition-colors shadow-sm text-decoration-none text-center">
+          <a href="{{ url_for('listar_times') }}" class="bg-surface-white hover:bg-surface border border-outline-variant text-on-surface font-bold text-xs px-6 py-2.5 rounded-lg transition-colors shadow-sm text-decoration-none text-center min-h-[44px] flex items-center justify-center">
             Cancelar
           </a>
         </div>

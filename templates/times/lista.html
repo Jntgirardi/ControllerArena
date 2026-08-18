@@ -12,7 +12,7 @@
       <p class="text-xs text-text-muted mt-1">Gerencie os elencos e tags dos times cadastrados.</p>
     </div>
     {% if session.role == 'ADMIN' %}
-    <a href="{{ url_for('novo_time') }}" class="bg-primary hover:bg-primary-container text-on-primary font-bold text-xs px-5 py-2.5 rounded-lg flex items-center justify-center gap-1.5 transition-all shadow-sm text-decoration-none sm:w-auto">
+    <a href="{{ url_for('novo_time') }}" class="bg-primary hover:bg-primary-container text-on-primary font-bold text-xs px-5 py-2.5 rounded-lg flex items-center justify-center gap-1.5 transition-all shadow-sm text-decoration-none sm:w-auto min-h-[44px]">
       <span class="material-symbols-outlined text-[18px]">add</span> Novo Time
     </a>
     {% endif %}

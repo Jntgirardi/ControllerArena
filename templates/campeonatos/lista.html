@@ -12,7 +12,7 @@
       <p class="text-xs text-text-muted mt-1">Gerencie torneios ativos, inscrições e históricos.</p>
     </div>
     {% if session.role == 'ADMIN' %}
-    <a href="{{ url_for('novo_campeonato') }}" class="bg-primary hover:bg-primary-container text-on-primary font-bold text-xs px-5 py-2.5 rounded-lg flex items-center justify-center gap-1.5 transition-all shadow-sm text-decoration-none sm:w-auto">
+    <a href="{{ url_for('novo_campeonato') }}" class="bg-primary hover:bg-primary-container text-on-primary font-bold text-xs px-5 py-2.5 rounded-lg flex items-center justify-center gap-1.5 transition-all shadow-sm text-decoration-none sm:w-auto min-h-[44px]">
       <span class="material-symbols-outlined text-[18px]">add</span> Novo Campeonato
     </a>
     {% endif %}
@@ -36,7 +36,7 @@
         <option value="Valorant" {% if filtro_jogo == 'Valorant' %}selected{% endif %}>Valorant</option>
       </select>
     </div>
-    <button type="submit" class="w-full sm:w-auto bg-surface-variant text-on-surface hover:bg-surface-dim px-6 py-2.5 rounded-lg font-bold text-xs transition-colors border border-outline-variant/30 flex items-center justify-center gap-1.5">
+    <button type="submit" class="w-full sm:w-auto bg-surface-variant text-on-surface hover:bg-surface-dim px-6 py-2.5 rounded-lg font-bold text-xs transition-colors border border-outline-variant/30 flex items-center justify-center gap-1.5 min-h-[44px]">
       <span class="material-symbols-outlined text-[18px]">filter_list</span> Filtrar
     </button>
   </form>
@@ -148,7 +148,7 @@
               </td>
               <td class="py-4 px-6 text-text-muted font-mono font-semibold">{{ c.datas.fim.strftime('%d/%m/%Y') }}</td>
               <td class="py-4 px-6 text-right">
-                <a class="text-primary font-bold hover:underline inline-flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity text-decoration-none" href="{{ url_for('ver_campeonato', camp_id=c._id) }}">
+                <a class="text-primary font-bold hover:underline inline-flex items-center gap-1 text-decoration-none min-h-[44px]" href="{{ url_for('ver_campeonato', camp_id=c._id) }}">
                   Ver Detalhes <span class="material-symbols-outlined text-[16px]">chevron_right</span>
                 </a>
               </td>

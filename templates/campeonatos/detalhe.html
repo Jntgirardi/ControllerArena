@@ -44,14 +44,14 @@
     <div class="flex flex-wrap gap-2.5 w-full sm:w-auto">
       {% if camp.status == 'INSCRICAO' and partidas|length == 0 %}
       <form method="post" action="{{ url_for('gerar_partidas_campeonato', camp_id=camp._id) }}" class="m-0">
-        <button type="submit" class="w-full sm:w-auto px-4 py-2 bg-primary hover:bg-primary-container text-on-primary font-bold text-xs rounded shadow-sm transition-all flex items-center justify-center gap-1.5">
+        <button type="submit" class="w-full sm:w-auto px-4 py-2 bg-primary hover:bg-primary-container text-on-primary font-bold text-xs rounded shadow-sm transition-all flex items-center justify-center gap-1.5 min-h-[44px]">
           <span class="material-symbols-outlined text-sm">account_tree</span> Gerar Confrontos
         </button>
       </form>
       {% endif %}
       
       {% if camp.status in ('INSCRICAO','EM_ANDAMENTO') %}
-      <button onclick="document.getElementById('addPartida').classList.toggle('hidden'); document.getElementById('addPartida').scrollIntoView({behavior: 'smooth'})" class="w-full sm:w-auto px-4 py-2 bg-surface-white text-on-surface-variant font-bold text-xs border border-border-subtle rounded hover:bg-surface transition-all flex items-center justify-center gap-1.5">
+      <button onclick="document.getElementById('addPartida').classList.toggle('hidden'); document.getElementById('addPartida').scrollIntoView({behavior: 'smooth'})" class="w-full sm:w-auto px-4 py-2 bg-surface-white text-on-surface-variant font-bold text-xs border border-border-subtle rounded hover:bg-surface transition-all flex items-center justify-center gap-1.5 min-h-[44px]">
         <span class="material-symbols-outlined text-sm">schedule</span> Agendar Partida
       </button>
       {% endif %}
@@ -265,9 +265,9 @@
           </div>
 
           <!-- Scoreboard matchup row -->
-          <div class="flex justify-between items-center px-4 md:px-12 py-1">
+          <div class="flex justify-between items-center px-2 md:px-12 py-1 gap-2">
             <span class="text-xs font-bold text-on-surface flex-1 text-left truncate">{{ p.time_a.nome }}</span>
-            <div class="flex items-center gap-4 bg-surface-container-low px-4 py-1.5 rounded border border-border-subtle font-mono text-sm font-bold mx-4">
+            <div class="flex items-center gap-4 bg-surface-container-low px-3 md:px-4 py-1.5 rounded border border-border-subtle font-mono text-sm font-bold shrink-0">
               <span>{{ p.time_a.placar }}</span>
               <span class="text-text-muted text-xs">-</span>
               <span>{{ p.time_b.placar }}</span>
@@ -303,7 +303,7 @@
               <div class="flex gap-2 w-full sm:w-auto">
                 <input type="number" name="placar_a" placeholder="Placar A" class="w-20 rounded border-border-subtle text-xs p-1 focus:ring-primary focus:border-primary" min="0" required>
                 <input type="number" name="placar_b" placeholder="Placar B" class="w-20 rounded border-border-subtle text-xs p-1 focus:ring-primary focus:border-primary" min="0" required>
-                <button type="submit" class="px-3 py-1 bg-success hover:opacity-90 text-white font-bold text-xs rounded transition-all">Salvar</button>
+                <button type="submit" class="px-3 py-2 bg-success hover:opacity-90 text-white font-bold text-xs rounded transition-all min-h-[44px]">Salvar</button>
               </div>
             </form>
           </div>
@@ -312,7 +312,7 @@
           <!-- Round Control Link -->
           {% if p.status != 'finalizada' and camp.status != 'ARQUIVADO' and (session.role in ('ADMIN', 'SUPER_ADMIN') or (session.role == 'REFEREE' and current_referee_id and p.arbitro_id|string == current_referee_id|string)) %}
           <div class="pt-2">
-            <a href="{{ url_for('rounds_control', partida_id=p._id) }}" class="w-full py-2 bg-primary hover:bg-primary-container text-on-primary font-bold text-xs rounded shadow-sm text-center flex items-center justify-center gap-1.5 text-decoration-none">
+            <a href="{{ url_for('rounds_control', partida_id=p._id) }}" class="w-full py-2 bg-primary hover:bg-primary-container text-on-primary font-bold text-xs rounded shadow-sm text-center flex items-center justify-center gap-1.5 text-decoration-none min-h-[44px]">
               <span class="material-symbols-outlined text-[16px]">sports_esports</span> Controlar Súmula (Rounds)
             </a>
           </div>

@@ -150,17 +150,17 @@
                 {% endif %}
               </div>
               
-              <div class="flex justify-between items-center px-4 md:px-12 py-1">
-                <div class="flex items-center gap-3">
-                  <span class="text-sm font-bold text-on-surface">{{ p.time_a.nome }}</span>
+              <div class="flex justify-between items-center px-2 md:px-12 py-1 gap-2">
+                <div class="flex items-center gap-3 min-w-0 flex-1 justify-start">
+                  <span class="text-sm font-bold text-on-surface truncate">{{ p.time_a.nome }}</span>
                 </div>
-                <div class="flex items-center gap-6 md:gap-12">
+                <div class="flex items-center gap-4 md:gap-12 shrink-0">
                   <span class="font-['Chakra_Petch'] text-xl font-bold text-on-surface">{% if has_sumula %}{{ p.score_a }}{% else %}-{% endif %}</span>
                   <span class="text-xs text-text-muted">vs</span>
                   <span class="font-['Chakra_Petch'] text-xl font-bold text-on-surface">{% if has_sumula %}{{ p.score_b }}{% else %}-{% endif %}</span>
                 </div>
-                <div class="flex items-center gap-3">
-                  <span class="text-sm font-bold text-on-surface">{{ p.time_b.nome }}</span>
+                <div class="flex items-center gap-3 min-w-0 flex-1 justify-end">
+                  <span class="text-sm font-bold text-on-surface truncate">{{ p.time_b.nome }}</span>
                 </div>
               </div>
               

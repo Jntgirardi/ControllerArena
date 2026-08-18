@@ -28,9 +28,9 @@
   <section class="flex flex-col gap-6 items-start max-w-3xl py-12">
     <h1 class="font-headline-lg text-headline-lg text-on-surface">The premier management platform for competitive esports.</h1>
     <p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl">Streamline tournament brackets, monitor live matches with surgical precision, and manage competitive circuits with enterprise-grade reliability.</p>
-    <div class="flex gap-4 mt-4">
-      <a href="#campeonatos" class="bg-primary text-on-primary px-6 py-3 rounded font-label-sm text-label-sm hover:opacity-90 transition-opacity text-decoration-none">Ver Campeonatos</a>
-      <a href="#ao-vivo" class="bg-surface-white text-on-surface border border-border-subtle px-6 py-3 rounded font-label-sm text-label-sm hover:bg-surface-container-low transition-colors text-decoration-none">Partidas Ao Vivo</a>
+    <div class="flex flex-wrap gap-4 mt-4">
+      <a href="#campeonatos" class="bg-primary text-on-primary px-6 py-3 rounded font-label-sm text-label-sm hover:opacity-90 transition-opacity text-decoration-none min-h-[44px] inline-flex items-center">Ver Campeonatos</a>
+      <a href="#ao-vivo" class="bg-surface-white text-on-surface border border-border-subtle px-6 py-3 rounded font-label-sm text-label-sm hover:bg-surface-container-low transition-colors text-decoration-none min-h-[44px] inline-flex items-center">Partidas Ao Vivo</a>
     </div>
   </section>
 
@@ -110,25 +110,25 @@
             <span class="font-stats-mono text-stats-mono text-text-muted">Map: {{ partida.mapa or 'A definir' }}</span>
           </div>
           
-          <div class="flex justify-between items-center px-4 md:px-12">
-            <div class="flex flex-col items-center gap-3">
-              <div class="w-16 h-16 bg-surface-container-low rounded flex items-center justify-center border border-border-subtle">
+          <div class="flex justify-between items-center px-2 md:px-12">
+            <div class="flex flex-col items-center gap-3 min-w-0">
+              <div class="w-14 h-14 md:w-16 md:h-16 bg-surface-container-low rounded flex items-center justify-center border border-border-subtle">
                 <span class="font-headline-lg text-headline-lg text-on-surface font-bold">{{ partida.time_a.tag or partida.time_a.nome[:3]|upper }}</span>
               </div>
-              <span class="font-label-sm text-label-sm text-on-surface text-center truncate max-w-[120px]">{{ partida.time_a.nome }}</span>
+              <span class="font-label-sm text-label-sm text-on-surface text-center truncate max-w-[100px] md:max-w-[120px]">{{ partida.time_a.nome }}</span>
             </div>
             
-            <div class="flex items-center gap-6 md:gap-12">
+            <div class="flex items-center gap-4 md:gap-12 shrink-0">
               <span class="font-display-score text-display-score text-on-surface">{{ partida.score_a }}</span>
                <span class="font-headline-md text-headline-md text-text-muted">-</span>
               <span class="font-display-score text-display-score text-primary">{{ partida.score_b }}</span>
             </div>
             
-            <div class="flex flex-col items-center gap-3">
-              <div class="w-16 h-16 bg-surface-container-low rounded flex items-center justify-center border border-border-subtle">
+            <div class="flex flex-col items-center gap-3 min-w-0">
+              <div class="w-14 h-14 md:w-16 md:h-16 bg-surface-container-low rounded flex items-center justify-center border border-border-subtle">
                 <span class="font-headline-lg text-headline-lg text-primary font-bold">{{ partida.time_b.tag or partida.time_b.nome[:3]|upper }}</span>
               </div>
-              <span class="font-label-sm text-label-sm text-on-surface text-center truncate max-w-[120px]">{{ partida.time_b.nome }}</span>
+              <span class="font-label-sm text-label-sm text-on-surface text-center truncate max-w-[100px] md:max-w-[120px]">{{ partida.time_b.nome }}</span>
             </div>
           </div>
         </a>
@@ -150,16 +150,16 @@
       <div class="bg-surface-white border border-border-subtle rounded-lg overflow-hidden flex flex-col">
         {% if scheduled_list.items %}
           {% for camp, partida in scheduled_list.items %}
-          <a href="{{ url_for('sumula_partida_publica', partida_id=partida.id) }}" class="flex justify-between items-center p-4 border-b border-border-subtle hover:bg-surface-container-low transition-colors cursor-pointer group text-decoration-none">
-            <div class="flex flex-col gap-1">
+          <a href="{{ url_for('sumula_partida_publica', partida_id=partida.id) }}" class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 p-4 border-b border-border-subtle hover:bg-surface-container-low transition-colors cursor-pointer group text-decoration-none">
+            <div class="flex flex-col gap-1 min-w-0">
               <span class="font-stats-mono text-stats-mono text-text-muted">{{ partida.data }} - {{ partida.hora }}</span>
-              <div class="flex items-center gap-2">
+              <div class="flex items-center gap-2 flex-wrap">
                 <span class="font-label-sm text-label-sm text-on-surface">{{ partida.time_a.nome }}</span>
                 <span class="font-label-sm text-label-sm text-text-muted">vs</span>
                 <span class="font-label-sm text-label-sm text-on-surface">{{ partida.time_b.nome }}</span>
               </div>
             </div>
-            <span class="font-body-md text-body-md text-primary opacity-0 group-hover:opacity-100 transition-opacity">Súmula</span>
+            <span class="font-body-md text-body-md text-primary opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity text-decoration-none">Súmula</span>
           </a>
           {% endfor %}
         {% else %}

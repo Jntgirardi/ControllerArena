@@ -212,13 +212,19 @@
     .team-logo-placeholder { display: inline-flex; align-items: center; justify-content: center; color: #5c59f2; background-color: rgba(92, 89, 242, 0.08); }
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    /* Mobile-first touch targets (44x44px) and safe overflow */
+    @media (max-width: 767px) {
+      .btn:not(.btn-sm) { min-height: 44px; }
+      .form-control, .form-select { min-height: 44px; }
+    }
   </style>
 </head>
-<body class="bg-neutral-100 text-default-font min-h-screen flex flex-col {% if session.user_id %}pb-36{% endif %}">
+<body class="bg-neutral-100 text-default-font min-h-screen flex flex-col overflow-x-hidden {% if session.user_id %}pb-36{% endif %}">
 
 
 <main class="flex-grow w-full">
-  <div class="fixed top-4 right-4 z-[9999] flex flex-col gap-3 max-w-sm w-full pointer-events-none">
+  <div class="fixed top-4 right-4 left-4 sm:left-auto z-[9999] flex flex-col gap-3 sm:max-w-sm pointer-events-none">
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
         {% for category, message in messages %}
@@ -318,19 +324,19 @@
     </div>
     <!-- Nav Links -->
     <div class="flex items-center gap-1">
-      <a class="px-4 py-2 rounded-full text-label-sm font-label-sm {% if request.endpoint == 'dashboard' %}text-primary bg-surface-container/60 font-bold{% else %}text-on-surface-variant hover:bg-surface-container-low{% endif %} whitespace-nowrap text-decoration-none transition-all duration-150" href="{{ url_for('dashboard') }}">Dashboard</a>
+      <a class="px-4 py-2.5 rounded-full text-label-sm font-label-sm {% if request.endpoint == 'dashboard' %}text-primary bg-surface-container/60 font-bold{% else %}text-on-surface-variant hover:bg-surface-container-low{% endif %} whitespace-nowrap text-decoration-none transition-all duration-150 min-h-[44px] flex items-center" href="{{ url_for('dashboard') }}">Dashboard</a>
       
       {% if session.role == 'ADMIN' %}
-      <a class="px-4 py-2 rounded-full text-label-sm font-label-sm {% if request.endpoint in ('listar_jogadores','novo_jogador','ver_jogador','editar_jogador') %}text-primary bg-surface-container/60 font-bold{% else %}text-on-surface-variant hover:bg-surface-container-low{% endif %} whitespace-nowrap text-decoration-none transition-all duration-150" href="{{ url_for('listar_jogadores') }}">Jogadores</a>
-      <a class="px-4 py-2 rounded-full text-label-sm font-label-sm {% if request.endpoint in ('listar_times','novo_time','editar_time') %}text-primary bg-surface-container/60 font-bold{% else %}text-on-surface-variant hover:bg-surface-container-low{% endif %} whitespace-nowrap text-decoration-none transition-all duration-150" href="{{ url_for('listar_times') }}">Times</a>
-      <a class="px-4 py-2 rounded-full text-label-sm font-label-sm {% if request.endpoint in ('listar_arbitros','novo_arbitro','editar_arbitro') %}text-primary bg-surface-container/60 font-bold{% else %}text-on-surface-variant hover:bg-surface-container-low{% endif %} whitespace-nowrap text-decoration-none transition-all duration-150" href="{{ url_for('listar_arbitros') }}">Árbitros</a>
+      <a class="px-4 py-2.5 rounded-full text-label-sm font-label-sm {% if request.endpoint in ('listar_jogadores','novo_jogador','ver_jogador','editar_jogador') %}text-primary bg-surface-container/60 font-bold{% else %}text-on-surface-variant hover:bg-surface-container-low{% endif %} whitespace-nowrap text-decoration-none transition-all duration-150 min-h-[44px] flex items-center" href="{{ url_for('listar_jogadores') }}">Jogadores</a>
+      <a class="px-4 py-2.5 rounded-full text-label-sm font-label-sm {% if request.endpoint in ('listar_times','novo_time','editar_time') %}text-primary bg-surface-container/60 font-bold{% else %}text-on-surface-variant hover:bg-surface-container-low{% endif %} whitespace-nowrap text-decoration-none transition-all duration-150 min-h-[44px] flex items-center" href="{{ url_for('listar_times') }}">Times</a>
+      <a class="px-4 py-2.5 rounded-full text-label-sm font-label-sm {% if request.endpoint in ('listar_arbitros','novo_arbitro','editar_arbitro') %}text-primary bg-surface-container/60 font-bold{% else %}text-on-surface-variant hover:bg-surface-container-low{% endif %} whitespace-nowrap text-decoration-none transition-all duration-150 min-h-[44px] flex items-center" href="{{ url_for('listar_arbitros') }}">Árbitros</a>
       {% endif %}
       
       {% if session.role in ('SUPER_ADMIN', 'ADMIN') %}
-      <a class="px-4 py-2 rounded-full text-label-sm font-label-sm {% if request.endpoint and 'campeonato' in request.endpoint %}text-primary bg-surface-container/60 font-bold{% else %}text-on-surface-variant hover:bg-surface-container-low{% endif %} whitespace-nowrap text-decoration-none transition-all duration-150" href="{{ url_for('listar_campeonatos') }}">Campeonatos</a>
+      <a class="px-4 py-2.5 rounded-full text-label-sm font-label-sm {% if request.endpoint and 'campeonato' in request.endpoint %}text-primary bg-surface-container/60 font-bold{% else %}text-on-surface-variant hover:bg-surface-container-low{% endif %} whitespace-nowrap text-decoration-none transition-all duration-150 min-h-[44px] flex items-center" href="{{ url_for('listar_campeonatos') }}">Campeonatos</a>
       {% endif %}
       
-      <a class="px-4 py-2 rounded-full text-label-sm font-label-sm {% if request.endpoint == 'ranking' %}text-primary bg-surface-container/60 font-bold{% else %}text-on-surface-variant hover:bg-surface-container-low{% endif %} whitespace-nowrap text-decoration-none transition-all duration-150" href="{{ url_for('ranking') }}">Ranking</a>
+      <a class="px-4 py-2.5 rounded-full text-label-sm font-label-sm {% if request.endpoint == 'ranking' %}text-primary bg-surface-container/60 font-bold{% else %}text-on-surface-variant hover:bg-surface-container-low{% endif %} whitespace-nowrap text-decoration-none transition-all duration-150 min-h-[44px] flex items-center" href="{{ url_for('ranking') }}">Ranking</a>
     </div>
     
     <div class="h-6 w-px bg-border-subtle shrink-0"></div>
@@ -341,7 +347,7 @@
       
       <!-- Profile Button and Dropdown -->
       <div class="relative">
-        <button id="profile-menu-btn" onclick="toggleProfileDropdown(event)" class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center border border-border-subtle cursor-pointer focus:outline-none hover:bg-surface-container-high transition-colors">
+        <button id="profile-menu-btn" onclick="toggleProfileDropdown(event)" class="w-11 h-11 rounded-full bg-surface-container flex items-center justify-center border border-border-subtle cursor-pointer focus:outline-none hover:bg-surface-container-high transition-colors">
           <span class="material-symbols-outlined text-primary text-[20px] pointer-events-none">person</span>
         </button>
       </div>
