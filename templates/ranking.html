@@ -9,10 +9,10 @@
   <!-- Title Band -->
   <div class="flex w-full flex-col items-start border-b border-solid border-neutral-200 bg-white px-12 py-8 mobile:px-4 mobile:py-6">
     <div class="flex w-full flex-col items-start gap-1 max-w-[1200px] mx-auto">
-      <span class="text-heading-1 font-heading-1 text-default-font mobile:text-heading-2 mobile:font-heading-2">
+      <span class="font-headline-lg text-headline-lg text-on-surface mobile:font-headline-md mobile:text-headline-md">
         Rankings
       </span>
-      <span class="text-body font-body text-neutral-500">
+      <span class="font-body-md text-body-md text-text-muted">
         Acompanhe os melhores jogadores e times
       </span>
     </div>
@@ -22,15 +22,15 @@
   <div class="flex w-full items-start bg-white px-12 py-4 mobile:px-4 border-b border-solid border-neutral-200">
     <div class="flex grow shrink-0 basis-0 items-center justify-between self-stretch max-w-[1200px] mx-auto mobile:flex-col mobile:items-start mobile:justify-start mobile:gap-4">
       <div class="flex gap-4">
-        <button id="btn-rank-players" onclick="switchRankTab('rank-players', this)" class="tab-btn py-3 px-3 text-sm font-bold border-b-2 border-brand-primary text-brand-primary transition">
+        <button id="btn-rank-players" onclick="switchRankTab('rank-players', this)" class="tab-btn py-3 px-3 text-sm font-bold border-b-2 border-primary text-primary transition">
           Jogadores
         </button>
-        <button id="btn-rank-teams" onclick="switchRankTab('rank-teams', this)" class="tab-btn py-3 px-3 text-sm font-bold border-transparent text-subtext border-b-2 hover:text-default-font transition">
+        <button id="btn-rank-teams" onclick="switchRankTab('rank-teams', this)" class="tab-btn py-3 px-3 text-sm font-bold border-transparent text-on-surface-variant border-b-2 hover:text-on-surface transition">
           Times
         </button>
       </div>
       <div class="flex w-48 flex-none items-start mobile:w-full mobile:flex-none">
-        <select onchange="filterByGame(this.value)" class="w-full rounded-md border border-default-border bg-white px-3 py-2 text-sm text-neutral-900 focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary transition">
+        <select onchange="filterByGame(this.value)" class="w-full rounded-md border border-border-subtle bg-white px-3 py-2 text-sm text-on-surface focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition">
           <option value="Todos">Todos os jogos</option>
           <option value="CS2" {% if filtro_jogo == 'CS2' %}selected{% endif %}>CS2</option>
           <option value="Valorant" {% if filtro_jogo == 'Valorant' %}selected{% endif %}>Valorant</option>
@@ -59,16 +59,16 @@
               <svg class="text-neutral-400 h-4 w-4" width="1em" height="1em" viewBox="0 0 24 24">
                 <path d="m12 2 3 6h6l-5 4 2 6-6-4-6 4 2-6-5-4h6z" fill="currentColor"/>
               </svg>
-              <span class="text-caption-bold font-caption-bold text-neutral-500">#2</span>
+              <span class="font-label-sm text-label-sm font-bold text-neutral-500">#2</span>
             </div>
-            <span class="flex h-12 w-12 items-center justify-center rounded-full bg-neutral-100 text-neutral-600 font-bold border border-default-border text-lg"><i class="bi bi-person"></i></span>
+            <span class="flex h-12 w-12 items-center justify-center rounded-full bg-neutral-100 text-neutral-600 font-bold border border-border-subtle text-lg"><i class="bi bi-person"></i></span>
             <div class="flex flex-col items-center gap-1">
-              <span class="text-heading-3 font-heading-3 text-default-font">{{ p2.nick }}</span>
-              <span class="text-body font-body text-neutral-500">{{ p2.time_nome or 'Sem Equipe' }}</span>
-              <span class="text-caption font-caption text-neutral-400 uppercase font-bold">{{ p2.jogo_principal }}</span>
+              <span class="font-headline-md text-headline-md text-on-surface">{{ p2.nick }}</span>
+              <span class="font-body-md text-body-md text-neutral-500">{{ p2.time_nome or 'Sem Equipe' }}</span>
+              <span class="font-label-sm text-label-sm text-neutral-400 uppercase font-bold">{{ p2.jogo_principal }}</span>
             </div>
             <div class="flex items-center gap-2">
-              <span class="text-body-bold font-body-bold text-success">{{ p2.estatisticas.vitorias }} vitórias</span>
+              <span class="font-body-md text-body-md font-bold text-success">{{ p2.estatisticas.vitorias }} vitórias</span>
             </div>
             <div class="flex items-center gap-4 border-t border-neutral-100 pt-3 w-full justify-center">
               <div class="flex flex-col items-center">
@@ -78,28 +78,28 @@
               </div>
               <div class="flex flex-col items-center">
                 <span class="text-[10px] text-neutral-400 uppercase tracking-wider">K/D</span>
-                <span class="text-xs font-bold text-default-font">{{ "%.2f"|format(p2.estatisticas.kd_ratio) }}</span>
+                <span class="text-xs font-bold text-on-surface">{{ "%.2f"|format(p2.estatisticas.kd_ratio) }}</span>
               </div>
             </div>
           </div>
 
           <!-- #1 Player (Gold border) -->
-          <div class="flex flex-col items-center gap-4 self-stretch rounded-lg border-2 border-solid border-brand-highlight bg-white px-6 py-6 shadow-md flex-1">
+          <div class="flex flex-col items-center gap-4 self-stretch rounded-lg border-2 border-solid border-warning bg-white px-6 py-6 shadow-md flex-1">
             <div class="flex items-center gap-2">
-              <svg class="text-brand-highlight h-5 w-5" width="1em" height="1em" viewBox="0 0 24 24">
+              <svg class="text-warning h-5 w-5" width="1em" height="1em" viewBox="0 0 24 24">
                 <path d="m12 2 3 6h6l-5 4 2 6-6-4-6 4 2-6-5-4h6z" fill="currentColor"/>
               </svg>
-              <span class="text-caption-bold font-caption-bold text-brand-highlight-dark">#1</span>
+              <span class="font-label-sm text-label-sm font-bold text-amber-800">#1</span>
             </div>
-            <span class="flex h-16 w-16 items-center justify-center rounded-full bg-amber-50 text-amber-600 font-bold border-2 border-brand-highlight text-2xl"><i class="bi bi-trophy"></i></span>
+            <span class="flex h-16 w-16 items-center justify-center rounded-full bg-amber-50 text-amber-600 font-bold border-2 border-warning text-2xl"><i class="bi bi-trophy"></i></span>
             <div class="flex flex-col items-center gap-1">
-              <span class="text-heading-3 font-heading-3 text-default-font">{{ p1.nick }}</span>
-              <span class="text-body font-body text-neutral-500">{{ p1.time_nome or 'Sem Equipe' }}</span>
-              <span class="text-caption font-caption text-neutral-400 uppercase font-bold">{{ p1.jogo_principal }}</span>
+              <span class="font-headline-md text-headline-md text-on-surface">{{ p1.nick }}</span>
+              <span class="font-body-md text-body-md text-neutral-500">{{ p1.time_nome or 'Sem Equipe' }}</span>
+              <span class="font-label-sm text-label-sm text-neutral-400 uppercase font-bold">{{ p1.jogo_principal }}</span>
             </div>
             <div class="flex items-center gap-2">
-              <span class="text-body-bold font-body-bold text-success">{{ p1.estatisticas.vitorias }} vitórias</span>
-              <span class="badge bg-amber-100 text-amber-800 border border-brand-highlight text-[9px] font-extrabold uppercase">MVP</span>
+              <span class="font-body-md text-body-md font-bold text-success">{{ p1.estatisticas.vitorias }} vitórias</span>
+              <span class="badge bg-amber-100 text-amber-800 border border-warning text-[9px] font-extrabold uppercase">MVP</span>
             </div>
             <div class="flex items-center gap-4 border-t border-neutral-100 pt-3 w-full justify-center">
               <div class="flex flex-col items-center">
@@ -109,7 +109,7 @@
               </div>
               <div class="flex flex-col items-center">
                 <span class="text-[10px] text-neutral-400 uppercase tracking-wider">K/D</span>
-                <span class="text-xs font-bold text-default-font">{{ "%.2f"|format(p1.estatisticas.kd_ratio) }}</span>
+                <span class="text-xs font-bold text-on-surface">{{ "%.2f"|format(p1.estatisticas.kd_ratio) }}</span>
               </div>
             </div>
           </div>
@@ -120,16 +120,16 @@
               <svg class="text-[#cd7f32] h-4 w-4" width="1em" height="1em" viewBox="0 0 24 24">
                 <path d="m12 2 3 6h6l-5 4 2 6-6-4-6 4 2-6-5-4h6z" fill="currentColor"/>
               </svg>
-              <span class="text-caption-bold font-caption-bold text-[#92400e]">#3</span>
+              <span class="font-label-sm text-label-sm font-bold text-[#92400e]">#3</span>
             </div>
             <span class="flex h-12 w-12 items-center justify-center rounded-full bg-amber-50 text-[#cd7f32] font-bold border border-[#cd7f32] text-lg"><i class="bi bi-person"></i></span>
             <div class="flex flex-col items-center gap-1">
-              <span class="text-heading-3 font-heading-3 text-default-font">{{ p3.nick }}</span>
-              <span class="text-body font-body text-neutral-500">{{ p3.time_nome or 'Sem Equipe' }}</span>
-              <span class="text-caption font-caption text-neutral-400 uppercase font-bold">{{ p3.jogo_principal }}</span>
+              <span class="font-headline-md text-headline-md text-on-surface">{{ p3.nick }}</span>
+              <span class="font-body-md text-body-md text-neutral-500">{{ p3.time_nome or 'Sem Equipe' }}</span>
+              <span class="font-label-sm text-label-sm text-neutral-400 uppercase font-bold">{{ p3.jogo_principal }}</span>
             </div>
             <div class="flex items-center gap-2">
-              <span class="text-body-bold font-body-bold text-success">{{ p3.estatisticas.vitorias }} vitórias</span>
+              <span class="font-body-md text-body-md font-bold text-success">{{ p3.estatisticas.vitorias }} vitórias</span>
             </div>
             <div class="flex items-center gap-4 border-t border-neutral-100 pt-3 w-full justify-center">
               <div class="flex flex-col items-center">
@@ -139,7 +139,7 @@
               </div>
               <div class="flex flex-col items-center">
                 <span class="text-[10px] text-neutral-400 uppercase tracking-wider">K/D</span>
-                <span class="text-xs font-bold text-default-font">{{ "%.2f"|format(p3.estatisticas.kd_ratio) }}</span>
+                <span class="text-xs font-bold text-on-surface">{{ "%.2f"|format(p3.estatisticas.kd_ratio) }}</span>
               </div>
             </div>
           </div>
@@ -149,11 +149,11 @@
 
         <!-- Datatable list of players -->
         <div class="flex w-full flex-col items-start gap-4 rounded-lg border border-solid border-neutral-200 bg-white px-6 py-6 shadow-sm">
-          <span class="text-heading-3 font-heading-3 text-default-font">Tabela de Classificação</span>
+          <span class="font-headline-md text-headline-md text-on-surface">Tabela de Classificação</span>
           <div class="w-full overflow-x-auto">
             <table class="w-full border-collapse text-left text-xs">
               <thead>
-                <tr class="border-b border-default-border text-neutral-500">
+                <tr class="border-b border-border-subtle text-neutral-500">
                   <th class="py-3 px-4 font-bold text-center w-12">Pos</th>
                   <th class="py-3 px-4 font-bold">Jogador</th>
                   <th class="py-3 px-4 font-bold">Equipe</th>
@@ -170,15 +170,15 @@
                 {% set wr = ((p.estatisticas.vitorias / t_matches) * 100)|int if t_matches > 0 else 0 %}
                 <tr class="border-b border-neutral-100 last:border-0 hover:bg-neutral-50 transition">
                   <td class="py-3.5 px-4 font-bold text-center text-neutral-500">#{{ loop.index }}</td>
-                  <td class="py-3.5 px-4 font-bold text-default-font">{{ p.nick }}</td>
+                  <td class="py-3.5 px-4 font-bold text-on-surface">{{ p.nick }}</td>
                   <td class="py-3.5 px-4 text-neutral-600">{{ p.time_nome or 'Sem Equipe' }}</td>
                   <td class="py-3.5 px-4">
-                    <span class="badge {% if p.jogo_principal == 'CS2' %}bg-brand-highlight text-white{% else %}bg-brand-primary text-white{% endif %} text-[9px] font-bold uppercase">{{ p.jogo_principal }}</span>
+                    <span class="badge {% if p.jogo_principal == 'CS2' %}bg-warning text-white{% else %}bg-primary text-white{% endif %} text-[9px] font-bold uppercase">{{ p.jogo_principal }}</span>
                   </td>
                   <td class="py-3.5 px-4 text-center font-bold text-success">{{ p.estatisticas.vitorias }}</td>
                   <td class="py-3.5 px-4 text-center text-red-600">{{ p.estatisticas.derrotas }}</td>
                   <td class="py-3.5 px-4 text-center font-bold text-success">{{ wr }}%</td>
-                  <td class="py-3.5 px-4 text-center font-bold text-default-font">{{ "%.2f"|format(p.estatisticas.kd_ratio) }}</td>
+                  <td class="py-3.5 px-4 text-center font-bold text-on-surface">{{ "%.2f"|format(p.estatisticas.kd_ratio) }}</td>
                 </tr>
                 {% else %}
                 <tr>
@@ -208,15 +208,15 @@
               <svg class="text-neutral-400 h-4 w-4" width="1em" height="1em" viewBox="0 0 24 24">
                 <path d="m12 2 3 6h6l-5 4 2 6-6-4-6 4 2-6-5-4h6z" fill="currentColor"/>
               </svg>
-              <span class="text-caption-bold font-caption-bold text-neutral-500">#2</span>
+              <span class="font-label-sm text-label-sm font-bold text-neutral-500">#2</span>
             </div>
-            <span class="flex h-12 w-12 items-center justify-center rounded-full bg-neutral-100 text-neutral-600 font-bold border border-default-border text-lg"><i class="bi bi-shield"></i></span>
+            <span class="flex h-12 w-12 items-center justify-center rounded-full bg-neutral-100 text-neutral-600 font-bold border border-border-subtle text-lg"><i class="bi bi-shield"></i></span>
             <div class="flex flex-col items-center gap-1">
-              <span class="text-heading-3 font-heading-3 text-default-font">{{ t2.nome }}</span>
-              <span class="text-caption font-caption text-neutral-400 uppercase font-bold">{{ t2.jogo }}</span>
+              <span class="font-headline-md text-headline-md text-on-surface">{{ t2.nome }}</span>
+              <span class="font-label-sm text-label-sm text-neutral-400 uppercase font-bold">{{ t2.jogo }}</span>
             </div>
             <div class="flex items-center gap-2">
-              <span class="text-body-bold font-body-bold text-success">{{ t2.vitorias }} vitórias</span>
+              <span class="font-body-md text-body-md font-bold text-success">{{ t2.vitorias }} vitórias</span>
             </div>
             <div class="flex items-center gap-4 border-t border-neutral-100 pt-3 w-full justify-center">
               <div class="flex flex-col items-center">
@@ -227,21 +227,21 @@
           </div>
 
           <!-- #1 Team (Gold border) -->
-          <div class="flex flex-col items-center gap-4 self-stretch rounded-lg border-2 border-solid border-brand-highlight bg-white px-6 py-6 shadow-md flex-1">
+          <div class="flex flex-col items-center gap-4 self-stretch rounded-lg border-2 border-solid border-warning bg-white px-6 py-6 shadow-md flex-1">
             <div class="flex items-center gap-2">
-              <svg class="text-brand-highlight h-5 w-5" width="1em" height="1em" viewBox="0 0 24 24">
+              <svg class="text-warning h-5 w-5" width="1em" height="1em" viewBox="0 0 24 24">
                 <path d="m12 2 3 6h6l-5 4 2 6-6-4-6 4 2-6-5-4h6z" fill="currentColor"/>
               </svg>
-              <span class="text-caption-bold font-caption-bold text-brand-highlight-dark">#1</span>
+              <span class="font-label-sm text-label-sm font-bold text-amber-800">#1</span>
             </div>
-            <span class="flex h-16 w-16 items-center justify-center rounded-full bg-amber-50 text-amber-600 font-bold border-2 border-brand-highlight text-2xl"><i class="bi bi-shield-shaded"></i></span>
+            <span class="flex h-16 w-16 items-center justify-center rounded-full bg-amber-50 text-amber-600 font-bold border-2 border-warning text-2xl"><i class="bi bi-shield-shaded"></i></span>
             <div class="flex flex-col items-center gap-1">
-              <span class="text-heading-3 font-heading-3 text-default-font">{{ t1.nome }}</span>
-              <span class="text-caption font-caption text-neutral-400 uppercase font-bold">{{ t1.jogo }}</span>
+              <span class="font-headline-md text-headline-md text-on-surface">{{ t1.nome }}</span>
+              <span class="font-label-sm text-label-sm text-neutral-400 uppercase font-bold">{{ t1.jogo }}</span>
             </div>
             <div class="flex items-center gap-2">
-              <span class="text-body-bold font-body-bold text-success">{{ t1.vitorias }} vitórias</span>
-              <span class="badge bg-amber-100 text-amber-800 border border-brand-highlight text-[9px] font-extrabold uppercase">TOP 1</span>
+              <span class="font-body-md text-body-md font-bold text-success">{{ t1.vitorias }} vitórias</span>
+              <span class="badge bg-amber-100 text-amber-800 border border-warning text-[9px] font-extrabold uppercase">TOP 1</span>
             </div>
             <div class="flex items-center gap-4 border-t border-neutral-100 pt-3 w-full justify-center">
               <div class="flex flex-col items-center">
@@ -257,15 +257,15 @@
               <svg class="text-[#cd7f32] h-4 w-4" width="1em" height="1em" viewBox="0 0 24 24">
                 <path d="m12 2 3 6h6l-5 4 2 6-6-4-6 4 2-6-5-4h6z" fill="currentColor"/>
               </svg>
-              <span class="text-caption-bold font-caption-bold text-[#92400e]">#3</span>
+              <span class="font-label-sm text-label-sm font-bold text-[#92400e]">#3</span>
             </div>
             <span class="flex h-12 w-12 items-center justify-center rounded-full bg-amber-50 text-[#cd7f32] font-bold border border-[#cd7f32] text-lg"><i class="bi bi-shield"></i></span>
             <div class="flex flex-col items-center gap-1">
-              <span class="text-heading-3 font-heading-3 text-default-font">{{ t3.nome }}</span>
-              <span class="text-caption font-caption text-neutral-400 uppercase font-bold">{{ t3.jogo }}</span>
+              <span class="font-headline-md text-headline-md text-on-surface">{{ t3.nome }}</span>
+              <span class="font-label-sm text-label-sm text-neutral-400 uppercase font-bold">{{ t3.jogo }}</span>
             </div>
             <div class="flex items-center gap-2">
-              <span class="text-body-bold font-body-bold text-success">{{ t3.vitorias }} vitórias</span>
+              <span class="font-body-md text-body-md font-bold text-success">{{ t3.vitorias }} vitórias</span>
             </div>
             <div class="flex items-center gap-4 border-t border-neutral-100 pt-3 w-full justify-center">
               <div class="flex flex-col items-center">
@@ -280,11 +280,11 @@
 
         <!-- Datatable list of teams -->
         <div class="flex w-full flex-col items-start gap-4 rounded-lg border border-solid border-neutral-200 bg-white px-6 py-6 shadow-sm">
-          <span class="text-heading-3 font-heading-3 text-default-font">Tabela de Classificação - Times</span>
+          <span class="font-headline-md text-headline-md text-on-surface">Tabela de Classificação - Times</span>
           <div class="w-full overflow-x-auto">
             <table class="w-full border-collapse text-left text-xs">
               <thead>
-                <tr class="border-b border-default-border text-neutral-500">
+                <tr class="border-b border-border-subtle text-neutral-500">
                   <th class="py-3 px-4 font-bold text-center w-12">Pos</th>
                   <th class="py-3 px-4 font-bold">Time</th>
                   <th class="py-3 px-4 font-bold">Tag</th>
@@ -298,10 +298,10 @@
                 {% for t in team_ranking %}
                 <tr class="border-b border-neutral-100 last:border-0 hover:bg-neutral-50 transition">
                   <td class="py-3.5 px-4 font-bold text-center text-neutral-500">#{{ loop.index }}</td>
-                  <td class="py-3.5 px-4 font-bold text-default-font">{{ t.nome }}</td>
+                  <td class="py-3.5 px-4 font-bold text-on-surface">{{ t.nome }}</td>
                   <td class="py-3.5 px-4 text-neutral-600 font-mono">#{{ t.tag }}</td>
                   <td class="py-3.5 px-4">
-                    <span class="badge {% if t.jogo == 'CS2' %}bg-brand-highlight text-white{% else %}bg-brand-primary text-white{% endif %} text-[9px] font-bold uppercase">{{ t.jogo }}</span>
+                    <span class="badge {% if t.jogo == 'CS2' %}bg-warning text-white{% else %}bg-primary text-white{% endif %} text-[9px] font-bold uppercase">{{ t.jogo }}</span>
                   </td>
                   <td class="py-3.5 px-4 text-center font-bold text-success">{{ t.vitorias }}</td>
                   <td class="py-3.5 px-4 text-center text-red-600">{{ t.derrotas }}</td>
@@ -329,11 +329,11 @@
     document.getElementById(tabId).classList.remove('hidden');
     
     document.querySelectorAll('.tab-btn').forEach(el => {
-      el.classList.remove('border-brand-primary', 'text-brand-primary');
-      el.classList.add('text-subtext', 'border-transparent');
+      el.classList.remove('border-primary', 'text-primary');
+      el.classList.add('text-on-surface-variant', 'border-transparent');
     });
-    btn.classList.add('border-brand-primary', 'text-brand-primary');
-    btn.classList.remove('text-subtext', 'border-transparent');
+    btn.classList.add('border-primary', 'text-primary');
+    btn.classList.remove('text-on-surface-variant', 'border-transparent');
   }
 
   function filterByGame(gameName) {
