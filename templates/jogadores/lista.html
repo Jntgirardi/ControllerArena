@@ -94,7 +94,7 @@
             <td class="py-4 px-6 text-text-muted hidden lg:table-cell font-mono">{{ j.contato or j.login or '-' }}</td>
             <td class="py-4 px-6 text-right">
               <div class="flex items-center justify-end gap-1 sm:gap-3 text-xs font-bold">
-                <a href="{{ url_for('ver_jogador', client_id=j._id) if 'client_id' in j else url_for('ver_jogador', jogador_id=j._id) }}" class="text-secondary hover:text-on-surface text-decoration-none min-h-[44px] flex items-center px-2">Ver</a>
+                <a href="{{ url_for('ver_jogador', jogador_id=j._id) }}" class="text-secondary hover:text-on-surface text-decoration-none min-h-[44px] flex items-center px-2">Ver</a>
                 {% if session.role in ('ADMIN', 'SUPER_ADMIN') %}
                 <a href="{{ url_for('editar_jogador', jogador_id=j._id) }}" class="text-primary hover:text-primary-container text-decoration-none min-h-[44px] flex items-center px-2">Editar</a>
                 <form action="{{ url_for('remover_jogador', jogador_id=j._id) }}" method="post" class="m-0 flex inline" onsubmit="return confirm('Deseja realmente remover este jogador?');">
