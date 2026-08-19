@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ code }} - Controller Arena</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&family=Chakra+Petch:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #5c59f2;
+      --on-primary: #ffffff;
+      --background: #f9f9ff;
+      --on-background: #141b2b;
+      --surface-white: #ffffff;
+      --surface-container: #e9edff;
+      --surface-container-low: #f1f3ff;
+      --border-subtle: #E5E7EB;
+      --text-muted: #6B7280;
+      --error: #ef4444;
+      --on-surface-variant: #434656;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--background);
+      color: var(--on-background);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1rem;
+      text-align: center;
+    }
+    h1, h2, h3 { font-family: 'Chakra Petch', sans-serif; }
+    .card {
+      background: var(--surface-white);
+      border: 1px solid var(--border-subtle);
+      border-radius: 1rem;
+      box-shadow: 0 8px 30px rgb(0, 0, 0, 0.08);
+      padding: 3rem 2.5rem;
+      max-width: 480px;
+      width: 100%;
+    }
+    .icon-wrap {
+      width: 88px;
+      height: 88px;
+      border-radius: 9999px;
+      background: var(--surface-container);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1.5rem;
+    }
+    .icon-wrap.error { background: #fee2e2; }
+    .material-symbols-outlined { font-family: 'Material Symbols Outlined'; }
+    .icon { font-size: 44px; color: var(--primary); }
+    .icon.error { color: var(--error); }
+    .code {
+      font-size: 4rem;
+      font-weight: 700;
+      line-height: 1;
+      color: var(--primary);
+      letter-spacing: -0.02em;
+    }
+    .code.error { color: var(--error); }
+    .title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin: 0.75rem 0 0.5rem;
+      color: var(--on-background);
+    }
+    .message {
+      font-size: 0.95rem;
+      color: var(--on-surface-variant);
+      line-height: 1.6;
+      margin-bottom: 2rem;
+    }
+    .actions { display: flex; flex-direction: column; gap: 0.75rem; }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      border-radius: 0.75rem;
+      padding: 0.75rem 1.5rem;
+      font-size: 0.875rem;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.2s;
+      min-height: 44px;
+    }
+    .btn-primary { background: var(--primary); color: var(--on-primary); }
+    .btn-primary:hover { background: #4f46e5; }
+    .btn-outline {
+      border-color: var(--border-subtle);
+      background: transparent;
+      color: var(--on-surface-variant);
+    }
+    .btn-outline:hover { background: var(--surface-container-low); }
+    .btn-back { display: inline-flex; align-items: center; gap: 0.4rem; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon-wrap {% if code == 500 %}error{% endif %}">
+      <span class="material-symbols-outlined icon {% if code == 500 %}error{% endif %}">
+        {% if code == 404 %}search_off{% elif code == 403 %}lock{% elif code == 500 %}error{% else %}report{% endif %}
+      </span>
+    </div>
+    <div class="code {% if code == 500 %}error{% endif %}">{{ code }}</div>
+    <h1 class="title">{{ title }}</h1>
+    <p class="message">{{ message }}</p>
+    <div class="actions">
+      <a href="{{ url_for('index') }}" class="btn btn-primary">
+        <span class="material-symbols-outlined" style="font-size:18px;">home</span>
+        Voltar ao Início
+      </a>
+      <button type="button" onclick="history.length > 1 ? history.back() : (location.href='{{ url_for('index') }}')" class="btn btn-outline btn-back">
+        <span class="material-symbols-outlined" style="font-size:18px;">arrow_back</span>
+        Voltar para a página anterior
+      </button>
+    </div>
+  </div>
+</body>
+</html>

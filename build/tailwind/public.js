@@ -75,6 +75,12 @@ module.exports = {
         "body-md": ["Inter", "sans-serif"],
         "label-sm": ["Inter", "sans-serif"],
         "stats-mono": ["Inter", "sans-serif"]
+      },
+      fontSize: {
+        "headline-lg": ["2rem", { lineHeight: "2.5rem" }],
+        "headline-md": ["1.75rem", { lineHeight: "2.25rem" }],
+        "body-md": ["0.875rem", { lineHeight: "1.25rem" }],
+        "label-sm": ["0.75rem", { lineHeight: "1rem" }]
       }
     }
   }
