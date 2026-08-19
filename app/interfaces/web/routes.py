@@ -7,7 +7,7 @@ from uuid import uuid4
 from flask import Response, abort, current_app, flash, redirect, render_template, request, session, url_for
 from PIL import Image, ImageOps, UnidentifiedImageError
 
-from ...application.services import ROLE_ADMIN, ROLE_PLAYER, ROLE_REFEREE, ROLE_SUPER_ADMIN, can_access_admin_scope
+from ...application.services import ROLE_ADMIN, ROLE_PLAYER, ROLE_REFEREE, ROLE_SUPER_ADMIN, can_access_admin_scope, get_scope_admin_id
 from .common import build_current_user, login_required, roles_required, to_oid
 from .report_exports import build_csv_bytes, build_pdf_bytes
 
@@ -667,7 +667,6 @@ def register_routes(app, services):
             jogadores = [j for j in jogadores if j["time_nome"] == time_filter]
 
         # Fetch teams for dropdown select
-        from app.application.services import get_scope_admin_id
         t_filter = {}
         if current_user["role"] != ROLE_SUPER_ADMIN:
             t_filter["admin_id"] = get_scope_admin_id(current_user)

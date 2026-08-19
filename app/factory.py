@@ -53,20 +53,4 @@ def create_app():
     app.extensions["services"] = services
 
     register_routes(app, services)
-
-    import traceback as _traceback
-
-    @app.errorhandler(Exception)
-    def _debug_traceback(e):
-        if os.environ.get("VERCEL") == "1" or os.environ.get("FLASK_ENV") == "production":
-            body = _traceback.format_exc()
-            print("TRACEBACK:", body)
-            try:
-                from flask import request
-                if request.headers.get("X-Debug-Trace") == "1":
-                    return body, 500
-            except Exception:
-                pass
-        raise e
-
     return app
