@@ -40,7 +40,7 @@
         {% endif %}
       </div>
       <div class="flex items-center gap-3">
-        <div class="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary border border-border-subtle font-bold"><span class="material-symbols-outlined text-sm">account_circle</span></div>
+        <button onclick="toggleProfileDropdown(event)" class="profile-menu-btn-trigger flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary border border-border-subtle font-bold cursor-pointer hover:bg-primary/20 transition-colors focus:outline-none"><span class="material-symbols-outlined text-sm pointer-events-none">account_circle</span></button>
       </div>
     </div>
   </div>
@@ -67,10 +67,10 @@
       <span>Mapa: <strong>{{ active_m.mapa or 'A definir' }}</strong></span>
     </div>
     <div class="flex items-center gap-3 pt-2">
-      <a href="{{ url_for('rounds_control', partida_id=active_m._id) }}" class="px-5 py-2.5 bg-primary hover:bg-primary-container text-white text-xs font-bold rounded shadow-sm text-decoration-none transition-all flex items-center gap-1.5">
+      <a href="{{ url_for('rounds_control', partida_id=active_m._id) }}" class="px-5 py-2.5 bg-primary hover:bg-primary-container text-white text-xs font-bold rounded shadow-sm text-decoration-none transition-all flex items-center gap-1.5 min-h-[44px]">
         <span class="material-symbols-outlined text-sm">controller</span> Iniciar Arbitragem
       </a>
-      <a href="{{ url_for('ver_campeonato', camp_id=active_m.campeonato_id) }}" class="px-5 py-2.5 border border-border-subtle bg-surface-white text-on-surface-variant text-xs font-bold rounded hover:bg-surface transition-all text-decoration-none">
+      <a href="{{ url_for('ver_campeonato', camp_id=active_m.campeonato_id) }}" class="px-5 py-2.5 border border-border-subtle bg-surface-white text-on-surface-variant text-xs font-bold rounded hover:bg-surface transition-all text-decoration-none min-h-[44px] flex items-center">
         Ver Campeonato
       </a>
     </div>
@@ -114,7 +114,7 @@
             </td>
             <td class="py-3.5 px-4 text-right">
               {% if p.status != 'finalizada' %}
-                <a href="{{ url_for('rounds_control', partida_id=p._id) }}" class="inline-flex h-8 px-3 items-center justify-center rounded bg-primary text-[10px] font-bold text-white hover:bg-primary-container shadow transition text-decoration-none gap-1">
+                <a href="{{ url_for('rounds_control', partida_id=p._id) }}" class="inline-flex h-11 px-3 items-center justify-center rounded bg-primary text-[10px] font-bold text-white hover:bg-primary-container shadow transition text-decoration-none gap-1">
                   <span class="material-symbols-outlined text-xs">controller</span> Arbitrar
                 </a>
               {% else %}
@@ -175,7 +175,7 @@
     </div>
     <div class="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
       <!-- Optional Quick Action -->
-      <a href="{{ url_for('listar_campeonatos') }}" class="px-4 py-2 bg-primary hover:bg-primary-container text-on-primary font-bold text-xs rounded-lg flex items-center justify-center gap-1.5 hover:opacity-95 transition shadow-sm">
+      <a href="{{ url_for('listar_campeonatos') }}" class="px-4 py-2 bg-primary hover:bg-primary-container text-on-primary font-bold text-xs rounded-lg flex items-center justify-center gap-1.5 hover:opacity-95 transition shadow-sm min-h-[44px]">
         <span class="material-symbols-outlined text-[16px]">add</span> Novo Campeonato
       </a>
       
@@ -190,7 +190,7 @@
           </div>
           {% endif %}
         </div>
-        <div class="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary border border-border-subtle font-bold"><span class="material-symbols-outlined text-sm">account_circle</span></div>
+        <button onclick="toggleProfileDropdown(event)" class="profile-menu-btn-trigger flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary border border-border-subtle font-bold cursor-pointer hover:bg-primary/20 transition-colors focus:outline-none"><span class="material-symbols-outlined text-sm pointer-events-none">account_circle</span></button>
       </div>
     </div>
   </header>
@@ -223,7 +223,7 @@
   <section class="bg-surface-white border border-border-subtle rounded-xl flex flex-col overflow-hidden shadow-sm w-full">
     <div class="p-card-padding border-b border-border-subtle flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-surface-bright">
       <h2 class="font-headline-md text-base text-on-surface">Campeonatos Recentes</h2>
-      <a href="{{ url_for('listar_campeonatos') }}" class="px-4 py-2 bg-primary hover:bg-primary-container text-white font-bold text-xs rounded-lg flex items-center justify-center gap-1.5 transition shadow-sm">
+      <a href="{{ url_for('listar_campeonatos') }}" class="px-4 py-2 bg-primary hover:bg-primary-container text-white font-bold text-xs rounded-lg flex items-center justify-center gap-1.5 transition shadow-sm min-h-[44px]">
         <span class="material-symbols-outlined text-[16px]">add</span> Novo Campeonato
       </a>
     </div>

@@ -26,6 +26,7 @@
   </div>
   <div class="card-body p-0">
     {% if time.get('jogadores') %}
+    <div class="table-responsive">
     <table class="table mb-0">
       <thead>
         <tr>
@@ -49,6 +50,7 @@
         {% endfor %}
       </tbody>
     </table>
+    </div>
     {% else %}
     <div class="p-4 text-center text-muted">
       <i class="bi bi-people d-block mb-2" style="font-size:1.5rem"></i>

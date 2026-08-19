@@ -5,7 +5,7 @@
   <!-- Top Bar / Actions -->
   <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border-subtle pb-4">
     <div class="flex items-center gap-3">
-      <a href="{{ url_for('listar_jogadores') }}" class="bg-surface-white border border-border-subtle text-on-surface px-3 py-1.5 rounded font-label-sm text-xs hover:bg-surface-container-low transition-colors text-decoration-none">
+      <a href="{{ url_for('listar_jogadores') }}" class="bg-surface-white border border-border-subtle text-on-surface px-3 py-1.5 rounded font-label-sm text-xs hover:bg-surface-container-low transition-colors text-decoration-none min-h-[44px] flex items-center">
         Voltar
       </a>
       <h1 class="font-headline-md text-xl font-bold text-on-surface">{{ jogador.nick }}</h1>
@@ -16,11 +16,11 @@
     </div>
     {% if session.role == 'ADMIN' %}
     <div class="flex gap-2">
-      <a href="{{ url_for('editar_jogador', jogador_id=jogador._id) }}" class="bg-surface-white border border-border-subtle text-on-surface px-4 py-2 rounded font-label-sm text-xs hover:bg-surface-container-low transition-colors text-decoration-none text-center">
+      <a href="{{ url_for('editar_jogador', jogador_id=jogador._id) }}" class="bg-surface-white border border-border-subtle text-on-surface px-4 py-2 rounded font-label-sm text-xs hover:bg-surface-container-low transition-colors text-decoration-none text-center min-h-[44px] flex items-center">
         Editar
       </a>
       <form method="post" action="{{ url_for('remover_jogador', jogador_id=jogador._id) }}" onsubmit="return confirm('Remover {{ jogador.nick }}?')" class="m-0">
-        <button type="submit" class="bg-error text-on-error px-4 py-2 rounded font-label-sm text-xs hover:opacity-90 transition-opacity cursor-pointer">
+        <button type="submit" class="bg-error text-on-error px-4 py-2 rounded font-label-sm text-xs hover:opacity-90 transition-opacity cursor-pointer min-h-[44px]">
           Remover
         </button>
       </form>

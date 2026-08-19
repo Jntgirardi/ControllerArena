@@ -99,7 +99,7 @@
 
         <!-- Submit Button -->
         <div class="pt-4">
-          <button type="submit" class="w-full bg-primary hover:bg-primary-container text-on-primary font-bold text-xs rounded-lg py-3 transition-colors shadow-sm cursor-pointer flex items-center justify-center gap-1.5">
+          <button type="submit" class="w-full bg-primary hover:bg-primary-container text-on-primary font-bold text-xs rounded-lg py-3 transition-colors shadow-sm cursor-pointer flex items-center justify-center gap-1.5 min-h-[48px]">
             <span class="material-symbols-outlined text-[18px]">{% if acao == 'editar' %}save{% else %}add{% endif %}</span>
             {{ 'Salvar Alterações' if acao == 'editar' else 'Cadastrar Jogador' }}
           </button>

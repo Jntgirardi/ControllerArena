@@ -8,7 +8,7 @@
   <!-- Referee Topbar Band -->
   <div class="flex items-center justify-between border-b border-border-subtle pb-4 flex-wrap gap-3">
     <div class="flex items-center gap-3">
-      <a href="{{ url_for('ver_campeonato', camp_id=partida.campeonato_id) }}" class="inline-flex items-center gap-1 text-xs font-bold text-text-muted hover:text-on-surface transition-colors text-decoration-none py-2 px-4 border border-border-subtle rounded-lg bg-surface-white hover:bg-surface shadow-sm">
+      <a href="{{ url_for('ver_campeonato', camp_id=partida.campeonato_id) }}" class="inline-flex items-center gap-1 text-xs font-bold text-text-muted hover:text-on-surface transition-colors text-decoration-none py-2 px-4 border border-border-subtle rounded-lg bg-surface-white hover:bg-surface shadow-sm min-h-[44px]">
         <span class="material-symbols-outlined text-[16px]">arrow_back</span> Voltar
       </a>
       <span class="text-xs text-text-muted">
@@ -20,7 +20,7 @@
         <span class="h-1.5 w-1.5 rounded-full bg-red-600 animate-pulse"></span> AO VIVO
       </span>
       <button
-        class="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg shadow transition-all"
+        class="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg shadow transition-all min-h-[44px]"
         data-bs-toggle="modal"
         data-bs-target="#confirmFinalizarModal"
       >
@@ -42,25 +42,25 @@
           MAPA: {{ partida.mapa or 'A definir' }}
         </span>
         
-        <div class="flex items-center justify-center gap-12 relative z-10 w-full px-8">
+        <div class="flex items-center justify-center gap-6 md:gap-12 relative z-10 w-full px-2 md:px-8">
           <!-- Team A -->
-          <div class="flex flex-col items-center flex-1">
+          <div class="flex flex-col items-center flex-1 min-w-0">
             <span class="flex h-12 w-12 rounded-full items-center justify-center bg-primary/10 text-primary font-bold border border-border-subtle text-xs mb-3">
               <span class="material-symbols-outlined text-sm">shield</span>
             </span>
-            <h2 class="text-sm font-bold text-on-surface mb-2 truncate max-w-[150px]">{{ partida.time_a.nome }}</h2>
-            <span id="score-a" class="font-['Chakra_Petch'] text-5xl font-black text-primary">{{ partida.time_a.placar }}</span>
+            <h2 class="text-sm font-bold text-on-surface mb-2 truncate max-w-[120px] md:max-w-[150px]">{{ partida.time_a.nome }}</h2>
+            <span id="score-a" class="font-['Chakra_Petch'] text-4xl md:text-5xl font-black text-primary">{{ partida.time_a.placar }}</span>
           </div>
           
           <span class="text-neutral-300 text-2xl font-light">:</span>
           
           <!-- Team B -->
-          <div class="flex flex-col items-center flex-1">
+          <div class="flex flex-col items-center flex-1 min-w-0">
             <span class="flex h-12 w-12 rounded-full items-center justify-center bg-primary/10 text-primary font-bold border border-border-subtle text-xs mb-3">
               <span class="material-symbols-outlined text-sm">shield</span>
             </span>
-            <h2 class="text-sm font-bold text-on-surface mb-2 truncate max-w-[150px]">{{ partida.time_b.nome }}</h2>
-            <span id="score-b" class="font-['Chakra_Petch'] text-5xl font-black text-on-surface">{{ partida.time_b.placar }}</span>
+            <h2 class="text-sm font-bold text-on-surface mb-2 truncate max-w-[120px] md:max-w-[150px]">{{ partida.time_b.nome }}</h2>
+            <span id="score-b" class="font-['Chakra_Petch'] text-4xl md:text-5xl font-black text-on-surface">{{ partida.time_b.placar }}</span>
           </div>
         </div>
       </div>
@@ -181,15 +181,15 @@
                   <div class="grid grid-cols-3 gap-2">
                     <div>
                       <label class="block text-text-muted text-[10px] uppercase font-bold mb-0.5">Kills</label>
-                      <input type="number" class="w-full rounded border border-border-subtle bg-white px-2 py-1 text-xs font-mono kda-input-a" data-player-id="{{ p.jogador_id }}" data-nick="{{ p.nick }}" data-stat="kills" min="0" value="0">
+                      <input type="number" class="w-full rounded border border-border-subtle bg-white px-2 py-2 text-xs font-mono kda-input-a" data-player-id="{{ p.jogador_id }}" data-nick="{{ p.nick }}" data-stat="kills" min="0" value="0">
                     </div>
                     <div>
                       <label class="block text-text-muted text-[10px] uppercase font-bold mb-0.5">Deaths</label>
-                      <input type="number" class="w-full rounded border border-border-subtle bg-white px-2 py-1 text-xs font-mono kda-input-a" data-player-id="{{ p.jogador_id }}" data-nick="{{ p.nick }}" data-stat="deaths" min="0" value="0">
+                      <input type="number" class="w-full rounded border border-border-subtle bg-white px-2 py-2 text-xs font-mono kda-input-a" data-player-id="{{ p.jogador_id }}" data-nick="{{ p.nick }}" data-stat="deaths" min="0" value="0">
                     </div>
                     <div>
                       <label class="block text-text-muted text-[10px] uppercase font-bold mb-0.5">Assists</label>
-                      <input type="number" class="w-full rounded border border-border-subtle bg-white px-2 py-1 text-xs font-mono kda-input-a" data-player-id="{{ p.jogador_id }}" data-nick="{{ p.nick }}" data-stat="assists" min="0" value="0">
+                      <input type="number" class="w-full rounded border border-border-subtle bg-white px-2 py-2 text-xs font-mono kda-input-a" data-player-id="{{ p.jogador_id }}" data-nick="{{ p.nick }}" data-stat="assists" min="0" value="0">
                     </div>
                   </div>
                 </div>
@@ -211,15 +211,15 @@
                   <div class="grid grid-cols-3 gap-2">
                     <div>
                       <label class="block text-text-muted text-[10px] uppercase font-bold mb-0.5">Kills</label>
-                      <input type="number" class="w-full rounded border border-border-subtle bg-white px-2 py-1 text-xs font-mono kda-input-b" data-player-id="{{ p.jogador_id }}" data-nick="{{ p.nick }}" data-stat="kills" min="0" value="0">
+                      <input type="number" class="w-full rounded border border-border-subtle bg-white px-2 py-2 text-xs font-mono kda-input-b" data-player-id="{{ p.jogador_id }}" data-nick="{{ p.nick }}" data-stat="kills" min="0" value="0">
                     </div>
                     <div>
                       <label class="block text-text-muted text-[10px] uppercase font-bold mb-0.5">Deaths</label>
-                      <input type="number" class="w-full rounded border border-border-subtle bg-white px-2 py-1 text-xs font-mono kda-input-b" data-player-id="{{ p.jogador_id }}" data-nick="{{ p.nick }}" data-stat="deaths" min="0" value="0">
+                      <input type="number" class="w-full rounded border border-border-subtle bg-white px-2 py-2 text-xs font-mono kda-input-b" data-player-id="{{ p.jogador_id }}" data-nick="{{ p.nick }}" data-stat="deaths" min="0" value="0">
                     </div>
                     <div>
                       <label class="block text-text-muted text-[10px] uppercase font-bold mb-0.5">Assists</label>
-                      <input type="number" class="w-full rounded border border-border-subtle bg-white px-2 py-1 text-xs font-mono kda-input-b" data-player-id="{{ p.jogador_id }}" data-nick="{{ p.nick }}" data-stat="assists" min="0" value="0">
+                      <input type="number" class="w-full rounded border border-border-subtle bg-white px-2 py-2 text-xs font-mono kda-input-b" data-player-id="{{ p.jogador_id }}" data-nick="{{ p.nick }}" data-stat="assists" min="0" value="0">
                     </div>
                   </div>
                 </div>

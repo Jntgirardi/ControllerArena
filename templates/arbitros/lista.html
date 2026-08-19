@@ -12,7 +12,7 @@
       <p class="text-xs text-text-muted mt-1">Gerencie a escala e escalas ativas de arbitragem.</p>
     </div>
     {% if session.role == 'ADMIN' %}
-    <a href="{{ url_for('novo_arbitro') }}" class="bg-primary hover:bg-primary-container text-on-primary font-bold text-xs px-5 py-2.5 rounded-lg flex items-center justify-center gap-1.5 transition-all shadow-sm text-decoration-none sm:w-auto">
+    <a href="{{ url_for('novo_arbitro') }}" class="bg-primary hover:bg-primary-container text-on-primary font-bold text-xs px-5 py-2.5 rounded-lg flex items-center justify-center gap-1.5 transition-all shadow-sm text-decoration-none sm:w-auto min-h-[44px]">
       <span class="material-symbols-outlined text-[18px]">add</span> Novo Árbitro
     </a>
     {% endif %}
@@ -32,7 +32,7 @@
         class="block w-full pl-10 pr-3 py-2.5 border border-border-subtle rounded-lg bg-surface-white text-xs placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-primary focus:border-transparent transition-all"
       >
     </div>
-    <button type="submit" class="bg-surface-white border border-border-subtle text-on-surface hover:bg-surface font-bold text-xs px-5 py-2.5 rounded-lg transition-colors flex items-center justify-center gap-1.5 whitespace-nowrap">
+    <button type="submit" class="bg-surface-white border border-border-subtle text-on-surface hover:bg-surface font-bold text-xs px-5 py-2.5 rounded-lg transition-colors flex items-center justify-center gap-1.5 whitespace-nowrap min-h-[44px]">
       <span class="material-symbols-outlined text-[18px]">filter_list</span> Filtrar
     </button>
   </form>
@@ -40,14 +40,14 @@
   <!-- Table Section -->
   <div class="bg-surface-white border border-border-subtle rounded-xl shadow-sm overflow-hidden w-full">
     <div class="w-full overflow-x-auto no-scrollbar">
-      <table class="w-full text-left border-collapse text-xs min-w-[800px]">
+      <table class="w-full text-left border-collapse text-xs min-w-[520px] sm:min-w-[700px] lg:min-w-[800px]">
         <thead>
           <tr class="bg-surface border-b border-border-subtle text-text-muted">
             <th class="py-4 px-6 font-bold uppercase tracking-wider text-[10px]">Nome</th>
-            <th class="py-4 px-6 font-bold uppercase tracking-wider text-[10px]">E-mail</th>
-            <th class="py-4 px-6 font-bold uppercase tracking-wider text-[10px]">Contato</th>
+            <th class="py-4 px-6 font-bold uppercase tracking-wider text-[10px] hidden sm:table-cell">E-mail</th>
+            <th class="py-4 px-6 font-bold uppercase tracking-wider text-[10px] hidden lg:table-cell">Contato</th>
             <th class="py-4 px-6 font-bold uppercase tracking-wider text-[10px]">Disponibilidade</th>
-            <th class="py-4 px-6 font-bold uppercase tracking-wider text-[10px]">Campeonatos</th>
+            <th class="py-4 px-6 font-bold uppercase tracking-wider text-[10px] hidden md:table-cell">Campeonatos</th>
             {% if session.role == 'ADMIN' %}
             <th class="py-4 px-6 font-bold uppercase tracking-wider text-[10px] text-right">Ações</th>
             {% endif %}
@@ -64,8 +64,8 @@
                 <span>{{ a.nome }}</span>
               </div>
             </td>
-            <td class="py-4 px-6 text-on-surface-variant font-medium"><code>{{ a.email }}</code></td>
-            <td class="py-4 px-6 text-on-surface-variant font-mono">{{ a.contato or '-' }}</td>
+            <td class="py-4 px-6 text-on-surface-variant font-medium hidden sm:table-cell"><code>{{ a.email }}</code></td>
+            <td class="py-4 px-6 text-on-surface-variant font-mono hidden lg:table-cell">{{ a.contato or '-' }}</td>
             <td class="py-4 px-6">
               {% if not a.disponibilidade or 'dispon' in a.disponibilidade.lower() or 'livre' in a.disponibilidade.lower() %}
               <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-container text-success font-semibold border border-success/20 text-[10px]">
@@ -84,7 +84,7 @@
               </span>
               {% endif %}
             </td>
-            <td class="py-4 px-6">
+            <td class="py-4 px-6 hidden md:table-cell">
               {% if a.campeonatos_vinculados %}
                 <span class="inline-flex items-center bg-primary/10 text-primary border border-primary/20 font-bold px-2 py-0.5 rounded text-[10px] uppercase">
                   {{ a.campeonatos_vinculados|length }} Vinculado(s)
@@ -95,10 +95,10 @@
             </td>
             {% if session.role == 'ADMIN' %}
             <td class="py-4 px-6 text-right">
-              <div class="flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity font-bold">
-                <a href="{{ url_for('editar_arbitro', arbitro_id=a._id) }}" class="text-primary hover:text-primary-container text-decoration-none">Editar</a>
+              <div class="flex items-center justify-end gap-1 sm:gap-3 font-bold">
+                <a href="{{ url_for('editar_arbitro', arbitro_id=a._id) }}" class="text-primary hover:text-primary-container text-decoration-none min-h-[44px] flex items-center px-2">Editar</a>
                 <form method="post" action="{{ url_for('remover_arbitro', arbitro_id=a._id) }}" class="m-0 flex inline" onsubmit="return confirm('Deseja realmente remover este árbitro?');">
-                  <button type="submit" class="text-error hover:text-on-error-container bg-transparent border-0 p-0 font-bold cursor-pointer transition">
+                  <button type="submit" class="text-error hover:text-on-error-container bg-transparent border-0 font-bold cursor-pointer transition min-h-[44px] px-2">
                     Remover
                   </button>
                 </form>
