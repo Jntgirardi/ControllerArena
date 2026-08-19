@@ -263,12 +263,23 @@
       event.stopPropagation();
     }
     const dropdown = document.getElementById('profile-dropdown');
-    const btn = document.getElementById('profile-menu-btn');
+    const btn = (event && event.currentTarget) || document.getElementById('profile-menu-btn');
     if (dropdown && btn) {
       const rect = btn.getBoundingClientRect();
       // Dynamically calculate and apply fixed position coordinates
       dropdown.style.position = 'fixed';
-      dropdown.style.bottom = (window.innerHeight - rect.top + 12) + 'px';
+      
+      // Clear previously set styles to avoid conflicts
+      dropdown.style.top = '';
+      dropdown.style.bottom = '';
+      
+      // If the button is in the upper half of the screen, place the dropdown below it.
+      // Otherwise, place it above the button.
+      if (rect.top < window.innerHeight / 2) {
+        dropdown.style.top = (rect.bottom + 12) + 'px';
+      } else {
+        dropdown.style.bottom = (window.innerHeight - rect.top + 12) + 'px';
+      }
       dropdown.style.left = (rect.left + rect.width - 192) + 'px';
       
       dropdown.classList.toggle('opacity-0');
@@ -278,8 +289,8 @@
 
   document.addEventListener('click', (e) => {
     const dropdown = document.getElementById('profile-dropdown');
-    const btn = document.getElementById('profile-menu-btn');
-    if (dropdown && btn && !dropdown.contains(e.target) && !btn.contains(e.target)) {
+    const isTrigger = e.target.closest('#profile-menu-btn') || e.target.closest('.profile-menu-btn-trigger');
+    if (dropdown && !dropdown.contains(e.target) && !isTrigger) {
       dropdown.classList.add('opacity-0');
       dropdown.classList.add('pointer-events-none');
     }
