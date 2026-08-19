@@ -33,6 +33,18 @@ module.exports = {
         "lg": "0.5rem",
         "xl": "0.75rem",
         "full": "9999px"
+      },
+      fontFamily: {
+        "headline-lg": ["Chakra Petch", "sans-serif"],
+        "headline-md": ["Chakra Petch", "sans-serif"],
+        "body-md": ["Inter", "sans-serif"],
+        "label-sm": ["Inter", "sans-serif"]
+      },
+      fontSize: {
+        "headline-lg": ["2rem", { lineHeight: "2.5rem" }],
+        "headline-md": ["1.75rem", { lineHeight: "2.25rem" }],
+        "body-md": ["0.875rem", { lineHeight: "1.25rem" }],
+        "label-sm": ["0.75rem", { lineHeight: "1rem" }]
       }
     }
   }

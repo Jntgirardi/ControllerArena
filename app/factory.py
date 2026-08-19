@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, render_template, request
 
 from .application import build_services
 from .config import Config
@@ -17,6 +17,56 @@ from .infrastructure.repositories import (
 )
 from .infrastructure.security.password_hasher import PasswordHasher
 from .interfaces.web import register_routes
+
+
+def _register_error_handlers(app: Flask) -> None:
+    from werkzeug.exceptions import Forbidden, HTTPException, NotFound
+
+    @app.errorhandler(404)
+    def not_found(_e):
+        return (
+            render_template(
+                "error.html",
+                code=404,
+                title="Página não encontrada",
+                message="O endereço que você acessou não existe ou foi movido.",
+            ),
+            404,
+        )
+
+    @app.errorhandler(403)
+    def forbidden(_e):
+        return (
+            render_template(
+                "error.html",
+                code=403,
+                title="Acesso negado",
+                message="Você não tem permissão para acessar esta página.",
+            ),
+            403,
+        )
+
+    @app.errorhandler(Exception)
+    def internal_error(e):
+        import logging
+        import traceback
+
+        logger = logging.getLogger(__name__)
+        logger.error("Erro nao tratado em %s: %s\n%s", request.path, e, traceback.format_exc())
+        code = e.code if isinstance(e, HTTPException) else 500
+        if code == 404:
+            return not_found(e)
+        if code == 403:
+            return forbidden(e)
+        return (
+            render_template(
+                "error.html",
+                code=500,
+                title="Algo deu errado",
+                message="Ocorreu um erro inesperado. Tente novamente em instantes.",
+            ),
+            500,
+        )
 
 
 def create_app():
@@ -53,4 +103,5 @@ def create_app():
     app.extensions["services"] = services
 
     register_routes(app, services)
+    _register_error_handlers(app)
     return app
