@@ -8,3 +8,4 @@ instance/
 *.db
 *.sqlite
 .system_generated/
+build/tailwind/node_modules/

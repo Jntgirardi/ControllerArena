@@ -6,82 +6,11 @@
   <title>{% block title %}Controller Arena{% endblock %}</title>
   
   <!-- Material Symbols Outlined and Google Fonts (Inter & Chakra Petch) -->
-  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&family=Chakra+Petch:wght@400;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   
-  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-  <script>
-    tailwind.config = {
-      darkMode: "class",
-      theme: {
-        extend: {
-          colors: {
-            "primary": "#003ec7",
-            "primary-container": "#0052ff",
-            "on-primary": "#ffffff",
-            "on-primary-container": "#dfe3ff",
-            "secondary": "#5c5f60",
-            "secondary-container": "#dee0e2",
-            "on-secondary": "#ffffff",
-            "on-secondary-container": "#606365",
-            "background": "#f9f9ff",
-            "on-background": "#141b2b",
-            "surface": "#f9f9ff",
-            "surface-white": "#FFFFFF",
-            "surface-dim": "#d3daef",
-            "surface-bright": "#f9f9ff",
-            "surface-container-lowest": "#ffffff",
-            "surface-container-low": "#f1f3ff",
-            "surface-container": "#e9edff",
-            "surface-container-high": "#e1e8fd",
-            "surface-container-highest": "#dce2f7",
-            "on-surface": "#141b2b",
-            "on-surface-variant": "#434656",
-            "outline": "#737688",
-            "outline-variant": "#c3c5d9",
-            "border-subtle": "#E5E7EB",
-            "text-muted": "#6B7280",
-            "live": "#ef4444",
-            "success": "#10B981",
-            "warning": "#F59E0B",
-            "error": "#EF4444",
-            "error-container": "#ffdad6",
-            "brand-primary": "#003ec7",
-            "brand-highlight": "#f59e0b",
-            "brand-highlight-dark": "#b45309",
-            "default-border": "#E5E7EB",
-            "default-font": "#141b2b",
-            "subtext": "#434656",
-          },
-          borderRadius: {
-            "DEFAULT": "0.25rem",
-            "lg": "0.5rem",
-            "xl": "0.75rem",
-            "full": "9999px"
-          },
-          spacing: {
-            "container-margin": "24px",
-            "section-gap": "40px",
-            "base": "4px",
-            "card-padding": "20px",
-            "gutter": "16px"
-          },
-          screens: {
-            "mobile": {'max': '991px'},
-          },
-          fontFamily: {
-            "body-lg": ["Inter", "sans-serif"],
-            "headline-md": ["Chakra Petch", "sans-serif"],
-            "display-score": ["Inter", "sans-serif"],
-            "headline-lg": ["Chakra Petch", "sans-serif"],
-            "body-md": ["Inter", "sans-serif"],
-            "label-sm": ["Inter", "sans-serif"],
-            "stats-mono": ["Inter", "sans-serif"]
-          }
-        }
-      }
-    }
-  </script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/public.css') }}">
   <style>
     body {
       font-family: 'Inter', sans-serif;
