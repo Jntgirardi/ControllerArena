@@ -1,0 +1,11 @@
+{
+  "name": "controller-arena-tailwind",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Build tooling for compiling Tailwind CSS utilities used by Controller Arena templates.",
+  "dependencies": {
+    "@tailwindcss/container-queries": "^0.1.1",
+    "@tailwindcss/forms": "^0.5.7",
+    "tailwindcss": "3.4.17"
+  }
+}

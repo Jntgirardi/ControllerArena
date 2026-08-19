@@ -466,7 +466,16 @@ def register_routes(app, services):
 
     @app.after_request
     def register_audit_log(response):
-        if request.endpoint not in {"static"} and session.get("user_id"):
+        # Cache-Control: assets estaticos (CSS/JS) por 1h para evitar re-baixar em toda navegacao
+        if request.endpoint == "static":
+            response.headers["Cache-Control"] = "public, max-age=3600, immutable"
+            return response
+
+        # Paginas publicas podem ser cacheadas brevemente pelo navegador/CDN
+        if not session.get("user_id"):
+            response.headers["Cache-Control"] = "public, max-age=60"
+
+        if session.get("user_id"):
             user = _session_user_for_logs()
             services["audit_logs"].record_request(
                 user,

@@ -20,6 +20,14 @@ jobs:
           python-version: "3.12"
       - run: pip install -r requirements.txt
       - run: python -m pytest
+      - name: Check CSS is in sync with templates
+        run: |
+          python build_css.py
+          if ! git diff --quiet -- app/static/css/; then
+            echo "::error::CSS estatico desatualizado. Rode 'python build_css.py' e commite as mudancas."
+            git diff --stat -- app/static/css/
+            exit 1
+          fi
 
   auto-merge:
     needs: test
