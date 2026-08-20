@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}Controller Arena{% endblock %}</title>
-  <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/logo.png') }}">
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/logo_icon.png') }}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
@@ -284,50 +284,50 @@
 {% if session.user_id %}
 <!-- Floating Bottom Navigation Bar (Stitch Design System) -->
 <div class="fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] w-max max-w-[calc(100vw-2rem)] overflow-x-auto no-scrollbar">
-  <div class="bg-surface-white rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-border-subtle pl-4 pr-2 py-2 flex items-center gap-3">
+  <div class="bg-surface-white rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-border-subtle pl-3 md:pl-4 pr-2 py-1.5 md:py-2 flex items-center gap-2 md:gap-3">
     <!-- Brand -->
-    <div class="flex items-center pl-2">
-      <img src="{{ url_for('static', filename='images/logo.png') }}" class="h-6 w-auto object-contain" alt="Controller Arena Logo">
+    <div class="hidden md:flex items-center pl-2">
+      <img src="{{ url_for('static', filename='images/logo_icon.png') }}" class="h-10 w-auto object-contain" alt="Controller Arena Logo">
     </div>
     <!-- Nav Links -->
-    <div class="flex items-center gap-1">
-      <a title="Dashboard" class="w-11 h-11 rounded-full {% if request.endpoint == 'dashboard' %}text-primary bg-surface-container/60{% else %}text-on-surface-variant hover:bg-surface-container-low{% endif %} text-decoration-none transition-all duration-150 flex items-center justify-center" href="{{ url_for('dashboard') }}">
-        <span class="material-symbols-outlined text-[20px]">dashboard</span>
+    <div class="flex items-center gap-1 md:gap-1.5">
+      <a title="Dashboard" class="w-11 h-11 md:w-12 md:h-12 rounded-full {% if request.endpoint == 'dashboard' %}text-primary bg-surface-container/60{% else %}text-on-surface-variant hover:bg-surface-container-low{% endif %} text-decoration-none transition-all duration-150 flex items-center justify-center" href="{{ url_for('dashboard') }}">
+        <span class="material-symbols-outlined text-[22px] md:text-[24px]">dashboard</span>
       </a>
       
       {% if session.role == 'ADMIN' %}
-      <a title="Jogadores" class="w-11 h-11 rounded-full {% if request.endpoint in ('listar_jogadores','novo_jogador','ver_jogador','editar_jogador') %}text-primary bg-surface-container/60{% else %}text-on-surface-variant hover:bg-surface-container-low{% endif %} text-decoration-none transition-all duration-150 flex items-center justify-center" href="{{ url_for('listar_jogadores') }}">
-        <span class="material-symbols-outlined text-[20px]">group</span>
+      <a title="Jogadores" class="w-11 h-11 md:w-12 md:h-12 rounded-full {% if request.endpoint in ('listar_jogadores','novo_jogador','ver_jogador','editar_jogador') %}text-primary bg-surface-container/60{% else %}text-on-surface-variant hover:bg-surface-container-low{% endif %} text-decoration-none transition-all duration-150 flex items-center justify-center" href="{{ url_for('listar_jogadores') }}">
+        <span class="material-symbols-outlined text-[22px] md:text-[24px]">group</span>
       </a>
-      <a title="Times" class="w-11 h-11 rounded-full {% if request.endpoint in ('listar_times','novo_time','editar_time') %}text-primary bg-surface-container/60{% else %}text-on-surface-variant hover:bg-surface-container-low{% endif %} text-decoration-none transition-all duration-150 flex items-center justify-center" href="{{ url_for('listar_times') }}">
-        <span class="material-symbols-outlined text-[20px]">shield</span>
+      <a title="Times" class="w-11 h-11 md:w-12 md:h-12 rounded-full {% if request.endpoint in ('listar_times','novo_time','editar_time') %}text-primary bg-surface-container/60{% else %}text-on-surface-variant hover:bg-surface-container-low{% endif %} text-decoration-none transition-all duration-150 flex items-center justify-center" href="{{ url_for('listar_times') }}">
+        <span class="material-symbols-outlined text-[22px] md:text-[24px]">shield</span>
       </a>
-      <a title="Árbitros" class="w-11 h-11 rounded-full {% if request.endpoint in ('listar_arbitros','novo_arbitro','editar_arbitro') %}text-primary bg-surface-container/60{% else %}text-on-surface-variant hover:bg-surface-container-low{% endif %} text-decoration-none transition-all duration-150 flex items-center justify-center" href="{{ url_for('listar_arbitros') }}">
-        <span class="material-symbols-outlined text-[20px]">gavel</span>
+      <a title="Árbitros" class="w-11 h-11 md:w-12 md:h-12 rounded-full {% if request.endpoint in ('listar_arbitros','novo_arbitro','editar_arbitro') %}text-primary bg-surface-container/60{% else %}text-on-surface-variant hover:bg-surface-container-low{% endif %} text-decoration-none transition-all duration-150 flex items-center justify-center" href="{{ url_for('listar_arbitros') }}">
+        <span class="material-symbols-outlined text-[22px] md:text-[24px]">gavel</span>
       </a>
       {% endif %}
       
       {% if session.role in ('SUPER_ADMIN', 'ADMIN') %}
-      <a title="Campeonatos" class="w-11 h-11 rounded-full {% if request.endpoint and 'campeonato' in request.endpoint %}text-primary bg-surface-container/60{% else %}text-on-surface-variant hover:bg-surface-container-low{% endif %} text-decoration-none transition-all duration-150 flex items-center justify-center" href="{{ url_for('listar_campeonatos') }}">
-        <span class="material-symbols-outlined text-[20px]">emoji_events</span>
+      <a title="Campeonatos" class="w-11 h-11 md:w-12 md:h-12 rounded-full {% if request.endpoint and 'campeonato' in request.endpoint %}text-primary bg-surface-container/60{% else %}text-on-surface-variant hover:bg-surface-container-low{% endif %} text-decoration-none transition-all duration-150 flex items-center justify-center" href="{{ url_for('listar_campeonatos') }}">
+        <span class="material-symbols-outlined text-[22px] md:text-[24px]">emoji_events</span>
       </a>
       {% endif %}
       
-      <a title="Ranking" class="w-11 h-11 rounded-full {% if request.endpoint == 'ranking' %}text-primary bg-surface-container/60{% else %}text-on-surface-variant hover:bg-surface-container-low{% endif %} text-decoration-none transition-all duration-150 flex items-center justify-center" href="{{ url_for('ranking') }}">
-        <span class="material-symbols-outlined text-[20px]">leaderboard</span>
+      <a title="Ranking" class="w-11 h-11 md:w-12 md:h-12 rounded-full {% if request.endpoint == 'ranking' %}text-primary bg-surface-container/60{% else %}text-on-surface-variant hover:bg-surface-container-low{% endif %} text-decoration-none transition-all duration-150 flex items-center justify-center" href="{{ url_for('ranking') }}">
+        <span class="material-symbols-outlined text-[22px] md:text-[24px]">leaderboard</span>
       </a>
     </div>
     
     <div class="h-6 w-px bg-border-subtle shrink-0"></div>
     
     <!-- Icons & Profile Dropdown -->
-    <div class="flex items-center gap-3 shrink-0 relative">
-
+    <div class="flex items-center gap-2 md:gap-3 shrink-0 relative">
+ 
       
       <!-- Profile Button and Dropdown -->
       <div class="relative">
-        <button id="profile-menu-btn" onclick="toggleProfileDropdown(event)" class="w-11 h-11 rounded-full bg-surface-container flex items-center justify-center border border-border-subtle cursor-pointer focus:outline-none hover:bg-surface-container-high transition-colors">
-          <span class="material-symbols-outlined text-primary text-[20px] pointer-events-none">person</span>
+        <button id="profile-menu-btn" onclick="toggleProfileDropdown(event)" class="w-11 h-11 md:w-12 md:h-12 rounded-full bg-surface-container flex items-center justify-center border border-border-subtle cursor-pointer focus:outline-none hover:bg-surface-container-high transition-colors">
+          <span class="material-symbols-outlined text-primary text-[22px] md:text-[24px] pointer-events-none">person</span>
         </button>
       </div>
     </div>
