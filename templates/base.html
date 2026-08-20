@@ -1,10 +1,9 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}Controller Arena{% endblock %}</title>
-  <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/logo.png') }}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
@@ -287,38 +286,38 @@
   <div class="bg-surface-white rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-border-subtle pl-4 pr-2 py-2 flex items-center gap-3">
     <!-- Brand -->
     <div class="flex items-center pl-2">
-      <img src="{{ url_for('static', filename='images/logo.png') }}" class="h-6 md:h-8 w-auto object-contain" alt="Controller Arena Logo">
+      <img src="{{ url_for('static', filename='images/logo.png') }}" class="h-6 w-auto object-contain" alt="Controller Arena Logo">
     </div>
     <!-- Nav Links -->
     <div class="flex items-center gap-1">
-      <a title="Dashboard" class="w-11 h-11 md:w-[52px] md:h-[52px] rounded-full {% if request.endpoint == 'dashboard' %}text-primary bg-surface-container/60{% else %}text-on-surface-variant hover:bg-surface-container-low{% endif %} text-decoration-none transition-all duration-150 flex items-center justify-center" href="{{ url_for('dashboard') }}">
-        <span class="material-symbols-outlined text-[20px] md:text-[26px]">dashboard</span>
+      <a title="Dashboard" class="w-11 h-11 rounded-full {% if request.endpoint == 'dashboard' %}text-primary bg-surface-container/60{% else %}text-on-surface-variant hover:bg-surface-container-low{% endif %} text-decoration-none transition-all duration-150 flex items-center justify-center" href="{{ url_for('dashboard') }}">
+        <span class="material-symbols-outlined text-[20px]">dashboard</span>
       </a>
       
       {% if session.role == 'ADMIN' %}
-      <a title="Jogadores" class="w-11 h-11 md:w-[52px] md:h-[52px] rounded-full {% if request.endpoint in ('listar_jogadores','novo_jogador','ver_jogador','editar_jogador') %}text-primary bg-surface-container/60{% else %}text-on-surface-variant hover:bg-surface-container-low{% endif %} text-decoration-none transition-all duration-150 flex items-center justify-center" href="{{ url_for('listar_jogadores') }}">
-        <span class="material-symbols-outlined text-[20px] md:text-[26px]">group</span>
+      <a title="Jogadores" class="w-11 h-11 rounded-full {% if request.endpoint in ('listar_jogadores','novo_jogador','ver_jogador','editar_jogador') %}text-primary bg-surface-container/60{% else %}text-on-surface-variant hover:bg-surface-container-low{% endif %} text-decoration-none transition-all duration-150 flex items-center justify-center" href="{{ url_for('listar_jogadores') }}">
+        <span class="material-symbols-outlined text-[20px]">group</span>
       </a>
-      <a title="Times" class="w-11 h-11 md:w-[52px] md:h-[52px] rounded-full {% if request.endpoint in ('listar_times','novo_time','editar_time') %}text-primary bg-surface-container/60{% else %}text-on-surface-variant hover:bg-surface-container-low{% endif %} text-decoration-none transition-all duration-150 flex items-center justify-center" href="{{ url_for('listar_times') }}">
-        <span class="material-symbols-outlined text-[20px] md:text-[26px]">shield</span>
+      <a title="Times" class="w-11 h-11 rounded-full {% if request.endpoint in ('listar_times','novo_time','editar_time') %}text-primary bg-surface-container/60{% else %}text-on-surface-variant hover:bg-surface-container-low{% endif %} text-decoration-none transition-all duration-150 flex items-center justify-center" href="{{ url_for('listar_times') }}">
+        <span class="material-symbols-outlined text-[20px]">shield</span>
       </a>
-      <a title="Ãrbitros" class="w-11 h-11 md:w-[52px] md:h-[52px] rounded-full {% if request.endpoint in ('listar_arbitros','novo_arbitro','editar_arbitro') %}text-primary bg-surface-container/60{% else %}text-on-surface-variant hover:bg-surface-container-low{% endif %} text-decoration-none transition-all duration-150 flex items-center justify-center" href="{{ url_for('listar_arbitros') }}">
-        <span class="material-symbols-outlined text-[20px] md:text-[26px]">gavel</span>
+      <a title="Árbitros" class="w-11 h-11 rounded-full {% if request.endpoint in ('listar_arbitros','novo_arbitro','editar_arbitro') %}text-primary bg-surface-container/60{% else %}text-on-surface-variant hover:bg-surface-container-low{% endif %} text-decoration-none transition-all duration-150 flex items-center justify-center" href="{{ url_for('listar_arbitros') }}">
+        <span class="material-symbols-outlined text-[20px]">gavel</span>
       </a>
       {% endif %}
       
       {% if session.role in ('SUPER_ADMIN', 'ADMIN') %}
-      <a title="Campeonatos" class="w-11 h-11 md:w-[52px] md:h-[52px] rounded-full {% if request.endpoint and 'campeonato' in request.endpoint %}text-primary bg-surface-container/60{% else %}text-on-surface-variant hover:bg-surface-container-low{% endif %} text-decoration-none transition-all duration-150 flex items-center justify-center" href="{{ url_for('listar_campeonatos') }}">
-        <span class="material-symbols-outlined text-[20px] md:text-[26px]">emoji_events</span>
+      <a title="Campeonatos" class="w-11 h-11 rounded-full {% if request.endpoint and 'campeonato' in request.endpoint %}text-primary bg-surface-container/60{% else %}text-on-surface-variant hover:bg-surface-container-low{% endif %} text-decoration-none transition-all duration-150 flex items-center justify-center" href="{{ url_for('listar_campeonatos') }}">
+        <span class="material-symbols-outlined text-[20px]">emoji_events</span>
       </a>
       {% endif %}
       
-      <a title="Ranking" class="w-11 h-11 md:w-[52px] md:h-[52px] rounded-full {% if request.endpoint == 'ranking' %}text-primary bg-surface-container/60{% else %}text-on-surface-variant hover:bg-surface-container-low{% endif %} text-decoration-none transition-all duration-150 flex items-center justify-center" href="{{ url_for('ranking') }}">
-        <span class="material-symbols-outlined text-[20px] md:text-[26px]">leaderboard</span>
+      <a title="Ranking" class="w-11 h-11 rounded-full {% if request.endpoint == 'ranking' %}text-primary bg-surface-container/60{% else %}text-on-surface-variant hover:bg-surface-container-low{% endif %} text-decoration-none transition-all duration-150 flex items-center justify-center" href="{{ url_for('ranking') }}">
+        <span class="material-symbols-outlined text-[20px]">leaderboard</span>
       </a>
     </div>
     
-    <div class="h-6 md:h-8 w-px bg-border-subtle shrink-0"></div>
+    <div class="h-6 w-px bg-border-subtle shrink-0"></div>
     
     <!-- Icons & Profile Dropdown -->
     <div class="flex items-center gap-3 shrink-0 relative">
@@ -326,8 +325,8 @@
       
       <!-- Profile Button and Dropdown -->
       <div class="relative">
-        <button id="profile-menu-btn" onclick="toggleProfileDropdown(event)" class="w-11 h-11 md:w-[52px] md:h-[52px] rounded-full bg-surface-container flex items-center justify-center border border-border-subtle cursor-pointer focus:outline-none hover:bg-surface-container-high transition-colors">
-          <span class="material-symbols-outlined text-primary text-[20px] md:text-[26px] pointer-events-none">person</span>
+        <button id="profile-menu-btn" onclick="toggleProfileDropdown(event)" class="w-11 h-11 rounded-full bg-surface-container flex items-center justify-center border border-border-subtle cursor-pointer focus:outline-none hover:bg-surface-container-high transition-colors">
+          <span class="material-symbols-outlined text-primary text-[20px] pointer-events-none">person</span>
         </button>
       </div>
     </div>
@@ -343,7 +342,7 @@
   <a class="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-default-font hover:bg-neutral-100 text-decoration-none" href="{{ url_for('listar_usuarios') }}"><span class="material-symbols-outlined text-sm">shield_lock</span> Admins</a>
   {% endif %}
   {% if session.role in ('SUPER_ADMIN', 'ADMIN') %}
-  <a class="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-default-font hover:bg-neutral-100 text-decoration-none" href="{{ url_for('relatorios') }}"><span class="material-symbols-outlined text-sm">analytics</span> RelatÃ³rios</a>
+  <a class="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-default-font hover:bg-neutral-100 text-decoration-none" href="{{ url_for('relatorios') }}"><span class="material-symbols-outlined text-sm">analytics</span> Relatórios</a>
   {% endif %}
   <a class="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-error hover:bg-red-50 text-decoration-none text-red-600 font-bold" href="{{ url_for('logout') }}"><span class="material-symbols-outlined text-sm">logout</span> Sair</a>
 </div>
