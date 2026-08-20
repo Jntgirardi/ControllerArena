@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}Controller Arena{% endblock %}</title>
-  <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/logo.png') }}">
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/logo_icon.png') }}">
   
   <!-- Material Symbols Outlined and Google Fonts (Inter & Chakra Petch) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -33,37 +33,36 @@
 <body class="bg-background text-on-background font-body-md antialiased min-h-screen flex flex-col pb-32 overflow-x-hidden">
 
   <!-- Floating Bottom Navigation Bar (Stitch Design System) -->
-  <nav class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-surface-white shadow-lg rounded-full border border-border-subtle px-4 md:px-8 py-3.5 md:py-4 flex items-center justify-between w-full max-w-3xl transition-all">
+  <nav class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-surface-white shadow-lg rounded-full border border-border-subtle px-4 md:px-8 py-2.5 md:py-3 flex items-center justify-between w-[calc(100%-2rem)] max-w-3xl transition-all">
     <div class="flex items-center justify-between w-full gap-3 md:gap-8">
       
       <!-- Brand Logo -->
       <div class="flex-shrink-0 min-w-0">
         <a href="{{ url_for('index') }}" class="flex items-center">
-          <img src="{{ url_for('static', filename='images/logo.png') }}" class="h-6 md:h-7 w-auto object-contain" alt="Controller Arena Logo">
+          <img src="{{ url_for('static', filename='images/logo_icon.png') }}" class="h-10 md:h-12 w-auto object-contain" alt="Controller Arena Logo">
         </a>
       </div>
       
       <!-- Nav Links -->
-      <div class="hidden md:flex items-center justify-center flex-grow gap-6">
-        <a href="{{ url_for('index') }}#campeonatos" class="font-label-sm text-label-sm text-on-surface-variant hover:text-primary transition-colors text-decoration-none whitespace-nowrap flex-shrink-0">Campeonatos</a>
-        <a href="{{ url_for('index') }}#ao-vivo" class="font-label-sm text-label-sm text-on-surface-variant hover:text-primary transition-colors text-decoration-none whitespace-nowrap flex-shrink-0">Ao Vivo</a>
-        <a href="{{ url_for('ranking') }}" class="font-label-sm text-label-sm text-on-surface-variant hover:text-primary transition-colors text-decoration-none whitespace-nowrap flex-shrink-0">Rankings</a>
+      <div class="hidden md:flex items-center justify-center flex-grow gap-8">
+        <a href="{{ url_for('index') }}#campeonatos" class="font-semibold text-sm md:text-base text-on-surface-variant hover:text-primary transition-colors text-decoration-none whitespace-nowrap flex-shrink-0">Campeonatos</a>
+        <a href="{{ url_for('index') }}#ao-vivo" class="font-semibold text-sm md:text-base text-on-surface-variant hover:text-primary transition-colors text-decoration-none whitespace-nowrap flex-shrink-0">Ao Vivo</a>
+        <a href="{{ url_for('ranking') }}" class="font-semibold text-sm md:text-base text-on-surface-variant hover:text-primary transition-colors text-decoration-none whitespace-nowrap flex-shrink-0">Rankings</a>
       </div>
       
       <!-- User Profile / CTA -->
       <div class="flex items-center gap-3 md:gap-4 flex-shrink-0">
         {% if session.user_id %}
 
-          <a href="{{ url_for('dashboard') }}" class="w-11 h-11 md:w-10 md:h-10 p-2 rounded-full hover:bg-surface-container-low transition-colors text-on-surface-variant flex items-center justify-center">
-            <span class="material-symbols-outlined">settings</span>
+          <a href="{{ url_for('dashboard') }}" class="w-11 h-11 md:w-12 md:h-12 p-2 rounded-full hover:bg-surface-container-low transition-colors text-on-surface-variant flex items-center justify-center">
+            <span class="material-symbols-outlined text-[24px]">settings</span>
           </a>
-          <div class="w-10 h-10 md:w-8 md:h-8 rounded-full bg-surface-dim overflow-hidden border border-border-subtle">
+          <div class="w-10 h-10 md:w-12 md:h-12 rounded-full bg-surface-dim overflow-hidden border border-border-subtle">
             <img class="w-full h-full object-cover" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=64&h=64&fit=crop">
           </div>
         {% else %}
-          <a href="{{ url_for('login') }}" class="bg-primary text-on-primary px-5 md:px-6 py-2.5 md:py-2.5 rounded-full font-label-sm text-label-sm hover:opacity-90 transition-opacity text-decoration-none flex items-center gap-2 min-h-[44px]">
+          <a href="{{ url_for('login') }}" class="bg-primary text-on-primary px-6 md:px-8 py-3 md:py-3.5 rounded-full font-semibold text-sm md:text-base hover:opacity-90 transition-opacity text-decoration-none flex items-center justify-center gap-2 min-h-[44px] md:min-h-[48px]">
             Entrar
-            <span class="hidden">Area do Competidor</span>
           </a>
         {% endif %}
       </div>
