@@ -24,13 +24,41 @@
 {% endfor %}
 
 <main class="flex-grow w-full max-w-[1280px] mx-auto px-container-margin py-section-gap flex flex-col gap-section-gap">
-  <!-- Hero Section -->
-  <section class="flex flex-col gap-6 items-start max-w-3xl py-12">
-    <h1 class="font-headline-lg text-headline-lg text-on-surface">The premier management platform for competitive esports.</h1>
-    <p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl">Streamline tournament brackets, monitor live matches with surgical precision, and manage competitive circuits with enterprise-grade reliability.</p>
-    <div class="flex flex-wrap gap-4 mt-4">
-      <a href="#campeonatos" class="bg-primary text-on-primary px-6 py-3 rounded font-label-sm text-label-sm hover:opacity-90 transition-opacity text-decoration-none min-h-[44px] inline-flex items-center">Ver Campeonatos</a>
-      <a href="#ao-vivo" class="bg-surface-white text-on-surface border border-border-subtle px-6 py-3 rounded font-label-sm text-label-sm hover:bg-surface-container-low transition-colors text-decoration-none min-h-[44px] inline-flex items-center">Partidas Ao Vivo</a>
+  <!-- Banner Carousel Evento FINC -->
+  <section class="w-full">
+    <div class="relative overflow-hidden rounded-xl border border-border-subtle hover:border-primary hover:shadow-md transition-all" id="banner-carousel">
+      <!-- Item 1 (Championship) -->
+      <div class="duration-700 ease-in-out transition-opacity opacity-100 z-10 relative" id="carousel-item-0">
+        <a href="{{ url_for('login') }}" class="block">
+          <img src="{{ url_for('static', filename='images/banner_finc_championship.png') }}" alt="FINC E-Sports Challengers - Inscrições de Times" class="w-full h-auto object-cover">
+        </a>
+      </div>
+      <!-- Item 2 (General Event) -->
+      <div class="duration-700 ease-in-out transition-opacity opacity-0 z-0 absolute inset-0" id="carousel-item-1">
+        <a href="https://festivalfinc.com.br/" target="_blank" rel="noopener noreferrer" class="block w-full h-full">
+          <img src="{{ url_for('static', filename='images/banner_finc_general.png') }}" alt="Festival FINC 26 - Inscrição Evento Geral" class="w-full h-full object-cover">
+        </a>
+      </div>
+      
+      <!-- Slider indicators -->
+      <div class="absolute z-30 flex -translate-x-1/2 bottom-4 left-1/2 space-x-2">
+        <button type="button" class="w-2.5 h-2.5 rounded-full bg-white shadow-sm border border-neutral-300" aria-current="true" aria-label="Slide 1" id="carousel-indicator-0" onclick="showSlide(0)"></button>
+        <button type="button" class="w-2.5 h-2.5 rounded-full bg-white/50 shadow-sm border border-neutral-300" aria-current="false" aria-label="Slide 2" id="carousel-indicator-1" onclick="showSlide(1)"></button>
+      </div>
+      
+      <!-- Slider controls -->
+      <button type="button" class="absolute top-0 start-0 z-30 flex items-center justify-center h-full px-3 cursor-pointer group focus:outline-none" onclick="prevSlide()">
+        <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-white/30 group-hover:bg-white/50 group-focus:ring-2 group-focus:ring-white transition-colors">
+          <span class="material-symbols-outlined text-on-surface text-sm md:text-base">chevron_left</span>
+          <span class="sr-only">Anterior</span>
+        </span>
+      </button>
+      <button type="button" class="absolute top-0 end-0 z-30 flex items-center justify-center h-full px-3 cursor-pointer group focus:outline-none" onclick="nextSlide()">
+        <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-white/30 group-hover:bg-white/50 group-focus:ring-2 group-focus:ring-white transition-colors">
+          <span class="material-symbols-outlined text-on-surface text-sm md:text-base">chevron_right</span>
+          <span class="sr-only">Próximo</span>
+        </span>
+      </button>
     </div>
   </section>
 
@@ -205,4 +233,60 @@
     {% endif %}
   </section>
 </main>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  let currentSlide = 0;
+  const totalSlides = 2;
+  let autoplayTimer;
+
+  function showSlide(index) {
+    // Reset timer
+    resetAutoplay();
+    
+    currentSlide = (index + totalSlides) % totalSlides;
+    
+    for (let i = 0; i < totalSlides; i++) {
+      const slide = document.getElementById(`carousel-item-${i}`);
+      const indicator = document.getElementById(`carousel-indicator-${i}`);
+      
+      if (i === currentSlide) {
+        slide.classList.remove('opacity-0', 'z-0', 'absolute', 'inset-0');
+        slide.classList.add('opacity-100', 'z-10', 'relative');
+        indicator.classList.remove('bg-white/50');
+        indicator.classList.add('bg-white');
+        indicator.setAttribute('aria-current', 'true');
+      } else {
+        slide.classList.remove('opacity-100', 'z-10', 'relative');
+        slide.classList.add('opacity-0', 'z-0', 'absolute', 'inset-0');
+        indicator.classList.remove('bg-white');
+        indicator.classList.add('bg-white/50');
+        indicator.setAttribute('aria-current', 'false');
+      }
+    }
+  }
+
+  function nextSlide() {
+    showSlide(currentSlide + 1);
+  }
+
+  function prevSlide() {
+    showSlide(currentSlide - 1);
+  }
+
+  function startAutoplay() {
+    autoplayTimer = setInterval(nextSlide, 5000);
+  }
+
+  function resetAutoplay() {
+    clearInterval(autoplayTimer);
+    startAutoplay();
+  }
+
+  // Start autoplay on load
+  document.addEventListener('DOMContentLoaded', () => {
+    startAutoplay();
+  });
+</script>
 {% endblock %}
