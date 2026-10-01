@@ -116,8 +116,7 @@
                 >
                 <span>{{ camp.nome }}</span>
               </label>
-              {% set game_bg = 'bg-warning/15 text-warning border-warning/30' if camp.jogo == 'CS2' else 'bg-error/10 text-error border-error/20' %}
-              <span class="inline-flex items-center px-2 py-0.5 rounded text-[9px] font-bold border {{ game_bg }} font-mono tracking-wide uppercase">{{ camp.jogo }}</span>
+              <span class="inline-flex items-center px-2 py-0.5 rounded text-[9px] font-bold border {{ get_game_badge_class(camp.jogo) }} font-mono tracking-wide uppercase">{{ camp.jogo }}</span>
             </div>
             {% else %}
             <div class="text-text-muted italic text-[11px] py-1">Nenhum campeonato cadastrado ainda.</div>

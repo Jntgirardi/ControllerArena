@@ -32,8 +32,10 @@
       <div class="flex w-48 flex-none items-start mobile:w-full mobile:flex-none">
         <select onchange="filterByGame(this.value)" class="w-full rounded-md border border-border-subtle bg-white px-3 py-2 text-sm text-on-surface focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition">
           <option value="Todos">Todos os jogos</option>
+          <option value="Valorant" {% if filtro_jogo == 'Valorant' %}selected{% endif %}>VALORANT</option>
+          <option value="League of Legends" {% if filtro_jogo == 'League of Legends' %}selected{% endif %}>League of Legends</option>
+          <option value="Clash Royale" {% if filtro_jogo == 'Clash Royale' %}selected{% endif %}>Clash Royale</option>
           <option value="CS2" {% if filtro_jogo == 'CS2' %}selected{% endif %}>CS2</option>
-          <option value="Valorant" {% if filtro_jogo == 'Valorant' %}selected{% endif %}>Valorant</option>
         </select>
       </div>
     </div>
@@ -173,7 +175,7 @@
                   <td class="py-3.5 px-4 font-bold text-on-surface">{{ p.nick }}</td>
                   <td class="py-3.5 px-4 text-neutral-600">{{ p.time_nome or 'Sem Equipe' }}</td>
                   <td class="py-3.5 px-4">
-                    <span class="badge {% if p.jogo_principal == 'CS2' %}bg-warning text-white{% else %}bg-primary text-white{% endif %} text-[9px] font-bold uppercase">{{ p.jogo_principal }}</span>
+                    <span class="badge {{ get_game_badge_bg(p.jogo_principal) }} text-white text-[9px] font-bold uppercase px-2 py-0.5 rounded">{{ p.jogo_principal }}</span>
                   </td>
                   <td class="py-3.5 px-4 text-center font-bold text-success">{{ p.estatisticas.vitorias }}</td>
                   <td class="py-3.5 px-4 text-center text-red-600">{{ p.estatisticas.derrotas }}</td>
@@ -301,7 +303,7 @@
                   <td class="py-3.5 px-4 font-bold text-on-surface">{{ t.nome }}</td>
                   <td class="py-3.5 px-4 text-neutral-600 font-mono">#{{ t.tag }}</td>
                   <td class="py-3.5 px-4">
-                    <span class="badge {% if t.jogo == 'CS2' %}bg-warning text-white{% else %}bg-primary text-white{% endif %} text-[9px] font-bold uppercase">{{ t.jogo }}</span>
+                    <span class="badge {{ get_game_badge_bg(t.jogo) }} text-white text-[9px] font-bold uppercase px-2 py-0.5 rounded">{{ t.jogo }}</span>
                   </td>
                   <td class="py-3.5 px-4 text-center font-bold text-success">{{ t.vitorias }}</td>
                   <td class="py-3.5 px-4 text-center text-red-600">{{ t.derrotas }}</td>

@@ -62,8 +62,10 @@
             class="w-full border border-border-subtle rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary bg-surface-white text-on-surface-variant cursor-pointer"
           >
             <option value="">Selecione...</option>
+            <option value="Valorant" {% if dados.get('jogo') == 'Valorant' %}selected{% endif %}>VALORANT (5x5)</option>
+            <option value="League of Legends" {% if dados.get('jogo') == 'League of Legends' %}selected{% endif %}>League of Legends (5x5)</option>
+            <option value="Clash Royale" {% if dados.get('jogo') == 'Clash Royale' %}selected{% endif %}>Clash Royale (1x1 Competidor)</option>
             <option value="CS2" {% if dados.get('jogo') == 'CS2' %}selected{% endif %}>CS2</option>
-            <option value="Valorant" {% if dados.get('jogo') == 'Valorant' %}selected{% endif %}>Valorant</option>
           </select>
         </div>
 
@@ -111,8 +113,7 @@
                   >
                   <span>{{ j.nick }}</span>
                 </label>
-                {% set game_bg = 'bg-warning/15 text-warning border-warning/30' if j.jogo_principal == 'CS2' else 'bg-error/10 text-error border-error/20' %}
-                <span class="inline-flex items-center px-2 py-0.5 rounded text-[9px] font-bold border {{ game_bg }} font-mono tracking-wide uppercase">
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-[9px] font-bold border {{ get_game_badge_class(j.jogo_principal) }} font-mono tracking-wide uppercase">
                   {{ j.jogo_principal }}
                 </span>
               </div>

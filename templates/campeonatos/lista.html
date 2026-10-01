@@ -32,8 +32,10 @@
     <div class="w-full sm:w-48">
       <select name="jogo" class="w-full border border-border-subtle rounded-lg focus:ring-1 focus:ring-primary focus:border-primary text-xs py-2.5 px-4 bg-surface-white text-on-surface-variant">
         <option value="">Todos os jogos</option>
+        <option value="Valorant" {% if filtro_jogo == 'Valorant' %}selected{% endif %}>VALORANT</option>
+        <option value="League of Legends" {% if filtro_jogo == 'League of Legends' %}selected{% endif %}>League of Legends</option>
+        <option value="Clash Royale" {% if filtro_jogo == 'Clash Royale' %}selected{% endif %}>Clash Royale</option>
         <option value="CS2" {% if filtro_jogo == 'CS2' %}selected{% endif %}>CS2</option>
-        <option value="Valorant" {% if filtro_jogo == 'Valorant' %}selected{% endif %}>Valorant</option>
       </select>
     </div>
     <button type="submit" class="w-full sm:w-auto bg-surface-variant text-on-surface hover:bg-surface-dim px-6 py-2.5 rounded-lg font-bold text-xs transition-colors border border-outline-variant/30 flex items-center justify-center gap-1.5 min-h-[44px]">
@@ -62,11 +64,7 @@
         </div>
         <!-- Cover Image -->
         <div class="relative w-full aspect-video bg-surface-variant overflow-hidden border-b border-border-subtle flex-shrink-0">
-          {% if c.jogo == 'CS2' %}
-          <img alt="CS2 Arena" class="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500" src="https://images.unsplash.com/photo-1542751371-adc38448a05e?w=600&auto=format&fit=crop">
-          {% else %}
-          <img alt="Valorant Arena" class="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500" src="https://images.unsplash.com/photo-1553481187-be93c21490a9?w=600&auto=format&fit=crop">
-          {% endif %}
+          <img alt="{{ c.jogo }} Arena" class="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500" src="{{ get_game_image_url(c.jogo) }}">
           <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
           <div class="absolute bottom-4 left-4">
             <span class="bg-white/20 backdrop-blur-md border border-white/30 text-white font-bold text-[10px] px-2 py-0.5 rounded uppercase tracking-wider font-mono">{{ c.jogo }}</span>

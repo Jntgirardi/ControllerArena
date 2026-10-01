@@ -3,7 +3,7 @@
 {% block title %}Controle de Rounds - Controller Arena{% endblock %}
 
 {% block content %}
-<main class="flex-grow w-full max-w-[1280px] mx-auto px-4 md:px-container-margin py-6 flex flex-col gap-6">
+<div class="w-full max-w-[1280px] mx-auto px-4 md:px-container-margin py-6 flex flex-col gap-6">
   
   <!-- Referee Topbar Band -->
   <div class="flex items-center justify-between border-b border-border-subtle pb-4 flex-wrap gap-3">
@@ -16,15 +16,30 @@
       </span>
     </div>
     <div class="flex items-center gap-3">
+      <a href="{{ url_for('sumula_oficial', partida_id=partida._id) }}" target="_blank" class="px-3 py-2 bg-surface-white border border-border-subtle hover:bg-surface-container-low text-on-surface text-xs font-bold rounded-lg shadow-sm transition-all min-h-[44px] flex items-center gap-1.5 text-decoration-none">
+        <span class="material-symbols-outlined text-sm text-primary">description</span> Súmula Oficial (Anexo IV)
+      </a>
       <span class="bg-red-50 text-red-700 border border-red-200 px-3 py-1.5 rounded-full font-label-sm text-[10px] font-extrabold uppercase tracking-wider flex items-center gap-1.5 shadow-sm">
         <span class="h-1.5 w-1.5 rounded-full bg-red-600 animate-pulse"></span> AO VIVO
       </span>
+      <button
+        class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-lg shadow transition-all min-h-[44px] flex items-center gap-1.5"
+        data-bs-toggle="modal"
+        data-bs-target="#confirmWOModal"
+      >
+        <span class="material-symbols-outlined text-sm">gavel</span> Decretar W.O.
+      </button>
       <button
         class="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg shadow transition-all min-h-[44px]"
         data-bs-toggle="modal"
         data-bs-target="#confirmFinalizarModal"
       >
-        Finalizar Partida
+        {% if partida.formato_serie in ('MD3', 'MD5') %}
+          {% set current_g = (partida.jogos_serie or [])|length + 1 %}
+          Confirmar Partida {{ current_g }}
+        {% else %}
+          Finalizar Partida
+        {% endif %}
       </button>
     </div>
   </div>
@@ -38,6 +53,24 @@
       <!-- Scoreboard Panel -->
       <div class="bg-surface-white border border-border-subtle rounded-xl p-card-padding flex flex-col items-center justify-center py-10 relative overflow-hidden shadow-sm">
         <div class="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent opacity-50"></div>
+        <div class="flex items-center gap-2 mb-2 relative z-10 flex-wrap justify-center">
+          <span class="px-2.5 py-0.5 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 text-[10px] font-bold uppercase font-mono">
+            Série: {{ partida.formato_serie or 'MD1' }}
+          </span>
+          {% if partida.formato_serie in ('MD3', 'MD5') %}
+          <span class="px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] font-bold uppercase font-mono">
+            Placar da Série: {{ partida.placar_serie_a or 0 }} x {{ partida.placar_serie_b or 0 }}
+          </span>
+          <span class="px-2.5 py-0.5 rounded-full bg-purple-50 border border-purple-200 text-purple-700 text-[10px] font-bold uppercase font-mono">
+            Partida {{ (partida.jogos_serie or [])|length + 1 }} de até {{ 3 if partida.formato_serie == 'MD3' else 5 }}{% if partida.formato_serie == 'MD3' and (partida.jogos_serie or [])|length == 2 %} (Desempate){% endif %}
+          </span>
+          {% endif %}
+          {% if partida.fearless_draft %}
+          <span class="px-2.5 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-[10px] font-bold flex items-center gap-1">
+            <span class="material-symbols-outlined text-[12px]">lock</span> Fearless Draft
+          </span>
+          {% endif %}
+        </div>
         <span class="text-[10px] font-bold text-text-muted uppercase tracking-widest mb-4 relative z-10 font-mono">
           MAPA: {{ partida.mapa or 'A definir' }}
         </span>
@@ -64,6 +97,55 @@
           </div>
         </div>
       </div>
+
+      <!-- Completed Series Games Banner -->
+      {% if partida.jogos_serie %}
+      <div class="bg-surface-white border border-border-subtle rounded-xl p-4 flex flex-col gap-2.5 shadow-sm">
+        <div class="flex items-center justify-between">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-text-muted flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-sm text-primary">history</span> Partidas Já Concluídas Desta Série ({{ partida.formato_serie }}):
+          </span>
+          <span class="text-[10px] font-bold text-primary font-mono">{{ partida.placar_serie_a or 0 }} x {{ partida.placar_serie_b or 0 }}</span>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          {% for jg in partida.jogos_serie %}
+          <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-container-low border border-border-subtle text-xs">
+            <span class="font-mono font-bold text-primary">Partida {{ jg.jogo_numero }}:</span>
+            <span class="font-bold text-on-surface">{% if jg.vencedor_id == partida.time_a.time_id %}{{ partida.time_a.nome }}{% else %}{{ partida.time_b.nome }}{% endif %}</span>
+            <span class="text-text-muted font-mono">({{ jg.score_a }} x {{ jg.score_b }})</span>
+            {% if jg.mapa %}<span class="text-[10px] text-text-muted font-mono">[{{ jg.mapa }}]</span>{% endif %}
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Fearless Draft Panel (if active) -->
+      {% if partida.fearless_draft %}
+      <div class="bg-amber-50/70 border border-amber-200 rounded-xl p-4 flex flex-col gap-2 shadow-sm">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-1.5 text-xs font-bold text-amber-900">
+            <span class="material-symbols-outlined text-sm text-amber-600">lock</span>
+            Fearless Draft: Campeões Bloqueados para Esta Série
+          </div>
+          <span class="text-[10px] font-mono font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full">
+            {{ (partida.campeoes_banidos_fearless or [])|length }} Bloqueado(s)
+          </span>
+        </div>
+        {% if partida.campeoes_banidos_fearless %}
+        <div class="flex flex-wrap gap-1.5 pt-1">
+          {% for champ in partida.campeoes_banidos_fearless %}
+          <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-surface-white border border-amber-200 text-[11px] font-bold text-neutral-800">
+            <span class="material-symbols-outlined text-[12px] text-red-500">block</span>
+            {{ champ }}
+          </span>
+          {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-[11px] text-amber-800/80 italic">Nenhum campeão bloqueado no momento. Os bloqueios iniciarão após o registro dos campeões do primeiro jogo.</p>
+        {% endif %}
+      </div>
+      {% endif %}
 
       <!-- Record Round Panel -->
       <div class="bg-surface-white border border-border-subtle rounded-xl p-card-padding flex flex-col gap-5 shadow-sm">
@@ -93,21 +175,41 @@
             </div>
           </div>
           
-          <!-- Win Condition -->
-          <div class="flex flex-col gap-2">
-            <label class="text-[10px] font-bold text-text-muted uppercase tracking-wider">Método de Vitória</label>
-            <select
-              id="metodoSelect"
-              class="h-12 w-full rounded-lg border border-border-subtle bg-surface-white px-3 text-xs font-bold text-on-surface focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none shadow-sm transition-all cursor-pointer"
-              onchange="selectMethod()"
-            >
-              <option value="" selected disabled>Selecionar método...</option>
-              <option value="elimination">Eliminação</option>
-              <option value="objective_bomb">Bomba Detonada</option>
-              <option value="objective_defuse">Bomba Desarmada</option>
-              <option value="objective_time">Tempo Esgotado</option>
-            </select>
-          </div>
+            <!-- Win Condition -->
+            <div class="flex flex-col gap-2">
+              <label class="text-[10px] font-bold text-text-muted uppercase tracking-wider">Método de Vitória</label>
+              <select
+                id="metodoSelect"
+                class="h-12 w-full rounded-lg border border-border-subtle bg-surface-white px-3 text-xs font-bold text-on-surface focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none shadow-sm transition-all cursor-pointer"
+                onchange="selectMethod()"
+              >
+                <option value="" selected disabled>Selecionar método...</option>
+                {% if 'league' in (jogo|lower) or 'lol' in (jogo|lower) %}
+                <option value="nexus_destroyed">Destruição do Nexus</option>
+                <option value="surrender">Rendição Adversária (Surrender)</option>
+                <option value="elimination">Eliminação de Equipe (Ace)</option>
+                <option value="wo">W.O. / Decisão de Arbitragem</option>
+                {% elif 'clash' in (jogo|lower) %}
+                <option value="king_tower">Destruição da Torre do Rei</option>
+                <option value="crowns_lead">Mais Coroas (Tempo Regulamentar)</option>
+                <option value="sudden_death">Morte Súbita</option>
+                <option value="lowest_hp">Desempate Automático (Menor Vida)</option>
+                <option value="wo">W.O. / Desistência</option>
+                {% elif 'valorant' in (jogo|lower) %}
+                <option value="elimination">Eliminação</option>
+                <option value="detonation">Detonação da Spike</option>
+                <option value="defuse">Desarme da Spike</option>
+                <option value="time">Tempo Esgotado</option>
+                <option value="wo">W.O.</option>
+                {% else %}
+                <option value="elimination">Eliminação</option>
+                <option value="objective_bomb">Bomba Detonada</option>
+                <option value="objective_defuse">Bomba Desarmada</option>
+                <option value="objective_time">Tempo Esgotado</option>
+                <option value="wo">W.O.</option>
+                {% endif %}
+              </select>
+            </div>
         </div>
 
         <button
@@ -143,22 +245,42 @@
     </aside>
 
   </div>
-</main>
+</div>
 
 <!-- Finalize Match Modal (Styled in Stitch look) -->
 <div class="modal fade" id="confirmFinalizarModal" tabindex="-1" aria-labelledby="confirmFinalizarModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered modal-lg">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
     <div class="modal-content bg-surface-white border border-border-subtle rounded-lg shadow-lg">
       <div class="modal-header border-b border-border-subtle px-4 py-3 bg-surface-container-low rounded-t-lg">
         <h5 class="modal-title font-heading font-bold text-on-surface flex items-center gap-2 text-sm" id="confirmFinalizarModalLabel">
-          <span class="material-symbols-outlined text-error">flag</span> Finalizar Partida e Enviar KDAs
+          <span class="material-symbols-outlined text-error">flag</span>
+          {% if partida.formato_serie in ('MD3', 'MD5') %}
+            Registrar Partida {{ (partida.jogos_serie or [])|length + 1 }} da Série {{ partida.formato_serie }}
+          {% else %}
+            Finalizar Partida e Enviar KDAs
+          {% endif %}
         </h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      <div class="modal-body py-4 px-5">
+      <div class="modal-body py-4 px-5 max-h-[60vh] overflow-y-auto">
+        {% if partida.formato_serie in ('MD3', 'MD5') %}
+        <div class="mb-4 bg-indigo-50 border border-indigo-200 rounded-lg p-3 text-xs text-indigo-900">
+          <div class="font-bold flex items-center gap-1.5 mb-1">
+            <span class="material-symbols-outlined text-sm text-indigo-600">info</span> Série {{ partida.formato_serie }}: Placar Atual {{ partida.time_a.nome }} {{ partida.placar_serie_a or 0 }} x {{ partida.placar_serie_b or 0 }} {{ partida.time_b.nome }}
+          </div>
+          <p class="text-[11px] text-indigo-800">
+            Você está registrando a <strong>Partida {{ (partida.jogos_serie or [])|length + 1 }}</strong> desta série. Ao confirmar, o resultado deste mapa será contabilizado. Se alguma equipe atingir {{ 2 if partida.formato_serie == 'MD3' else 3 }} vitórias, a série será finalizada automaticamente. Caso contrário, a próxima partida da série será iniciada para desempate.
+          </p>
+        </div>
+        <div class="mb-4">
+          <label class="block text-text-muted text-[10px] uppercase font-bold mb-1">Mapa / Arena Desta Partida</label>
+          <input type="text" id="modal-mapa-input" value="{{ partida.mapa or '' }}" placeholder="Ex: Ascent, Bind, Haven, Split" class="w-full rounded border border-border-subtle bg-white px-3 py-2 text-xs text-on-surface font-semibold focus:ring-1 focus:ring-primary focus:border-primary outline-none">
+        </div>
+        {% else %}
         <p class="text-xs text-text-muted mb-4 text-center leading-relaxed font-semibold">
           Preencha o KDA final de cada jogador para registrar na súmula oficial e recalcular os rankings.
         </p>
+        {% endif %}
         <div class="flex justify-center items-center gap-4 bg-surface-container-low border border-border-subtle py-2.5 px-4 rounded-md mb-5 max-w-sm mx-auto text-xs font-bold">
           <span class="truncate max-w-[120px]">{{ partida.time_a.nome }}</span>
           <span id="modal-score-a" class="font-mono text-emerald-600 text-sm">{{ partida.time_a.placar }}</span>
@@ -234,8 +356,51 @@
       </div>
       <div class="modal-footer border-t border-border-subtle px-4 py-3">
         <button type="button" class="btn btn-secondary py-1.5 px-3 text-xs" data-bs-dismiss="modal">Cancelar</button>
-        <button type="button" class="btn btn-danger py-1.5 px-4 text-xs font-bold bg-red-600 border-0 hover:bg-red-700" onclick="finalizeMatch()">Confirmar e Finalizar</button>
+        <button type="button" class="btn btn-danger py-1.5 px-4 text-xs font-bold bg-red-600 border-0 hover:bg-red-700" onclick="finalizeMatch()">
+          {% if partida.formato_serie in ('MD3', 'MD5') %}
+            Confirmar Partida {{ (partida.jogos_serie or [])|length + 1 }}
+          {% else %}
+            Confirmar e Finalizar
+          {% endif %}
+        </button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- W.O. Confirmation Modal (FINC 2026 Item 10.2) -->
+<div class="modal fade" id="confirmWOModal" tabindex="-1" aria-labelledby="confirmWOModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content bg-surface-white border border-border-subtle rounded-lg shadow-lg">
+      <div class="modal-header border-b border-border-subtle px-4 py-3 bg-amber-50 rounded-t-lg">
+        <h5 class="modal-title font-heading font-bold text-amber-900 flex items-center gap-2 text-sm" id="confirmWOModalLabel">
+          <span class="material-symbols-outlined text-amber-600">gavel</span> Decretar Vitória por W.O. (Item 10.2)
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form method="post" action="{{ url_for('aplicar_wo_partida', partida_id=partida._id) }}">
+        <div class="modal-body py-4 px-5 flex flex-col gap-3 max-h-[60vh] overflow-y-auto">
+          <div class="p-3 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-900">
+            <strong>Regra Oficial FINC 2026 (Item 10.2):</strong> A tolerância máxima de atraso é de <strong>10 minutos</strong>. O placar mínimo da série (<strong>{{ partida.formato_serie or 'MD1' }}</strong>) será atribuído automaticamente à equipe vencedora.
+          </div>
+          <div class="flex flex-col gap-1.5">
+            <label class="text-[10px] font-bold text-text-muted uppercase tracking-wider">Equipe Presente (Vencedora)</label>
+            <select name="vencedor_id" class="w-full rounded border border-border-subtle p-2 text-xs bg-white font-bold text-on-surface">
+              <option value="{{ partida.time_a.time_id }}">{{ partida.time_a.nome }} ({{ partida.time_b.nome }} ausente)</option>
+              <option value="{{ partida.time_b.time_id }}">{{ partida.time_b.nome }} ({{ partida.time_a.nome }} ausente)</option>
+              <option value="">Duplo W.O. (ambas as equipes ausentes)</option>
+            </select>
+          </div>
+          <div class="flex flex-col gap-1.5">
+            <label class="text-[10px] font-bold text-text-muted uppercase tracking-wider">Motivo / Relato da Arbitragem</label>
+            <input type="text" name="motivo" placeholder="Ex: Não comparecimento no prazo de 10 minutos após o horário oficial" class="w-full rounded border border-border-subtle p-2 text-xs">
+          </div>
+        </div>
+        <div class="modal-footer border-t border-border-subtle px-4 py-3">
+          <button type="button" class="btn btn-secondary py-1.5 px-3 text-xs" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-warning py-1.5 px-4 text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white border-0">Confirmar W.O.</button>
+        </div>
+      </form>
     </div>
   </div>
 </div>
@@ -257,7 +422,7 @@ matchRounds.push({
   round: {{ r.round }},
   vencedor_id: "{{ r.vencedor_id }}",
   metodo: "{{ r.metodo }}",
-  timestamp: "{{ r.timestamp.isoformat() if hasattr(r.timestamp, 'isoformat') else r.timestamp }}"
+  timestamp: "{{ r.timestamp.isoformat() if r.timestamp.isoformat is defined else r.timestamp }}"
 });
 {% endfor %}
 
@@ -413,11 +578,14 @@ async function finalizeMatch() {
     const modalEl = document.getElementById('confirmFinalizarModal');
     const modal = bootstrap.Modal.getInstance(modalEl);
     if (modal) modal.hide();
+
+    const mapaInput = document.getElementById("modal-mapa-input");
+    const mapaVal = mapaInput ? mapaInput.value.trim() : "";
     
     const response = await fetch(`/partidas/${matchId}/rounds/finalizar`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ kda_a: kda_a, kda_b: kda_b })
+      body: JSON.stringify({ kda_a: kda_a, kda_b: kda_b, mapa: mapaVal })
     });
     const data = await response.json();
     if (!response.ok || !data.success) {
@@ -462,14 +630,23 @@ function renderRounds() {
     const isTeamA = r.vencedor_id === teamAId;
     const winnerName = isTeamA ? teamAName : teamBName;
     
-    let methodLabel = 'Eliminação';
-    if (r.metodo === 'objective_bomb' || r.metodo === 'detonation') {
-      methodLabel = 'Bomba Detonada';
-    } else if (r.metodo === 'objective_defuse' || r.metodo === 'defuse') {
-      methodLabel = 'Bomba Desarmada';
-    } else if (r.metodo === 'objective_time' || r.metodo === 'time') {
-      methodLabel = 'Tempo Esgotado';
-    }
+    const methodNames = {
+      'elimination': 'Eliminação',
+      'objective_bomb': 'Bomba Detonada',
+      'detonation': 'Detonação da Spike',
+      'objective_defuse': 'Bomba Desarmada',
+      'defuse': 'Desarme da Spike',
+      'objective_time': 'Tempo Esgotado',
+      'time': 'Tempo Esgotado',
+      'nexus_destroyed': 'Destruição do Nexus',
+      'surrender': 'Rendição Adversária',
+      'king_tower': 'Torre do Rei Destruída',
+      'crowns_lead': 'Mais Coroas',
+      'sudden_death': 'Morte Súbita',
+      'lowest_hp': 'Menor Vida de Torre',
+      'wo': 'W.O.'
+    };
+    const methodLabel = methodNames[r.metodo] || r.metodo || 'Eliminação';
     
     const item = document.createElement("div");
     item.className = "flex w-full items-center justify-between border-b border-border-subtle pb-3 last:border-0 last:pb-0 group";

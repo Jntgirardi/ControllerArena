@@ -309,7 +309,7 @@
         <li class="flex justify-between items-start border border-border-subtle bg-surface-container-low rounded-lg p-3 text-xs w-full" id="notif_{{ n._id }}">
           <div class="flex flex-col gap-1 grow pr-2">
             <div class="flex items-center gap-2">
-              <span class="badge {% if n.jogo == 'CS2' %}bg-brand-highlight text-white{% else %}bg-brand-primary text-white{% endif %} text-[8px] font-bold uppercase px-1.5 py-0.5 rounded">{{ n.jogo or 'Jogo' }}</span>
+              <span class="badge {{ get_game_badge_bg(n.jogo) }} text-white text-[8px] font-bold uppercase px-1.5 py-0.5 rounded">{{ n.jogo or 'Jogo' }}</span>
               <span class="text-[9px] text-text-muted font-mono">{{ n.criado_em.strftime('%d/%m %H:%M') if n.get('criado_em') else 'Agora' }}</span>
             </div>
             <span class="font-semibold text-on-surface mt-1 leading-snug">{{ n.mensagem }}</span>
@@ -380,11 +380,20 @@ function renderNotificationList(listId, notifications, emptyMessage, linkLabel) 
     return;
   }
 
+  function getNotifBadgeColor(jogo) {
+    const j = (jogo || '').toLowerCase();
+    if (j.includes('valorant')) return 'bg-rose-600';
+    if (j.includes('league') || j.includes('lol')) return 'bg-sky-600';
+    if (j.includes('clash')) return 'bg-purple-600';
+    if (j.includes('cs2')) return 'bg-amber-600';
+    return 'bg-brand-primary';
+  }
+
   list.innerHTML = notifications.map(n => `
     <li class="flex justify-between items-start border border-border-subtle bg-surface-container-low rounded-lg p-3 text-xs w-full" id="notif_${escapeHtml(n.id)}">
       <div class="flex flex-col gap-1 grow pr-2">
         <div class="flex items-center gap-2">
-          ${n.jogo ? `<span class="badge ${n.jogo === 'CS2' ? 'bg-brand-highlight text-white' : 'bg-brand-primary text-white'} text-[8px] font-bold uppercase px-1.5 py-0.5 rounded">${escapeHtml(n.jogo)}</span>` : ''}
+          ${n.jogo ? `<span class="badge ${getNotifBadgeColor(n.jogo)} text-white text-[8px] font-bold uppercase px-1.5 py-0.5 rounded">${escapeHtml(n.jogo)}</span>` : ''}
           <span class="text-[9px] text-text-muted font-mono">${escapeHtml(n.criado_em || 'Agora')}</span>
         </div>
         <span class="font-semibold text-on-surface mt-1 leading-snug">${escapeHtml(n.mensagem)}</span>

@@ -49,6 +49,15 @@
         </button>
       </form>
       {% endif %}
+
+      {% if camp.status == 'EM_ANDAMENTO' and camp.formato == 'mata-mata' and partidas|length > 0 %}
+      <form method="post" action="{{ url_for('avancar_fase_campeonato', camp_id=camp._id) }}" class="m-0">
+        <button type="submit" class="w-full sm:w-auto px-4 py-2 font-bold text-xs rounded shadow-sm transition-all flex items-center justify-center gap-1.5 min-h-[44px] cursor-pointer" style="background-color: #059669; color: #ffffff; border: 1px solid #047857;" onmouseover="this.style.backgroundColor='#047857'" onmouseout="this.style.backgroundColor='#059669'">
+          <span class="material-symbols-outlined text-sm text-white">fast_forward</span>
+          <span class="text-white font-bold">Avançar Próxima Rodada</span>
+        </button>
+      </form>
+      {% endif %}
       
       {% if camp.status in ('INSCRICAO','EM_ANDAMENTO') %}
       <button onclick="document.getElementById('addPartida').classList.toggle('hidden'); document.getElementById('addPartida').scrollIntoView({behavior: 'smooth'})" class="w-full sm:w-auto px-4 py-2 bg-surface-white text-on-surface-variant font-bold text-xs border border-border-subtle rounded hover:bg-surface transition-all flex items-center justify-center gap-1.5 min-h-[44px]">
@@ -219,8 +228,22 @@
           </div>
 
           <div class="flex flex-col gap-1.5">
+            <label class="text-[10px] font-bold text-text-muted uppercase tracking-wider">Formato da Série</label>
+            <select name="formato_serie" class="block w-full rounded border-border-subtle text-xs p-2 bg-surface-white focus:ring-primary focus:border-primary">
+              <option value="MD1">MD1 (Melhor de 1)</option>
+              <option value="MD3">MD3 (Melhor de 3)</option>
+              <option value="MD5">MD5 (Melhor de 5)</option>
+            </select>
+          </div>
+
+          <div class="flex flex-col gap-1.5">
             <label class="text-[10px] font-bold text-text-muted uppercase tracking-wider">Data e Hora</label>
             <input type="datetime-local" name="data_partida" class="block w-full rounded border-border-subtle text-xs p-2 focus:ring-primary focus:border-primary">
+          </div>
+
+          <div class="flex items-center gap-2 md:col-span-2 pt-1">
+            <input type="checkbox" id="fearless_draft" name="fearless_draft" value="true" class="rounded border-border-subtle text-primary focus:ring-primary">
+            <label for="fearless_draft" class="text-xs font-semibold text-on-surface">Ativar Fearless Draft (Campeões jogados ficam bloqueados para ambas as equipes)</label>
           </div>
 
           <div class="col-span-1 md:col-span-2 pt-2">
@@ -249,8 +272,19 @@
           
           <!-- Header info -->
           <div class="flex justify-between items-center border-b border-border-subtle pb-2.5">
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 flex-wrap">
               <span class="bg-surface-container-high text-on-surface-variant text-[10px] font-bold px-2 py-0.5 rounded">{{ p.fase }}</span>
+              <span class="bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] font-bold px-2 py-0.5 rounded">{{ p.formato_serie or 'MD1' }}</span>
+              {% if p.fearless_draft %}
+              <span class="bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-bold px-2 py-0.5 rounded flex items-center gap-1" title="Fearless Draft Ativo">
+                <span class="material-symbols-outlined text-[12px]">lock</span> Fearless
+              </span>
+              {% endif %}
+              {% if p.is_bye or p.time_b.nome == 'FOLGA (BYE)' %}
+              <span class="bg-purple-50 text-purple-700 border border-purple-200 text-[10px] font-bold px-2 py-0.5 rounded flex items-center gap-1" title="Equipe avançou por folga (Bye) - Item 9.1 FINC">
+                <span class="material-symbols-outlined text-[12px]">skip_next</span> FOLGA / BYE
+              </span>
+              {% endif %}
               <span class="text-[10px] text-text-muted font-bold font-mono">Mapa: {{ p.mapa or 'A definir' }}</span>
             </div>
             {% if p.status == 'finalizada' %}
@@ -275,6 +309,23 @@
             <span class="text-xs font-bold text-on-surface flex-1 text-right truncate">{{ p.time_b.nome }}</span>
           </div>
 
+          {% if p.jogos_serie %}
+          <div class="bg-surface-container-low/60 rounded-lg p-2.5 border border-border-subtle/40 flex flex-col gap-1.5">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-text-muted">Jogos da Série ({{ p.jogos_serie|length }})</span>
+            <div class="flex flex-wrap gap-2">
+              {% for jg in p.jogos_serie %}
+              <span class="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-surface-white border border-border-subtle text-[11px]">
+                <strong class="text-primary font-bold">Jogo {{ jg.jogo_numero }}:</strong>
+                <span class="text-on-surface font-semibold">{% if jg.vencedor_id == p.time_a.time_id %}{{ p.time_a.nome }}{% else %}{{ p.time_b.nome }}{% endif %} venceu</span>
+                {% if jg.score_a or jg.score_b %}
+                <span class="text-text-muted font-mono text-[10px]">({{ jg.score_a }}x{{ jg.score_b }})</span>
+                {% endif %}
+              </span>
+              {% endfor %}
+            </div>
+          </div>
+          {% endif %}
+
           <!-- Referee meta -->
           {% if p.arbitro_id %}
           <div class="text-[11px] text-text-muted flex items-center gap-1">
@@ -290,6 +341,77 @@
             {% if not referee_found %}
               <span class="italic">Designado</span>
             {% endif %}
+          </div>
+          {% endif %}
+
+          <!-- W.O. Alert Badge (if applied) -->
+          {% if p.checkin and p.checkin.wo_aplicado %}
+          <div class="bg-red-50 border border-red-200 rounded-lg p-2.5 text-xs flex items-start gap-2 text-red-800">
+            <span class="material-symbols-outlined text-red-600 text-sm mt-0.5">warning</span>
+            <div>
+              <strong class="font-bold">Resultado por W.O.:</strong>
+              <div class="text-[11px] mt-0.5">{{ p.checkin.mensagem_wo }}</div>
+            </div>
+          </div>
+          {% endif %}
+
+          <!-- Check-in Management (if requested and match open) -->
+          {% if p.checkin and p.checkin.solicitado and p.status != 'finalizada' %}
+          <div class="bg-surface-container-low rounded-lg p-2.5 border border-border-subtle flex flex-col gap-2 text-xs">
+            <div class="flex justify-between items-center">
+              <span class="font-bold text-on-surface flex items-center gap-1 text-[11px]">
+                <span class="material-symbols-outlined text-sm text-primary">how_to_reg</span> Check-in (Tolerância Oficial: 10 min)
+              </span>
+              <span class="text-[10px] text-text-muted font-mono">{{ p.checkin.antecedencia_minutos or 10 }}m antecedência</span>
+            </div>
+            <div class="grid grid-cols-2 gap-2 text-[11px]">
+              <div class="flex items-center justify-between p-1.5 rounded bg-surface-white border border-border-subtle">
+                <span class="truncate mr-1">{{ p.time_a.nome }}:</span>
+                <strong class="{% if p.checkin.time_a_confirmado %}text-green-700{% else %}text-amber-700{% endif %}">
+                  {% if p.checkin.time_a_confirmado %}Presente{% else %}Pendente{% endif %}
+                </strong>
+              </div>
+              <div class="flex items-center justify-between p-1.5 rounded bg-surface-white border border-border-subtle">
+                <span class="truncate mr-1">{{ p.time_b.nome }}:</span>
+                <strong class="{% if p.checkin.time_b_confirmado %}text-green-700{% else %}text-amber-700{% endif %}">
+                  {% if p.checkin.time_b_confirmado %}Presente{% else %}Pendente{% endif %}
+                </strong>
+              </div>
+            </div>
+            {% if session.role == 'ADMIN' and camp.status != 'ARQUIVADO' %}
+            <div class="flex flex-wrap gap-2 pt-1 border-t border-border-subtle/50 items-center">
+              <form method="post" action="{{ url_for('verificar_checkin_partida', partida_id=p._id) }}">
+                <button type="submit" class="px-2 py-1 bg-amber-500 hover:bg-amber-600 text-white font-bold text-[10px] rounded flex items-center gap-1 shadow-sm">
+                  <span class="material-symbols-outlined text-xs">gavel</span> Verificar W.O. (10 min)
+                </button>
+              </form>
+              {% if not p.checkin.time_a_confirmado %}
+              <form method="post" action="{{ url_for('confirmar_checkin_partida', partida_id=p._id) }}">
+                <input type="hidden" name="time_id" value="{{ p.time_a.time_id }}">
+                <button type="submit" class="px-2 py-1 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 font-bold text-[10px] rounded">
+                  Confirmar {{ p.time_a.nome }}
+                </button>
+              </form>
+              {% endif %}
+              {% if not p.checkin.time_b_confirmado %}
+              <form method="post" action="{{ url_for('confirmar_checkin_partida', partida_id=p._id) }}">
+                <input type="hidden" name="time_id" value="{{ p.time_b.time_id }}">
+                <button type="submit" class="px-2 py-1 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 font-bold text-[10px] rounded">
+                  Confirmar {{ p.time_b.nome }}
+                </button>
+              </form>
+              {% endif %}
+            </div>
+            {% endif %}
+          </div>
+          {% elif (not p.checkin or not p.checkin.solicitado) and p.status != 'finalizada' and session.role == 'ADMIN' and camp.status != 'ARQUIVADO' %}
+          <div class="flex justify-end pt-1">
+            <form method="post" action="{{ url_for('solicitar_checkin_partida', partida_id=p._id) }}">
+              <input type="hidden" name="antecedencia_minutos" value="10">
+              <button type="submit" class="px-2.5 py-1 bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-bold text-[10px] rounded flex items-center gap-1 border border-border-subtle shadow-sm">
+                <span class="material-symbols-outlined text-xs text-primary">timer</span> Solicitar Check-in (10 min)
+              </button>
+            </form>
           </div>
           {% endif %}
 
@@ -309,16 +431,17 @@
           </div>
           {% endif %}
 
-          <!-- Round Control Link -->
-          {% if p.status != 'finalizada' and camp.status != 'ARQUIVADO' and (session.role in ('ADMIN', 'SUPER_ADMIN') or (session.role == 'REFEREE' and current_referee_id and p.arbitro_id|string == current_referee_id|string)) %}
-          <div class="pt-2">
-            <a href="{{ url_for('rounds_control', partida_id=p._id) }}" class="w-full py-2 bg-primary hover:bg-primary-container text-on-primary font-bold text-xs rounded shadow-sm text-center flex items-center justify-center gap-1.5 text-decoration-none min-h-[44px]">
+          <!-- Official Súmula Anexo IV Link -->
+          <div class="pt-2 flex flex-col sm:flex-row gap-2">
+            {% if p.status != 'finalizada' and camp.status != 'ARQUIVADO' and (session.role in ('ADMIN', 'SUPER_ADMIN') or (session.role == 'REFEREE' and current_referee_id and p.arbitro_id|string == current_referee_id|string)) %}
+            <a href="{{ url_for('rounds_control', partida_id=p._id) }}" class="flex-1 py-2 bg-primary hover:bg-primary-container text-on-primary font-bold text-xs rounded shadow-sm text-center flex items-center justify-center gap-1.5 text-decoration-none min-h-[40px]">
               <span class="material-symbols-outlined text-[16px]">sports_esports</span> Controlar Súmula (Rounds)
             </a>
+            {% endif %}
+            <a href="{{ url_for('sumula_oficial', partida_id=p._id) }}" class="flex-1 py-2 bg-surface-white hover:bg-surface-container-low border border-border-subtle text-on-surface font-bold text-xs rounded shadow-sm text-center flex items-center justify-center gap-1.5 transition text-decoration-none min-h-[40px]">
+              <span class="material-symbols-outlined text-[16px] text-primary">description</span> Súmula Oficial (Anexo IV)
+            </a>
           </div>
-          {% endif %}
-
-
 
         </div>
         {% else %}
