@@ -72,7 +72,7 @@
     {% if campeonatos %}
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-container-margin">
       {% for campeonato in campeonatos %}
-      {% set default_image = 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=600&h=300&fit=crop' if campeonato.jogo == 'CS2' else 'https://images.unsplash.com/photo-1560419015-7c427e8ae5ba?w=600&h=300&fit=crop' %}
+      {% set default_image = get_game_image_url(campeonato.jogo) %}
       
       <a href="{{ url_for('detalhes_campeonato_publico', camp_id=campeonato.id) }}" class="bg-surface-white border border-border-subtle rounded-lg overflow-hidden hover:-translate-y-0.5 hover:border-primary transition-all duration-200 group relative flex flex-col h-full text-decoration-none">
         

@@ -25,6 +25,12 @@ class PlayerDocument(me.Document):
     nome_real = me.StringField()
     login = me.StringField(unique=True)
     contato = me.StringField()
+    email = me.StringField()
+    data_nascimento = me.StringField()
+    instituicao = me.StringField()
+    curso = me.StringField()
+    matricula = me.StringField()
+    numero_ingresso_finc = me.StringField()
     jogo_principal = me.StringField(required=True)
     admin_id = me.ObjectIdField(required=True)
     time_id = me.ObjectIdField()
@@ -34,6 +40,12 @@ class PlayerDocument(me.Document):
     premier_rating = me.IntField()
     rank_ato = me.StringField()
     agente_principal = me.StringField()
+    elo_lol = me.StringField()
+    rota_principal = me.StringField()
+    campeao_favorito = me.StringField()
+    trofeus_clash = me.IntField()
+    arena_clash = me.StringField()
+    carta_favorita = me.StringField()
     criado_em = me.DateTimeField()
 
 
@@ -109,7 +121,8 @@ class RoundLog(me.EmbeddedDocument):
 class MatchCheckin(me.EmbeddedDocument):
     solicitado = me.BooleanField(default=False)
     solicitado_em = me.DateTimeField()
-    antecedencia_minutos = me.IntField(default=15)
+    antecedencia_minutos = me.IntField(default=10)
+    tolerancia_minutos = me.IntField(default=10)
     time_a_confirmado = me.BooleanField(default=False)
     time_b_confirmado = me.BooleanField(default=False)
     wo_aplicado = me.BooleanField(default=False)
@@ -137,6 +150,12 @@ class MatchDocument(me.Document):
     time_b = me.EmbeddedDocumentField(MatchTeam, required=True)
     rounds = me.EmbeddedDocumentListField(RoundLog, default=list)
     checkin = me.EmbeddedDocumentField(MatchCheckin, default=MatchCheckin)
+    formato_serie = me.StringField(default="MD1")
+    placar_serie_a = me.IntField(default=0)
+    placar_serie_b = me.IntField(default=0)
+    jogos_serie = me.ListField(me.DictField(), default=list)
+    fearless_draft = me.BooleanField(default=False)
+    campeoes_banidos_fearless = me.ListField(me.StringField(), default=list)
     iniciada_em = me.DateTimeField()
 
 

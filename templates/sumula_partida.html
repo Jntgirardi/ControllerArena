@@ -7,9 +7,14 @@
 
 <main class="max-w-[1280px] mx-auto px-4 md:px-container-margin py-section-gap flex flex-col gap-6">
   
-  <!-- Breadcrumbs -->
-  <div class="text-xs font-semibold text-text-muted">
-    <a href="{{ url_for('index') }}" class="hover:text-primary transition-colors text-decoration-none">Campeonatos</a> &gt; {{ campeonato.nome }} &gt; Súmula
+  <!-- Breadcrumbs & Action Bar -->
+  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+    <div class="text-xs font-semibold text-text-muted">
+      <a href="{{ url_for('index') }}" class="hover:text-primary transition-colors text-decoration-none">Campeonatos</a> &gt; {{ campeonato.nome }} &gt; Súmula
+    </div>
+    <a href="{{ url_for('sumula_oficial', partida_id=partida.id) }}" class="px-3 py-1.5 bg-primary hover:bg-primary-container text-on-primary font-bold text-xs rounded shadow-sm flex items-center gap-1.5 transition text-decoration-none">
+      <span class="material-symbols-outlined text-sm">description</span> Ver Súmula Oficial (Anexo IV)
+    </a>
   </div>
 
   <!-- Scoreboard Header Card -->
@@ -44,14 +49,24 @@
           {% endif %}
         </div>
         
-        <div class="px-3 py-1 bg-surface-container-low border border-border-subtle rounded-full flex items-center gap-2 mt-2 shadow-sm">
-          {% if partida.status == 'finalizado' %}
-            <span class="font-label-sm text-[10px] font-bold text-on-surface uppercase tracking-wider">CONCLUÍDO</span>
-          {% elif partida.status == 'ao_vivo' %}
-            <span class="w-2 h-2 rounded-full bg-red-650 animate-pulse"></span>
-            <span class="font-label-sm text-[10px] font-bold text-error uppercase tracking-wider">AO VIVO</span>
-          {% else %}
-            <span class="font-label-sm text-[10px] font-bold text-primary uppercase tracking-wider">AGENDADO</span>
+        <div class="flex items-center gap-2 mt-2">
+          <div class="px-3 py-1 bg-surface-container-low border border-border-subtle rounded-full flex items-center gap-2 shadow-sm">
+            {% if partida.status == 'finalizado' %}
+              <span class="font-label-sm text-[10px] font-bold text-on-surface uppercase tracking-wider">CONCLUÍDO</span>
+            {% elif partida.status == 'ao_vivo' %}
+              <span class="w-2 h-2 rounded-full bg-red-650 animate-pulse"></span>
+              <span class="font-label-sm text-[10px] font-bold text-error uppercase tracking-wider">AO VIVO</span>
+            {% else %}
+              <span class="font-label-sm text-[10px] font-bold text-primary uppercase tracking-wider">AGENDADO</span>
+            {% endif %}
+          </div>
+          <span class="px-2.5 py-1 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-full font-mono text-[10px] font-bold uppercase tracking-wider">
+            {{ partida.formato_serie or 'MD1' }}
+          </span>
+          {% if partida.fearless_draft %}
+          <span class="px-2.5 py-1 bg-amber-50 border border-amber-200 text-amber-700 rounded-full text-[10px] font-bold flex items-center gap-1">
+            <span class="material-symbols-outlined text-[12px]">lock</span> Fearless
+          </span>
           {% endif %}
         </div>
         
@@ -71,9 +86,22 @@
     </div>
     
     <div class="bg-surface-container-low py-3 px-6 text-center text-xs text-text-muted border-t border-border-subtle/60 font-semibold">
-      Fase: {{ partida.fase }} · Agendamento: {{ partida.data }} às {{ partida.hora }}
+      Fase: {{ partida.fase }} · Formato: {{ partida.formato_serie or 'MD1' }} · Agendamento: {{ partida.data }} às {{ partida.hora }}
     </div>
   </section>
+
+  <!-- W.O. Official Notice (Item 10.2) -->
+  {% if partida.checkin and partida.checkin.wo_aplicado %}
+  <section class="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3 text-red-900 shadow-sm">
+    <span class="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 text-red-600 flex-shrink-0">
+      <span class="material-symbols-outlined text-xl">gavel</span>
+    </span>
+    <div class="flex flex-col">
+      <span class="font-bold text-xs uppercase tracking-wider text-red-700">Resultado Oficial por W.O. (Regulamento FINC 2026 - Item 10.2)</span>
+      <span class="text-xs text-red-800 font-semibold mt-0.5">{{ partida.checkin.mensagem_wo }}</span>
+    </div>
+  </section>
+  {% endif %}
 
   <!-- KDA Tables Section -->
   <div class="grid grid-cols-1 md:grid-cols-2 gap-gutter">
@@ -172,6 +200,77 @@
       </div>
     </section>
   </div>
+
+  <!-- Fearless Draft Section (League of Legends) -->
+  {% if partida.fearless_draft %}
+  <section class="bg-surface-white rounded-xl border border-amber-200 overflow-hidden shadow-sm">
+    <div class="bg-amber-50/60 p-4 border-b border-amber-200 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <span class="material-symbols-outlined text-amber-600 text-lg">lock</span>
+        <h3 class="text-sm font-heading font-bold text-amber-900">Fearless Draft - Campeões Bloqueados</h3>
+      </div>
+      <span class="text-xs font-mono font-bold text-amber-700 bg-amber-100/80 px-2.5 py-0.5 rounded-full">
+        {{ (partida.campeoes_banidos_fearless or [])|length }} bloqueado(s)
+      </span>
+    </div>
+    <div class="p-5 flex flex-col gap-3">
+      <p class="text-xs text-text-muted">
+        De acordo com o Regulamento Oficial FINC 2026, campeões utilizados por qualquer equipe em jogos anteriores desta série não podem ser escolhidos novamente por nenhuma das equipes no restante da série.
+      </p>
+      {% if partida.campeoes_banidos_fearless %}
+      <div class="flex flex-wrap gap-2 pt-1">
+        {% for champ in partida.campeoes_banidos_fearless %}
+        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-neutral-100 border border-neutral-200 text-xs font-bold text-neutral-700">
+          <span class="material-symbols-outlined text-xs text-red-500">block</span>
+          {{ champ }}
+        </span>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="text-xs text-neutral-400 italic">Nenhum campeão bloqueado ainda. Os bloqueios iniciarão após o término do primeiro jogo.</p>
+      {% endif %}
+    </div>
+  </section>
+  {% endif %}
+
+  <!-- Series Games Breakdown (MD3 / MD5) -->
+  {% if partida.jogos_serie %}
+  <section class="bg-surface-white rounded-xl border border-border-subtle overflow-hidden shadow-sm">
+    <div class="p-card-padding flex flex-col gap-4 py-5 px-6">
+      <div class="flex justify-between items-center border-b border-border-subtle pb-3">
+        <h3 class="text-base font-heading font-bold text-on-surface">Histórico de Jogos da Série ({{ partida.formato_serie or 'MD3' }})</h3>
+        <span class="font-mono text-xs font-bold text-primary">{{ partida.placar_serie_a }} x {{ partida.placar_serie_b }}</span>
+      </div>
+      <div class="space-y-3">
+        {% for jg in partida.jogos_serie %}
+        <div class="p-3.5 rounded-lg bg-surface-container-low/70 border border-border-subtle flex flex-col md:flex-row justify-between md:items-center gap-3">
+          <div class="flex items-center gap-3">
+            <span class="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-primary font-mono font-bold text-xs">J{{ jg.jogo_numero }}</span>
+            <div>
+              <div class="text-xs font-bold text-on-surface">
+                Vencedor: <span class="text-primary font-bold">{% if jg.vencedor_id == partida.time_a.time_id %}{{ partida.time_a.nome }}{% else %}{{ partida.time_b.nome }}{% endif %}</span>
+              </div>
+              {% if jg.mapa %}
+              <div class="text-[11px] text-text-muted">Mapa/Arena: {{ jg.mapa }}</div>
+              {% endif %}
+            </div>
+          </div>
+          {% if jg.campeoes_a or jg.campeoes_b %}
+          <div class="text-[11px] flex flex-col gap-1">
+            {% if jg.campeoes_a %}
+            <div><strong class="text-on-surface">{{ partida.time_a.nome }}:</strong> <span class="text-text-muted">{{ jg.campeoes_a|join(', ') }}</span></div>
+            {% endif %}
+            {% if jg.campeoes_b %}
+            <div><strong class="text-on-surface">{{ partida.time_b.nome }}:</strong> <span class="text-text-muted">{{ jg.campeoes_b|join(', ') }}</span></div>
+            {% endif %}
+          </div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+  {% endif %}
 
   <!-- Rounds Log Card -->
   <section class="bg-surface-white rounded-xl border border-border-subtle overflow-hidden shadow-sm">

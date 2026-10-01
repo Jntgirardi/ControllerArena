@@ -48,16 +48,99 @@
 
 
 
-        <!-- Contato -->
-        <div>
-          <label class="block font-bold text-xs text-on-surface mb-1" for="contato">Contato</label>
-          <input 
-            type="email" 
-            name="contato" 
-            id="contato"
-            value="{{ dados.get('contato', '') }}"
-            class="w-full border border-border-subtle rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary bg-surface-white transition-colors text-on-surface"
-          >
+        <!-- Contato e E-mail -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block font-bold text-xs text-on-surface mb-1" for="email">E-mail *</label>
+            <input 
+              type="email" 
+              name="email" 
+              id="email"
+              placeholder="exemplo@unef.edu.br"
+              value="{{ dados.get('email', '') }}"
+              class="w-full border border-border-subtle rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary bg-surface-white transition-colors text-on-surface"
+            >
+          </div>
+          <div>
+            <label class="block font-bold text-xs text-on-surface mb-1" for="contato">WhatsApp / Telefone *</label>
+            <input 
+              type="text" 
+              name="contato" 
+              id="contato"
+              placeholder="(75) 99999-9999"
+              value="{{ dados.get('contato', '') }}"
+              class="w-full border border-border-subtle rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary bg-surface-white transition-colors text-on-surface"
+            >
+          </div>
+        </div>
+
+        <!-- Seção: Elegibilidade Acadêmica FINC 2026 -->
+        <div class="border-t border-border-subtle pt-4">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="material-symbols-outlined text-primary text-base">school</span>
+            <h3 class="text-xs font-bold uppercase tracking-wider text-on-surface">Elegibilidade & Dados Acadêmicos (FINC 2026)</h3>
+          </div>
+          
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-3">
+            <div>
+              <label class="block font-bold text-xs text-on-surface mb-1" for="data_nascimento">Data de Nascimento *</label>
+              <input 
+                type="date" 
+                name="data_nascimento" 
+                id="data_nascimento"
+                value="{{ dados.get('data_nascimento', '') }}"
+                class="w-full border border-border-subtle rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary bg-surface-white transition-colors text-on-surface"
+              >
+              <span class="text-[10px] text-text-muted">Mínimo 18 anos até 20/10/2026</span>
+            </div>
+            <div>
+              <label class="block font-bold text-xs text-on-surface mb-1" for="instituicao">Instituição de Ensino *</label>
+              <input 
+                type="text" 
+                name="instituicao" 
+                id="instituicao"
+                placeholder="Ex: UNEF, UNIFAN, etc."
+                value="{{ dados.get('instituicao', '') }}"
+                class="w-full border border-border-subtle rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary bg-surface-white transition-colors text-on-surface"
+              >
+            </div>
+            <div>
+              <label class="block font-bold text-xs text-on-surface mb-1" for="curso">Curso de Graduação *</label>
+              <input 
+                type="text" 
+                name="curso" 
+                id="curso"
+                placeholder="Ex: Sistemas de Informação"
+                value="{{ dados.get('curso', '') }}"
+                class="w-full border border-border-subtle rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary bg-surface-white transition-colors text-on-surface"
+              >
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block font-bold text-xs text-on-surface mb-1" for="matricula">Matrícula da Faculdade *</label>
+              <input 
+                type="text" 
+                name="matricula" 
+                id="matricula"
+                placeholder="Ex: 202410293"
+                value="{{ dados.get('matricula', '') }}"
+                class="w-full border border-border-subtle rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary bg-surface-white transition-colors text-on-surface"
+              >
+            </div>
+            <div>
+              <label class="block font-bold text-xs text-on-surface mb-1" for="numero_ingresso_finc">Nº do Ingresso FINC 2026 *</label>
+              <input 
+                type="text" 
+                name="numero_ingresso_finc" 
+                id="numero_ingresso_finc"
+                placeholder="Ex: FINC-882193"
+                value="{{ dados.get('numero_ingresso_finc', '') }}"
+                class="w-full border border-border-subtle rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary bg-surface-white transition-colors text-on-surface"
+              >
+            </div>
+          </div>
         </div>
 
         <!-- Jogo Principal & Vinculação de Campeonato -->
@@ -70,8 +153,10 @@
               onchange="toggleCamposJogo()"
               class="w-full border border-border-subtle rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary bg-surface-white text-on-surface-variant cursor-pointer"
             >
+              <option value="Valorant" {% if dados.get('jogo_principal') == 'Valorant' %}selected{% endif %}>VALORANT</option>
+              <option value="League of Legends" {% if dados.get('jogo_principal') == 'League of Legends' %}selected{% endif %}>League of Legends</option>
+              <option value="Clash Royale" {% if dados.get('jogo_principal') == 'Clash Royale' %}selected{% endif %}>Clash Royale (1x1)</option>
               <option value="CS2" {% if dados.get('jogo_principal') == 'CS2' %}selected{% endif %}>CS2</option>
-              <option value="Valorant" {% if dados.get('jogo_principal') == 'Valorant' %}selected{% endif %}>Valorant</option>
             </select>
           </div>
           <div>
@@ -89,12 +174,132 @@
           </div>
         </div>
 
-        <!-- Campos Extras CS2 -->
-        <div id="campos_cs2" class="pt-2">
+        <!-- Campos Extras Valorant -->
+        <div id="campos_valorant" class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+          <div>
+            <label class="block font-bold text-xs text-on-surface mb-1" for="rank_ato">Rank de Ato</label>
+            <input 
+              type="text" 
+              name="rank_ato" 
+              id="rank_ato" 
+              value="{{ dados.get('rank_ato', '') }}"
+              placeholder="Ex: Diamante 2, Imortal 1"
+              class="w-full border border-border-subtle rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary bg-surface-white text-on-surface"
+            >
+          </div>
+          <div>
+            <label class="block font-bold text-xs text-on-surface mb-1" for="agente_principal">Agente Principal</label>
+            <input 
+              type="text" 
+              name="agente_principal" 
+              id="agente_principal" 
+              value="{{ dados.get('agente_principal', '') }}"
+              placeholder="Ex: Jett, Omen, Sova"
+              class="w-full border border-border-subtle rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary bg-surface-white text-on-surface"
+            >
+          </div>
         </div>
 
-        <!-- Campos Extras Valorant -->
-        <div id="campos_valorant" class="pt-2" style="display:none">
+        <!-- Campos Extras League of Legends -->
+        <div id="campos_lol" class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2" style="display:none">
+          <div>
+            <label class="block font-bold text-xs text-on-surface mb-1" for="elo_lol">Elo / Tier</label>
+            <select 
+              name="elo_lol" 
+              id="elo_lol" 
+              class="w-full border border-border-subtle rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary bg-surface-white text-on-surface cursor-pointer"
+            >
+              {% for elo in ['Unranked', 'Ferro', 'Bronze', 'Prata', 'Ouro', 'Platina', 'Esmeralda', 'Diamante', 'Mestre', 'Grão-Mestre', 'Desafiante'] %}
+              <option value="{{ elo }}" {% if dados.get('elo_lol') == elo %}selected{% endif %}>{{ elo }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label class="block font-bold text-xs text-on-surface mb-1" for="rota_principal">Rota Principal</label>
+            <select 
+              name="rota_principal" 
+              id="rota_principal" 
+              class="w-full border border-border-subtle rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary bg-surface-white text-on-surface cursor-pointer"
+            >
+              {% for rota in ['Topo', 'Selva', 'Meio', 'Atirador', 'Suporte', 'Flex'] %}
+              <option value="{{ rota }}" {% if dados.get('rota_principal') == rota %}selected{% endif %}>{{ rota }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label class="block font-bold text-xs text-on-surface mb-1" for="campeao_favorito">Campeão Favorito</label>
+            <input 
+              type="text" 
+              name="campeao_favorito" 
+              id="campeao_favorito" 
+              value="{{ dados.get('campeao_favorito', '') }}"
+              placeholder="Ex: Ahri, Yasuo, Lee Sin"
+              class="w-full border border-border-subtle rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary bg-surface-white text-on-surface"
+            >
+          </div>
+        </div>
+
+        <!-- Campos Extras Clash Royale -->
+        <div id="campos_clash" class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2" style="display:none">
+          <div>
+            <label class="block font-bold text-xs text-on-surface mb-1" for="trofeus_clash">Troféus Máximos</label>
+            <input 
+              type="number" 
+              name="trofeus_clash" 
+              id="trofeus_clash" 
+              value="{{ dados.get('trofeus_clash', '') }}"
+              placeholder="Ex: 6500"
+              class="w-full border border-border-subtle rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary bg-surface-white text-on-surface"
+            >
+          </div>
+          <div>
+            <label class="block font-bold text-xs text-on-surface mb-1" for="arena_clash">Arena / Liga</label>
+            <input 
+              type="text" 
+              name="arena_clash" 
+              id="arena_clash" 
+              value="{{ dados.get('arena_clash', '') }}"
+              placeholder="Ex: Arena Lendária, Campeão Supremo"
+              class="w-full border border-border-subtle rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary bg-surface-white text-on-surface"
+            >
+          </div>
+          <div>
+            <label class="block font-bold text-xs text-on-surface mb-1" for="carta_favorita">Carta / Deck Favorito</label>
+            <input 
+              type="text" 
+              name="carta_favorita" 
+              id="carta_favorita" 
+              value="{{ dados.get('carta_favorita', '') }}"
+              placeholder="Ex: Corredor, P.E.K.K.A, Log Bait"
+              class="w-full border border-border-subtle rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary bg-surface-white text-on-surface"
+            >
+          </div>
+        </div>
+
+        <!-- Campos Extras CS2 -->
+        <div id="campos_cs2" class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2" style="display:none">
+          <div>
+            <label class="block font-bold text-xs text-on-surface mb-1" for="premier_rating">Premier Rating</label>
+            <input 
+              type="number" 
+              name="premier_rating" 
+              id="premier_rating" 
+              value="{{ dados.get('premier_rating', '') }}"
+              placeholder="Ex: 15400"
+              class="w-full border border-border-subtle rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary bg-surface-white text-on-surface"
+            >
+          </div>
+          <div>
+            <label class="block font-bold text-xs text-on-surface mb-1" for="rank_competitivo">Rank Competitivo</label>
+            <input 
+              type="text" 
+              name="rank_competitivo" 
+              id="rank_competitivo" 
+              value="{{ dados.get('rank_competitivo', '') }}"
+              placeholder="Ex: Global Elite, Xerife"
+              class="w-full border border-border-subtle rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary bg-surface-white text-on-surface"
+            >
+          </div>
         </div>
 
         <!-- Submit Button -->
@@ -115,8 +320,10 @@
 <script>
 function toggleCamposJogo() {
   const jogo = document.getElementById('jogoSelect').value;
-  document.getElementById('campos_cs2').style.display = jogo === 'CS2' ? '' : 'none';
   document.getElementById('campos_valorant').style.display = jogo === 'Valorant' ? '' : 'none';
+  document.getElementById('campos_lol').style.display = jogo === 'League of Legends' ? '' : 'none';
+  document.getElementById('campos_clash').style.display = jogo === 'Clash Royale' ? '' : 'none';
+  document.getElementById('campos_cs2').style.display = jogo === 'CS2' ? '' : 'none';
 }
 toggleCamposJogo();
 </script>

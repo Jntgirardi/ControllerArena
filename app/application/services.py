@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 from urllib import error as urllib_error
 from urllib import request as urllib_request
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime, timedelta, date
 from typing import Any
 from uuid import uuid4
 
@@ -28,6 +29,66 @@ DISCORD_WEBHOOK_PREFIXES = (
     "https://discord.com/api/webhooks/",
     "https://discordapp.com/api/webhooks/",
 )
+
+GAME_VALORANT = "Valorant"
+GAME_LOL = "League of Legends"
+GAME_CLASH_ROYALE = "Clash Royale"
+GAME_CS2 = "CS2"
+VALID_GAMES = (GAME_VALORANT, GAME_LOL, GAME_CLASH_ROYALE, GAME_CS2)
+INDIVIDUAL_GAMES = (GAME_CLASH_ROYALE,)
+
+
+def normalize_game_name(game: str | None) -> str:
+    if not game:
+        return ""
+    g = game.strip()
+    g_lower = g.lower()
+    if g_lower in ("valorant", "vlr"):
+        return GAME_VALORANT
+    if g_lower in ("league of legends", "lol", "league"):
+        return GAME_LOL
+    if g_lower in ("clash royale", "clash", "cr"):
+        return GAME_CLASH_ROYALE
+    if g_lower in ("cs2", "cs:go", "csgo", "counter-strike 2", "counter-strike"):
+        return GAME_CS2
+    return g
+
+
+SERIES_MD1 = "MD1"
+SERIES_MD3 = "MD3"
+SERIES_MD5 = "MD5"
+VALID_SERIES_FORMATS = (SERIES_MD1, SERIES_MD3, SERIES_MD5)
+
+
+def get_default_series_format(jogo: str | None, fase: str | None, formato_preferido: str | None = None) -> str:
+    if formato_preferido in (SERIES_MD1, SERIES_MD3, SERIES_MD5):
+        return formato_preferido
+    j = (jogo or "").strip().lower()
+    f = (fase or "").strip().lower()
+    is_grand_final = "final" in f and "semi" not in f and "quarta" not in f and "oitava" not in f
+    if "clash" in j:
+        if is_grand_final:
+            return SERIES_MD5
+        return SERIES_MD3
+    elif "league" in j or "lol" in j:
+        if is_grand_final:
+            return SERIES_MD3
+        return SERIES_MD1
+    elif "valorant" in j:
+        if is_grand_final:
+            return SERIES_MD3
+        return SERIES_MD1
+    if is_grand_final:
+        return SERIES_MD3
+    return SERIES_MD1
+
+
+def is_fearless_draft(jogo: str | None, fase: str | None, formato_serie: str | None = None) -> bool:
+    j = (jogo or "").strip().lower()
+    f = (fase or "").strip().lower()
+    is_grand_final = "final" in f and "semi" not in f and "quarta" not in f and "oitava" not in f
+    return ("league" in j or "lol" in j) and is_grand_final
+
 
 logger = logging.getLogger(__name__)
 
@@ -196,14 +257,45 @@ class PlayerService:
             errors.append("Nick e obrigatorio.")
         if not data.get("nome", "").strip():
             errors.append("Nome do jogador e obrigatorio.")
-        if data.get("jogo_principal") not in ("CS2", "Valorant"):
+        jogo = normalize_game_name(data.get("jogo_principal", ""))
+        if jogo not in VALID_GAMES:
             errors.append("Jogo principal invalido.")
-        if data.get("jogo_principal") == "CS2":
+        data["jogo_principal"] = jogo
+
+        # Validate data_nascimento (must be 18+ by 20/10/2026 as per item 4.2.1 of FINC 2026 regulations)
+        data_nasc_str = (data.get("data_nascimento") or "").strip()
+        if data_nasc_str:
+            nasc_date = None
+            for fmt in ("%Y-%m-%d", "%d/%m/%Y"):
+                try:
+                    nasc_date = datetime.strptime(data_nasc_str, fmt).date()
+                    break
+                except ValueError:
+                    pass
+            if not nasc_date:
+                errors.append("Data de nascimento invalida. Use o formato AAAA-MM-DD.")
+            else:
+                event_date = date(2026, 10, 20)
+                age = event_date.year - nasc_date.year - ((event_date.month, event_date.day) < (nasc_date.month, nasc_date.day))
+                if age < 18:
+                    errors.append("O participante deve ter 18 anos completos ate 20/10/2026 (item 4.2.1 do Regulamento).")
+
+        email_str = (data.get("email") or "").strip()
+        if email_str and "@" not in email_str:
+            errors.append("E-mail invalido.")
+
+        if jogo == GAME_CS2:
             try:
                 if int(data.get("premier_rating") or 0) < 0:
                     errors.append("Premier Rating nao pode ser negativo.")
             except ValueError:
                 errors.append("Premier Rating deve ser um numero inteiro.")
+        elif jogo == GAME_CLASH_ROYALE:
+            try:
+                if int(data.get("trofeus_clash") or 0) < 0:
+                    errors.append("Trofeus nao pode ser negativo.")
+            except ValueError:
+                errors.append("Trofeus deve ser um numero inteiro.")
         return errors
 
     def list_players(self, current_user: dict[str, Any], jogo: str, busca: str) -> list[dict[str, Any]]:
@@ -224,17 +316,31 @@ class PlayerService:
             "login": None,
             "jogo_principal": data["jogo_principal"],
             "contato": data.get("contato", "").strip(),
+            "email": data.get("email", "").strip(),
+            "data_nascimento": data.get("data_nascimento", "").strip(),
+            "instituicao": data.get("instituicao", "").strip(),
+            "curso": data.get("curso", "").strip(),
+            "matricula": data.get("matricula", "").strip(),
+            "numero_ingresso_finc": data.get("numero_ingresso_finc", "").strip(),
             "admin_id": admin_id,
             "campeonato_id": ObjectId(data["campeonato_id"]) if data.get("campeonato_id") else None,
             "estatisticas": {"partidas_jogadas": 0, "vitorias": 0, "derrotas": 0, "kd_ratio": 0.0},
             "criado_em": utc_now_naive(),
         }
-        if data["jogo_principal"] == "CS2":
+        if data["jogo_principal"] == GAME_CS2:
             player_document["rank_competitivo"] = data.get("rank_competitivo", "Sem Rank")
             player_document["premier_rating"] = int(data.get("premier_rating") or 0)
-        else:
+        elif data["jogo_principal"] == GAME_VALORANT:
             player_document["rank_ato"] = data.get("rank_ato", "Sem Rank")
             player_document["agente_principal"] = data.get("agente_principal", "").strip()
+        elif data["jogo_principal"] == GAME_LOL:
+            player_document["elo_lol"] = data.get("elo_lol", "Unranked")
+            player_document["rota_principal"] = data.get("rota_principal", "Flex")
+            player_document["campeao_favorito"] = data.get("campeao_favorito", "").strip()
+        elif data["jogo_principal"] == GAME_CLASH_ROYALE:
+            player_document["trofeus_clash"] = int(data.get("trofeus_clash") or 0)
+            player_document["arena_clash"] = data.get("arena_clash", "").strip()
+            player_document["carta_favorita"] = data.get("carta_favorita", "").strip()
 
         player_id = self.player_repo.insert(player_document)
         invalidate_ranking_cache(self.cache)
@@ -262,16 +368,52 @@ class PlayerService:
             "nome_real": data["nome"].strip(),
             "jogo_principal": data["jogo_principal"],
             "contato": data.get("contato", "").strip(),
+            "email": data.get("email", "").strip(),
+            "data_nascimento": data.get("data_nascimento", "").strip(),
+            "instituicao": data.get("instituicao", "").strip(),
+            "curso": data.get("curso", "").strip(),
+            "matricula": data.get("matricula", "").strip(),
+            "numero_ingresso_finc": data.get("numero_ingresso_finc", "").strip(),
             "campeonato_id": ObjectId(data["campeonato_id"]) if data.get("campeonato_id") else None,
         }
-        if data["jogo_principal"] == "CS2":
+        unset = {
+            "rank_competitivo": "",
+            "premier_rating": "",
+            "rank_ato": "",
+            "agente_principal": "",
+            "elo_lol": "",
+            "rota_principal": "",
+            "campeao_favorito": "",
+            "trofeus_clash": "",
+            "arena_clash": "",
+            "carta_favorita": "",
+        }
+        if data["jogo_principal"] == GAME_CS2:
             update["rank_competitivo"] = data.get("rank_competitivo", "Sem Rank")
             update["premier_rating"] = int(data.get("premier_rating") or 0)
-            self.player_repo.unset_fields(object_id, {"rank_ato": "", "agente_principal": ""})
-        else:
+            unset.pop("rank_competitivo", None)
+            unset.pop("premier_rating", None)
+        elif data["jogo_principal"] == GAME_VALORANT:
             update["rank_ato"] = data.get("rank_ato", "Sem Rank")
             update["agente_principal"] = data.get("agente_principal", "").strip()
-            self.player_repo.unset_fields(object_id, {"rank_competitivo": "", "premier_rating": ""})
+            unset.pop("rank_ato", None)
+            unset.pop("agente_principal", None)
+        elif data["jogo_principal"] == GAME_LOL:
+            update["elo_lol"] = data.get("elo_lol", "Unranked")
+            update["rota_principal"] = data.get("rota_principal", "Flex")
+            update["campeao_favorito"] = data.get("campeao_favorito", "").strip()
+            unset.pop("elo_lol", None)
+            unset.pop("rota_principal", None)
+            unset.pop("campeao_favorito", None)
+        elif data["jogo_principal"] == GAME_CLASH_ROYALE:
+            update["trofeus_clash"] = int(data.get("trofeus_clash") or 0)
+            update["arena_clash"] = data.get("arena_clash", "").strip()
+            update["carta_favorita"] = data.get("carta_favorita", "").strip()
+            unset.pop("trofeus_clash", None)
+            unset.pop("arena_clash", None)
+            unset.pop("carta_favorita", None)
+
+        self.player_repo.unset_fields(object_id, unset)
         self.player_repo.update_fields(object_id, update)
         invalidate_ranking_cache(self.cache)
         return []
@@ -320,6 +462,8 @@ class TeamService:
             errors.append("Tag do time e obrigatoria.")
         if not jogo:
             errors.append("Jogo e obrigatorio.")
+        elif normalize_game_name(jogo) not in VALID_GAMES:
+            errors.append("Jogo invalido.")
         if not ids_selecionados:
             errors.append("Selecione ao menos 1 jogador.")
         return errors
@@ -425,8 +569,10 @@ class ChampionshipService:
         errors = []
         if not data.get("nome", "").strip():
             errors.append("Nome do campeonato e obrigatorio.")
-        if data.get("jogo") not in ("CS2", "Valorant"):
+        jogo = normalize_game_name(data.get("jogo", ""))
+        if jogo not in VALID_GAMES:
             errors.append("Jogo invalido.")
+        data["jogo"] = jogo
         if data.get("formato") not in self.valid_formats:
             errors.append("Formato invalido.")
         try:
@@ -471,6 +617,7 @@ class ChampionshipService:
                 "nome": data["nome"].strip(),
                 "jogo": data["jogo"],
                 "formato": data.get("formato", "mata-mata"),
+                "formato_serie": data.get("formato_serie", "padrao").strip(),
                 "max_times": int(data["max_times"]),
                 "premiacao": {
                     "1_lugar": data.get("premio_1", "").strip(),
@@ -514,6 +661,7 @@ class ChampionshipService:
                 "nome": data["nome"].strip(),
                 "jogo": data["jogo"],
                 "formato": data["formato"],
+                "formato_serie": data.get("formato_serie", "padrao").strip(),
                 "max_times": int(data["max_times"]),
                 "premiacao.1_lugar": data.get("premio_1", "").strip(),
                 "premiacao.2_lugar": data.get("premio_2", "").strip(),
@@ -614,39 +762,114 @@ class ChampionshipService:
         
         if formato == "mata-mata":
             n = len(times)
-            # perfect brackets are powers of 2 (2, 4, 8, 16, 32)
-            if n not in (2, 4, 8, 16, 32):
-                return ["Para o formato Mata-Mata, a quantidade de times inscritos deve ser uma potencia de 2 (2, 4, 8 ou 16)."]
-            
-            # Determine Phase Name
-            if n == 2:
+            if n < 2:
+                return ["E necessario ter pelo menos 2 times inscritos para gerar as partidas."]
+            if n > 32:
+                return ["O limite maximo e de 32 equipes inscritas para a chave eliminatoria."]
+
+            # Calculate bracket power of 2 and Byes (Folgas - Item 9.1 Regulamento FINC 2026)
+            if n <= 2:
+                m = 2
                 fase = "Grande Final"
-            elif n == 4:
+            elif n <= 4:
+                m = 4
                 fase = "Semifinal"
-            elif n == 8:
+            elif n <= 8:
+                m = 8
                 fase = "Quartas de Final"
-            elif n == 16:
+            elif n <= 16:
+                m = 16
                 fase = "Oitavas de Final"
             else:
+                m = 32
                 fase = "Primeira Rodada"
 
-            # Pair sequentially
-            for i in range(0, n, 2):
-                time_a = times[i]
-                time_b = times[i+1]
-                data_partida = base_date + timedelta(hours=i)
-                matches_to_insert.append({
-                    "admin_id": camp.get("admin_id"),
-                    "campeonato_id": championship_id,
-                    "fase": fase,
-                    "time_a": {"time_id": time_a["_id"], "nome": time_a["nome"], "placar": 0},
-                    "time_b": {"time_id": time_b["_id"], "nome": time_b["nome"], "placar": 0},
-                    "vencedor_id": None,
-                    "mapa": "",
-                    "data_partida": data_partida,
-                    "status": "agendada",
-                    "arbitro_id": None,
-                })
+            byes_count = m - n
+            formato_serie = get_default_series_format(camp.get("jogo", ""), fase, camp.get("formato_serie"))
+            fearless = is_fearless_draft(camp.get("jogo", ""), fase, formato_serie)
+
+            match_idx = 0
+            if byes_count > 0:
+                # Top seeds or drawn teams receive Byes and advance directly (Item 9.1)
+                for b_i in range(byes_count):
+                    team_bye = times[b_i]
+                    data_partida = base_date + timedelta(hours=match_idx)
+                    matches_to_insert.append({
+                        "admin_id": camp.get("admin_id"),
+                        "campeonato_id": championship_id,
+                        "fase": fase,
+                        "time_a": {"time_id": team_bye["_id"], "nome": team_bye["nome"], "placar": 1},
+                        "time_b": {"time_id": None, "nome": "FOLGA (BYE)", "placar": 0},
+                        "vencedor_id": team_bye["_id"],
+                        "mapa": "-",
+                        "data_partida": data_partida,
+                        "status": "finalizada",
+                        "arbitro_id": None,
+                        "formato_serie": formato_serie,
+                        "placar_serie_a": 1,
+                        "placar_serie_b": 0,
+                        "jogos_serie": [],
+                        "fearless_draft": fearless,
+                        "campeoes_banidos_fearless": [],
+                        "is_bye": True,
+                        "observacoes": "Avançou direto por sorteio de folga (Bye) - Item 9.1 FINC 2026.",
+                    })
+                    match_idx += 1
+
+                # Remaining teams play preliminary elimination matches
+                playing_teams = times[byes_count:]
+                for i in range(0, len(playing_teams), 2):
+                    time_a = playing_teams[i]
+                    time_b = playing_teams[i+1]
+                    data_partida = base_date + timedelta(hours=match_idx)
+                    matches_to_insert.append({
+                        "admin_id": camp.get("admin_id"),
+                        "campeonato_id": championship_id,
+                        "fase": fase,
+                        "time_a": {"time_id": time_a["_id"], "nome": time_a["nome"], "placar": 0},
+                        "time_b": {"time_id": time_b["_id"], "nome": time_b["nome"], "placar": 0},
+                        "vencedor_id": None,
+                        "mapa": "",
+                        "data_partida": data_partida,
+                        "status": "agendada",
+                        "arbitro_id": None,
+                        "formato_serie": formato_serie,
+                        "placar_serie_a": 0,
+                        "placar_serie_b": 0,
+                        "jogos_serie": [],
+                        "fearless_draft": fearless,
+                        "campeoes_banidos_fearless": [],
+                        "is_bye": False,
+                        "observacoes": "",
+                    })
+                    match_idx += 1
+            else:
+                # Perfect power of 2 bracket
+                for i in range(0, n, 2):
+                    time_a = times[i]
+                    time_b = times[i+1]
+                    data_partida = base_date + timedelta(hours=match_idx)
+                    matches_to_insert.append({
+                        "admin_id": camp.get("admin_id"),
+                        "campeonato_id": championship_id,
+                        "fase": fase,
+                        "time_a": {"time_id": time_a["_id"], "nome": time_a["nome"], "placar": 0},
+                        "time_b": {"time_id": time_b["_id"], "nome": time_b["nome"], "placar": 0},
+                        "vencedor_id": None,
+                        "mapa": "",
+                        "data_partida": data_partida,
+                        "status": "agendada",
+                        "arbitro_id": None,
+                        "formato_serie": formato_serie,
+                        "placar_serie_a": 0,
+                        "placar_serie_b": 0,
+                        "jogos_serie": [],
+                        "fearless_draft": fearless,
+                        "campeoes_banidos_fearless": [],
+                        "is_bye": False,
+                        "observacoes": "",
+                    })
+                    match_idx += 1
         
         elif formato == "grupos":
             n = len(times)
@@ -667,6 +890,8 @@ class ChampionshipService:
             match_count = 0
             for nome_grupo, membros in grupos.items():
                 m_len = len(membros)
+                formato_serie = get_default_series_format(camp.get("jogo", ""), nome_grupo, camp.get("formato_serie"))
+                fearless = is_fearless_draft(camp.get("jogo", ""), nome_grupo, formato_serie)
                 # Generate Round-Robin within the group
                 for i in range(m_len):
                     for j in range(i + 1, m_len):
@@ -684,6 +909,14 @@ class ChampionshipService:
                             "data_partida": data_partida,
                             "status": "agendada",
                             "arbitro_id": None,
+                            "formato_serie": formato_serie,
+                            "placar_serie_a": 0,
+                            "placar_serie_b": 0,
+                            "jogos_serie": [],
+                            "fearless_draft": fearless,
+                            "campeoes_banidos_fearless": [],
+                            "is_bye": False,
+                            "observacoes": "",
                         })
                         match_count += 1
         
@@ -697,6 +930,86 @@ class ChampionshipService:
         # Update championship status to EM_ANDAMENTO
         self.championship_repo.update_fields(championship_id, {"status": STATUS_EM_ANDAMENTO})
         
+        return []
+
+    def generate_next_phase_matches(self, current_user: dict[str, Any], championship_id) -> list[str]:
+        camp = self.championship_repo.find_by_id(championship_id)
+        if not camp or not can_access_admin_scope(current_user, camp.get("admin_id")):
+            return ["Campeonato nao encontrado."]
+
+        if camp.get("status") in (STATUS_FINALIZADO, STATUS_ARQUIVADO):
+            return ["Campeonato finalizado ou arquivado."]
+
+        all_matches = self.match_repo.list_by_championship(championship_id)
+        if not all_matches:
+            return ["Nenhuma partida encontrada neste campeonato. Gere os confrontos iniciais primeiro."]
+
+        phase_order = ["Primeira Rodada", "Oitavas de Final", "Quartas de Final", "Semifinal", "Grande Final"]
+        # Find the phases present
+        existing_phases = [p for p in phase_order if any(m.get("fase") == p for m in all_matches)]
+        if not existing_phases:
+            return ["Fases anteriores não identificadas para chaveamento mata-mata."]
+
+        current_phase = existing_phases[-1]
+        if current_phase == "Grande Final":
+            return ["A Grande Final já foi gerada para este campeonato."]
+
+        current_phase_matches = [m for m in all_matches if m.get("fase") == current_phase]
+        for m in current_phase_matches:
+            if m.get("status") != "finalizada" or not m.get("vencedor_id"):
+                return [f"Todas as partidas da fase '{current_phase}' precisam ser concluídas antes de gerar a próxima fase."]
+
+        # Next phase name
+        curr_idx = phase_order.index(current_phase)
+        next_phase = phase_order[curr_idx + 1]
+
+        # Check if next phase already has matches
+        if any(m.get("fase") == next_phase for m in all_matches):
+            return [f"As partidas da fase '{next_phase}' já foram geradas."]
+
+        # Gather winners in order
+        winners_ids = [m["vencedor_id"] for m in current_phase_matches if m.get("vencedor_id")]
+        if len(winners_ids) < 2:
+            return ["Não há vencedores suficientes para compor a próxima fase."]
+
+        base_date = utc_now_naive()
+        formato_serie = get_default_series_format(camp.get("jogo", ""), next_phase, camp.get("formato_serie"))
+        fearless = is_fearless_draft(camp.get("jogo", ""), next_phase, formato_serie)
+
+        matches_to_insert = []
+        for i in range(0, len(winners_ids), 2):
+            if i + 1 < len(winners_ids):
+                t_a = self.team_repo.find_by_id(winners_ids[i])
+                t_b = self.team_repo.find_by_id(winners_ids[i+1])
+                if not t_a or not t_b:
+                    continue
+                matches_to_insert.append({
+                    "admin_id": camp.get("admin_id"),
+                    "campeonato_id": championship_id,
+                    "fase": next_phase,
+                    "time_a": {"time_id": t_a["_id"], "nome": t_a["nome"], "placar": 0},
+                    "time_b": {"time_id": t_b["_id"], "nome": t_b["nome"], "placar": 0},
+                    "vencedor_id": None,
+                    "mapa": "",
+                    "data_partida": base_date + timedelta(hours=i),
+                    "status": "agendada",
+                    "arbitro_id": None,
+                    "formato_serie": formato_serie,
+                    "placar_serie_a": 0,
+                    "placar_serie_b": 0,
+                    "jogos_serie": [],
+                    "fearless_draft": fearless,
+                    "campeoes_banidos_fearless": [],
+                    "is_bye": False,
+                    "observacoes": "",
+                })
+
+        if not matches_to_insert:
+            return ["Não foi possível montar os confrontos da próxima fase."]
+
+        for m in matches_to_insert:
+            self.match_repo.insert(m)
+
         return []
 
 
@@ -777,11 +1090,18 @@ class MatchService:
         else:
             arbitro_id = None
 
+        fase = form_data.get("fase", "").strip()
+        formato_serie = form_data.get("formato_serie", "").strip()
+        if not formato_serie or formato_serie not in VALID_SERIES_FORMATS:
+            formato_serie = get_default_series_format(camp.get("jogo", ""), fase)
+        
+        fearless = form_data.get("fearless_draft") in (True, "true", "on", "1") or is_fearless_draft(camp.get("jogo", ""), fase, formato_serie)
+
         match_id = self.match_repo.insert(
             {
                 "admin_id": camp.get("admin_id"),
                 "campeonato_id": championship_id,
-                "fase": form_data.get("fase", "").strip(),
+                "fase": fase,
                 "time_a": {"time_id": time_a["_id"], "nome": time_a["nome"], "placar": 0},
                 "time_b": {"time_id": time_b["_id"], "nome": time_b["nome"], "placar": 0},
                 "vencedor_id": None,
@@ -789,6 +1109,12 @@ class MatchService:
                 "data_partida": data_partida,
                 "status": "agendada",
                 "arbitro_id": arbitro_id,
+                "formato_serie": formato_serie,
+                "placar_serie_a": 0,
+                "placar_serie_b": 0,
+                "jogos_serie": [],
+                "fearless_draft": fearless,
+                "campeoes_banidos_fearless": [],
             }
         )
         
@@ -843,6 +1169,8 @@ class MatchService:
         update_fields = {
             "time_a.placar": score_a,
             "time_b.placar": score_b,
+            "placar_serie_a": score_a,
+            "placar_serie_b": score_b,
             "vencedor_id": vencedor_tid,
             "status": "finalizada",
         }
@@ -935,7 +1263,7 @@ class MatchService:
         self._notify_match_result(camp, match, score_a, score_b)
         return None, match["campeonato_id"]
 
-    def solicitar_checkin(self, current_user: dict[str, Any], match_id, antecedencia_minutos: str) -> tuple[str | None, ObjectId | None]:
+    def solicitar_checkin(self, current_user: dict[str, Any], match_id, antecedencia_minutos: str = "10") -> tuple[str | None, ObjectId | None]:
         match = self.match_repo.find_by_id(match_id)
         if not match or not can_access_admin_scope(current_user, match.get("admin_id")):
             return "Partida nao encontrada.", None
@@ -945,7 +1273,7 @@ class MatchService:
         if match.get("status") == "finalizada":
             return "Esta partida ja foi finalizada.", match["campeonato_id"]
         try:
-            minutos = int(antecedencia_minutos)
+            minutos = int(antecedencia_minutos) if antecedencia_minutos else 10
             if minutos < 5:
                 return "A antecedencia minima e de 5 minutos.", match["campeonato_id"]
         except ValueError:
@@ -957,9 +1285,12 @@ class MatchService:
                 "checkin": {
                     "solicitado": True,
                     "antecedencia_minutos": minutos,
+                    "tolerancia_minutos": 10,
                     "solicitado_em": utc_now_naive(),
                     "time_a_confirmado": False,
                     "time_b_confirmado": False,
+                    "wo_aplicado": False,
+                    "mensagem_wo": None,
                 }
             }
         )
@@ -989,7 +1320,6 @@ class MatchService:
         if match.get("status") == "finalizada":
             return "Esta partida ja foi finalizada.", match["campeonato_id"]
 
-
         checkin = match.get("checkin")
         if not checkin or not checkin.get("solicitado"):
             return "O check-in nao foi solicitado para esta partida.", match["campeonato_id"]
@@ -1014,19 +1344,21 @@ class MatchService:
         if not is_admin and not is_player_on_team:
             return "Acesso negado para confirmar presenca deste time.", match["campeonato_id"]
 
-        # Validate time window
+        # Validate time window with 10 min tolerance (FINC 2026 Item 10.2)
         data_partida = match.get("data_partida")
         if data_partida:
             agora = utc_now_naive()
-            antecedencia = timedelta(minutes=checkin["antecedencia_minutos"])
+            antecedencia = timedelta(minutes=checkin.get("antecedencia_minutos", 10))
+            tolerancia = timedelta(minutes=checkin.get("tolerancia_minutos", 10))
             inicio_janela = data_partida - antecedencia
+            limite_tolerancia = data_partida + tolerancia
             # Only players are restricted to the window, admins can confirm at any time
             if not is_admin:
                 if agora < inicio_janela:
-                    minutos_restantes = int((inicio_janela - agora).total_seconds() / 60)
+                    minutos_restantes = max(1, int((inicio_janela - agora).total_seconds() / 60))
                     return f"A janela de check-in ainda nao abriu. Tente novamente em {minutos_restantes} minutos.", match["campeonato_id"]
-                if agora > data_partida:
-                    return "O horario de inicio da partida ja passou. Nao e mais possivel confirmar presenca.", match["campeonato_id"]
+                if agora > limite_tolerancia:
+                    return "O horario da partida com tolerancia de 10 minutos ja passou. Nao e mais possivel confirmar presenca.", match["campeonato_id"]
 
         # Update confirmation field
         field_to_update = "checkin.time_a_confirmado" if team_id == time_a_id else "checkin.time_b_confirmado"
@@ -1062,8 +1394,12 @@ class MatchService:
             
         agora = utc_now_naive()
         data_partida = match.get("data_partida")
-        if data_partida and agora < data_partida:
-            return "O horario da partida ainda nao chegou. Aguarde o prazo limite.", match["campeonato_id"]
+        tolerancia_minutos = checkin.get("tolerancia_minutos", 10)
+        tolerancia = timedelta(minutes=tolerancia_minutos)
+
+        if data_partida and agora < (data_partida + tolerancia):
+            minutos_restantes = max(1, int(((data_partida + tolerancia) - agora).total_seconds() / 60))
+            return f"Ainda dentro do prazo de tolerancia de {tolerancia_minutos} minutos. Aguarde mais {minutos_restantes} minuto(s) para decretar W.O.", match["campeonato_id"]
             
         confirm_a = checkin.get("time_a_confirmado", False)
         confirm_b = checkin.get("time_b_confirmado", False)
@@ -1071,42 +1407,58 @@ class MatchService:
         if confirm_a and confirm_b:
             return "Ambos os times confirmaram presenca. A partida deve ser jogada normalmente.", match["campeonato_id"]
             
+        formato = match.get("formato_serie", SERIES_MD1)
+        needed_wins = 1 if formato == SERIES_MD1 else (2 if formato == SERIES_MD3 else (3 if formato == SERIES_MD5 else 1))
+
         placar_a = 0
         placar_b = 0
         vencedor_tid = None
         perdedor_tid = None
         
         if confirm_a and not confirm_b:
-            placar_a = 13
+            placar_a = needed_wins
             placar_b = 0
             vencedor_tid = match["time_a"]["time_id"]
             perdedor_tid = match["time_b"]["time_id"]
-            mensagem = f"W.O. aplicado! O time {match['time_b']['nome']} faltou e o time {match['time_a']['nome']} venceu por 13x0."
+            mensagem = f"W.O. decretado! O time {match['time_b']['nome']} faltou (tolerancia de {tolerancia_minutos} min excedida). Vitoria de {match['time_a']['nome']} por {placar_a}x{placar_b} ({formato})."
         elif confirm_b and not confirm_a:
             placar_a = 0
-            placar_b = 13
+            placar_b = needed_wins
             vencedor_tid = match["time_b"]["time_id"]
             perdedor_tid = match["time_a"]["time_id"]
-            mensagem = f"W.O. aplicado! O time {match['time_a']['nome']} faltou e o time {match['time_b']['nome']} venceu por 13x0."
+            mensagem = f"W.O. decretado! O time {match['time_a']['nome']} faltou (tolerancia de {tolerancia_minutos} min excedida). Vitoria de {match['time_b']['nome']} por {placar_b}x{placar_a} ({formato})."
         else:
             placar_a = 0
             placar_b = 0
             vencedor_tid = None
-            mensagem = f"Duplo W.O. aplicado! Ambos os times ({match['time_a']['nome']} e {match['time_b']['nome']}) faltaram a partida."
+            mensagem = f"Duplo W.O. decretado! Ambos os times ({match['time_a']['nome']} e {match['time_b']['nome']}) faltaram a partida (tolerancia de {tolerancia_minutos} min excedida)."
             
+        rounds_wo = []
+        if vencedor_tid:
+            rounds_wo.append({
+                "round": 1,
+                "vencedor_id": vencedor_tid,
+                "metodo": "wo",
+                "timestamp": agora,
+            })
+
         self.match_repo.update_fields(
             match_id,
             {
                 "time_a.placar": placar_a,
                 "time_b.placar": placar_b,
+                "placar_serie_a": placar_a,
+                "placar_serie_b": placar_b,
                 "vencedor_id": vencedor_tid,
                 "status": "finalizada",
+                "rounds": rounds_wo,
                 "checkin.wo_aplicado": True,
                 "checkin.mensagem_wo": mensagem
             }
         )
         
         db = self.match_repo.collection.database
+        camp = self.championship_repo.find_by_id(match["campeonato_id"])
         
         if vencedor_tid and perdedor_tid:
             increments = [
@@ -1117,8 +1469,11 @@ class MatchService:
                 team = self.team_repo.find_by_id(team_id)
                 if team:
                     for membro in team.get("jogadores", []):
-                        db["jogadores"].update_one({"_id": membro["jogador_id"]}, {"$inc": increment})
-                        
+                        self.player_repo.increment_stats(membro["jogador_id"], increment)
+
+        invalidate_ranking_cache(self.cache)
+        self._notify_match_result(camp, match, placar_a, placar_b)
+
         arbitro_id = match.get("arbitro_id")
         if arbitro_id:
             user = db["usuarios"].find_one({"referee_id": arbitro_id})
@@ -1135,9 +1490,9 @@ class MatchService:
             team = self.team_repo.find_by_id(match[side]["time_id"])
             if team:
                 for member in team.get("jogadores", []):
-                    player_user = db["usuarios"].find_one({"player_id": member["jogador_id"]})
+                    player_user = self.match_repo.collection.database["usuarios"].find_one({"player_id": member["jogador_id"]})
                     if player_user:
-                        db["notificacoes"].insert_one({
+                        self.match_repo.collection.database["notificacoes"].insert_one({
                             "user_id": player_user["_id"],
                             "mensagem": f"Check-in Encerrado: {mensagem}",
                             "lida": False,
@@ -1145,7 +1500,97 @@ class MatchService:
                             "criado_em": utc_now_naive(),
                         })
 
-        self.cache.delete_pattern("fps_arena:ranking:*")
+        return None, match["campeonato_id"]
+
+    def aplicar_wo(
+        self,
+        current_user: dict[str, Any],
+        match_id,
+        vencedor_id: ObjectId | None = None,
+        motivo: str = "",
+    ) -> tuple[str | None, ObjectId | None]:
+        match = self.match_repo.find_by_id(match_id)
+        if not match:
+            return "Partida nao encontrada.", None
+
+        is_admin = current_user.get("role") in (ROLE_ADMIN, ROLE_SUPER_ADMIN) and can_access_admin_scope(current_user, match.get("admin_id"))
+        is_designated_referee = False
+        if current_user.get("role") == ROLE_REFEREE:
+            referee = self.match_repo.collection.database["usuarios"].find_one({"_id": current_user["_id"]})
+            referee_id = referee.get("referee_id") if referee else None
+            if referee_id and match.get("arbitro_id") and str(match["arbitro_id"]) == str(referee_id):
+                is_designated_referee = True
+
+        if not is_admin and not is_designated_referee:
+            return "Acesso negado para arbitrar esta partida.", None
+
+        camp = self.championship_repo.find_by_id(match["campeonato_id"])
+        if camp and camp.get("status") == STATUS_ARQUIVADO:
+            return "Nao e possivel alterar partidas de um campeonato arquivado.", match["campeonato_id"]
+        if match.get("status") == "finalizada":
+            return "Esta partida ja foi finalizada.", match["campeonato_id"]
+
+        time_a_id = match["time_a"]["time_id"]
+        time_b_id = match["time_b"]["time_id"]
+
+        formato = match.get("formato_serie", SERIES_MD1)
+        needed_wins = 1 if formato == SERIES_MD1 else (2 if formato == SERIES_MD3 else (3 if formato == SERIES_MD5 else 1))
+
+        agora = utc_now_naive()
+        if vencedor_id == time_a_id:
+            placar_a = needed_wins
+            placar_b = 0
+            perdedor_tid = time_b_id
+            mensagem = motivo or f"W.O. decretado pela arbitragem! Vitoria de {match['time_a']['nome']} por {placar_a}x{placar_b} ({formato})."
+        elif vencedor_id == time_b_id:
+            placar_a = 0
+            placar_b = needed_wins
+            perdedor_tid = time_a_id
+            mensagem = motivo or f"W.O. decretado pela arbitragem! Vitoria de {match['time_b']['nome']} por {placar_b}x{placar_a} ({formato})."
+        else:
+            placar_a = 0
+            placar_b = 0
+            vencedor_id = None
+            perdedor_tid = None
+            mensagem = motivo or f"Duplo W.O. decretado pela arbitragem para {match['time_a']['nome']} e {match['time_b']['nome']}."
+
+        rounds_wo = []
+        if vencedor_id:
+            rounds_wo.append({
+                "round": 1,
+                "vencedor_id": vencedor_id,
+                "metodo": "wo",
+                "timestamp": agora,
+            })
+
+        self.match_repo.update_fields(
+            match_id,
+            {
+                "time_a.placar": placar_a,
+                "time_b.placar": placar_b,
+                "placar_serie_a": placar_a,
+                "placar_serie_b": placar_b,
+                "vencedor_id": vencedor_id,
+                "status": "finalizada",
+                "rounds": rounds_wo,
+                "checkin.wo_aplicado": True,
+                "checkin.mensagem_wo": mensagem,
+            }
+        )
+
+        if vencedor_id and perdedor_tid:
+            increments = [
+                (vencedor_id, {"estatisticas.vitorias": 1, "estatisticas.partidas_jogadas": 1}),
+                (perdedor_tid, {"estatisticas.derrotas": 1, "estatisticas.partidas_jogadas": 1}),
+            ]
+            for tid, inc in increments:
+                team = self.team_repo.find_by_id(tid)
+                if team:
+                    for membro in team.get("jogadores", []):
+                        self.player_repo.increment_stats(membro["jogador_id"], inc)
+
+        invalidate_ranking_cache(self.cache)
+        self._notify_match_result(camp, match, placar_a, placar_b)
         return None, match["campeonato_id"]
 
     def add_round(self, current_user: dict[str, Any], match_id, vencedor_id: ObjectId, metodo: str) -> tuple[str | None, dict[str, Any] | None]:
@@ -1255,6 +1700,461 @@ class MatchService:
         # Reload and return updated match
         updated_match = self.match_repo.find_by_id(match_id)
         return None, updated_match
+
+    def record_series_game(
+        self,
+        current_user: dict[str, Any],
+        match_id,
+        vencedor_id: ObjectId,
+        score_a: int = 0,
+        score_b: int = 0,
+        mapa: str = "",
+        campeoes_a: list[str] | None = None,
+        campeoes_b: list[str] | None = None,
+        kda_a: list[dict[str, Any]] | None = None,
+        kda_b: list[dict[str, Any]] | None = None,
+    ) -> tuple[str | None, dict[str, Any] | None]:
+        match = self.match_repo.find_by_id(match_id)
+        if not match:
+            return "Partida nao encontrada.", None
+
+        is_admin = current_user.get("role") in (ROLE_ADMIN, ROLE_SUPER_ADMIN) and can_access_admin_scope(current_user, match.get("admin_id"))
+        is_designated_referee = False
+        if current_user.get("role") == ROLE_REFEREE:
+            referee = self.match_repo.collection.database["usuarios"].find_one({"_id": current_user["_id"]})
+            referee_id = referee.get("referee_id") if referee else None
+            if referee_id and match.get("arbitro_id") and str(match["arbitro_id"]) == str(referee_id):
+                is_designated_referee = True
+
+        if not is_admin and not is_designated_referee:
+            return "Acesso negado para arbitrar esta partida.", None
+
+        if match.get("status") == "finalizada":
+            return "Esta partida ja foi finalizada.", None
+
+        camp = self.championship_repo.find_by_id(match["campeonato_id"])
+        if camp and camp.get("status") == STATUS_ARQUIVADO:
+            return "O campeonato esta arquivado.", None
+
+        time_a_id = match["time_a"]["time_id"]
+        time_b_id = match["time_b"]["time_id"]
+        if vencedor_id not in (time_a_id, time_b_id):
+            return "Time vencedor invalido para esta partida.", None
+
+        # Clean champions lists
+        clean_champs_a = [c.strip().title() for c in (campeoes_a or []) if c and c.strip()]
+        clean_champs_b = [c.strip().title() for c in (campeoes_b or []) if c and c.strip()]
+
+        # Validate Fearless Draft: champions picked in earlier games cannot be picked again by either team
+        is_fearless = match.get("fearless_draft", False)
+        banidos_atuais = set(match.get("campeoes_banidos_fearless", []))
+        if is_fearless:
+            for champ in clean_champs_a + clean_champs_b:
+                if champ in banidos_atuais:
+                    return f"O campeao '{champ}' ja foi utilizado nesta serie e esta bloqueado pelo Fearless Draft.", None
+
+        # Update scores
+        curr_score_a = int(match.get("placar_serie_a", match["time_a"].get("placar", 0)) or 0)
+        curr_score_b = int(match.get("placar_serie_b", match["time_b"].get("placar", 0)) or 0)
+        if vencedor_id == time_a_id:
+            curr_score_a += 1
+        else:
+            curr_score_b += 1
+
+        # Check required wins for format
+        formato = match.get("formato_serie", SERIES_MD1)
+        needed_wins = 1 if formato == SERIES_MD1 else (2 if formato == SERIES_MD3 else 3)
+
+        partida_finalizada = False
+        vencedor_final_id = None
+        if curr_score_a >= needed_wins:
+            partida_finalizada = True
+            vencedor_final_id = time_a_id
+        elif curr_score_b >= needed_wins:
+            partida_finalizada = True
+            vencedor_final_id = time_b_id
+
+        # Update Fearless banned champions list
+        new_banidos = list(match.get("campeoes_banidos_fearless", []))
+        if is_fearless:
+            for champ in clean_champs_a + clean_champs_b:
+                if champ not in new_banidos:
+                    new_banidos.append(champ)
+
+        novo_jogo = {
+            "jogo_numero": len(match.get("jogos_serie", [])) + 1,
+            "vencedor_id": vencedor_id,
+            "score_a": int(score_a or 0),
+            "score_b": int(score_b or 0),
+            "mapa": mapa or match.get("mapa", ""),
+            "campeoes_a": clean_champs_a,
+            "campeoes_b": clean_champs_b,
+            "kda_a": kda_a or [],
+            "kda_b": kda_b or [],
+            "timestamp": utc_now_naive(),
+        }
+
+        update_fields: dict[str, Any] = {
+            "placar_serie_a": curr_score_a,
+            "placar_serie_b": curr_score_b,
+            "time_a.placar": curr_score_a,
+            "time_b.placar": curr_score_b,
+            "campeoes_banidos_fearless": new_banidos,
+            "rounds": [],
+        }
+        if partida_finalizada:
+            update_fields["status"] = "finalizada"
+            update_fields["vencedor_id"] = vencedor_final_id
+        else:
+            update_fields["status"] = "em_andamento"
+            if not match.get("iniciada_em"):
+                update_fields["iniciada_em"] = utc_now_naive()
+
+        self.match_repo.collection.update_one(
+            {"_id": match_id},
+            {
+                "$set": update_fields,
+                "$push": {"jogos_serie": novo_jogo},
+            }
+        )
+
+        # Accumulate individual player KDAs from this game into player profiles
+        for item in (kda_a or []):
+            try:
+                pid = ObjectId(item["jogador_id"]) if isinstance(item.get("jogador_id"), str) else item.get("jogador_id")
+                if pid:
+                    kills = int(item.get("kills") or 0)
+                    deaths = int(item.get("deaths") or 0)
+                    assists = int(item.get("assists") or 0)
+                    player = self.player_repo.find_by_id(pid)
+                    if player:
+                        old_stats = player.get("estatisticas", {})
+                        new_kills = old_stats.get("total_kills", 0) + kills
+                        new_deaths = old_stats.get("total_deaths", 0) + deaths
+                        new_assists = old_stats.get("total_assists", 0) + assists
+                        kd = round(float(new_kills) / float(new_deaths), 2) if new_deaths > 0 else float(new_kills)
+                        self.player_repo.update_fields(pid, {
+                            "estatisticas.total_kills": new_kills,
+                            "estatisticas.total_deaths": new_deaths,
+                            "estatisticas.total_assists": new_assists,
+                            "estatisticas.kd_ratio": kd
+                        })
+            except Exception:
+                pass
+
+        for item in (kda_b or []):
+            try:
+                pid = ObjectId(item["jogador_id"]) if isinstance(item.get("jogador_id"), str) else item.get("jogador_id")
+                if pid:
+                    kills = int(item.get("kills") or 0)
+                    deaths = int(item.get("deaths") or 0)
+                    assists = int(item.get("assists") or 0)
+                    player = self.player_repo.find_by_id(pid)
+                    if player:
+                        old_stats = player.get("estatisticas", {})
+                        new_kills = old_stats.get("total_kills", 0) + kills
+                        new_deaths = old_stats.get("total_deaths", 0) + deaths
+                        new_assists = old_stats.get("total_assists", 0) + assists
+                        kd = round(float(new_kills) / float(new_deaths), 2) if new_deaths > 0 else float(new_kills)
+                        self.player_repo.update_fields(pid, {
+                            "estatisticas.total_kills": new_kills,
+                            "estatisticas.total_deaths": new_deaths,
+                            "estatisticas.total_assists": new_assists,
+                            "estatisticas.kd_ratio": kd
+                        })
+            except Exception:
+                pass
+
+        if partida_finalizada:
+            perdedor_final_id = time_b_id if vencedor_final_id == time_a_id else time_a_id
+            increments = [
+                (vencedor_final_id, {"estatisticas.vitorias": 1, "estatisticas.partidas_jogadas": 1}),
+                (perdedor_final_id, {"estatisticas.derrotas": 1, "estatisticas.partidas_jogadas": 1}),
+            ]
+            for tid, inc in increments:
+                team = self.team_repo.find_by_id(tid)
+                if team:
+                    for membro in team.get("jogadores", []):
+                        self.player_repo.increment_stats(membro["jogador_id"], inc)
+            invalidate_ranking_cache(self.cache)
+            self._notify_match_result(camp, match, curr_score_a, curr_score_b)
+
+        updated_match = self.match_repo.find_by_id(match_id)
+        return None, updated_match
+
+    def undo_series_game(self, current_user: dict[str, Any], match_id) -> tuple[str | None, dict[str, Any] | None]:
+        match = self.match_repo.find_by_id(match_id)
+        if not match:
+            return "Partida nao encontrada.", None
+
+        is_admin = current_user.get("role") in (ROLE_ADMIN, ROLE_SUPER_ADMIN) and can_access_admin_scope(current_user, match.get("admin_id"))
+        is_designated_referee = False
+        if current_user.get("role") == ROLE_REFEREE:
+            referee = self.match_repo.collection.database["usuarios"].find_one({"_id": current_user["_id"]})
+            referee_id = referee.get("referee_id") if referee else None
+            if referee_id and match.get("arbitro_id") and str(match["arbitro_id"]) == str(referee_id):
+                is_designated_referee = True
+
+        if not is_admin and not is_designated_referee:
+            return "Acesso negado para arbitrar esta partida.", None
+
+        camp = self.championship_repo.find_by_id(match["campeonato_id"])
+        if camp and camp.get("status") == STATUS_ARQUIVADO:
+            return "O campeonato esta arquivado.", None
+
+        jogos = match.get("jogos_serie", [])
+        if not jogos:
+            return "Nao ha jogos nesta serie para desfazer.", None
+
+        last_game = jogos[-1]
+        vencedor_id = last_game.get("vencedor_id")
+        time_a_id = match["time_a"]["time_id"]
+        time_b_id = match["time_b"]["time_id"]
+
+        curr_score_a = int(match.get("placar_serie_a", match["time_a"].get("placar", 0)) or 0)
+        curr_score_b = int(match.get("placar_serie_b", match["time_b"].get("placar", 0)) or 0)
+
+        if vencedor_id == time_a_id:
+            curr_score_a = max(0, curr_score_a - 1)
+        else:
+            curr_score_b = max(0, curr_score_b - 1)
+
+        # If it was finalized, revert team stats
+        if match.get("status") == "finalizada" and match.get("vencedor_id"):
+            v_id = match["vencedor_id"]
+            p_id = time_b_id if v_id == time_a_id else time_a_id
+            for tid, dec in [(v_id, {"estatisticas.vitorias": -1, "estatisticas.partidas_jogadas": -1}),
+                             (p_id, {"estatisticas.derrotas": -1, "estatisticas.partidas_jogadas": -1})]:
+                team = self.team_repo.find_by_id(tid)
+                if team:
+                    for membro in team.get("jogadores", []):
+                        self.player_repo.increment_stats(membro["jogador_id"], dec)
+            invalidate_ranking_cache(self.cache)
+
+        # Recalculate remaining fearless banned champions
+        remaining_jogos = jogos[:-1]
+        recalculated_banned = []
+        for g in remaining_jogos:
+            for champ in g.get("campeoes_a", []) + g.get("campeoes_b", []):
+                if champ not in recalculated_banned:
+                    recalculated_banned.append(champ)
+
+        self.match_repo.collection.update_one(
+            {"_id": match_id},
+            {
+                "$set": {
+                    "placar_serie_a": curr_score_a,
+                    "placar_serie_b": curr_score_b,
+                    "time_a.placar": curr_score_a,
+                    "time_b.placar": curr_score_b,
+                    "status": "em_andamento" if remaining_jogos else "agendada",
+                    "vencedor_id": None,
+                    "campeoes_banidos_fearless": recalculated_banned,
+                },
+                "$pop": {"jogos_serie": 1}
+            }
+        )
+
+        updated_match = self.match_repo.find_by_id(match_id)
+        return None, updated_match
+
+    def get_sumula_oficial(self, match_id: ObjectId) -> dict[str, Any] | None:
+        match = self.match_repo.find_by_id(match_id)
+        if not match:
+            return None
+
+        camp = self.championship_repo.find_by_id(match["campeonato_id"])
+        if not camp:
+            return None
+
+        # Teams info
+        team_a = self.team_repo.find_by_id(match["time_a"]["time_id"]) if match.get("time_a", {}).get("time_id") else None
+        team_b = self.team_repo.find_by_id(match["time_b"]["time_id"]) if match.get("time_b", {}).get("time_id") else None
+
+        # Captains & Players info (including matricula & curso for academic eligibility)
+        def get_team_captain_info(team):
+            if not team:
+                return {"nome": "N/A", "nick": "N/A", "matricula": "N/A", "curso": "N/A", "ingresso_finc": "N/A"}
+            capitao = next((m for m in team.get("jogadores", []) if m.get("funcao") == "Capitão"), None)
+            if not capitao and team.get("jogadores"):
+                capitao = team["jogadores"][0]
+            if capitao:
+                p_doc = self.player_repo.find_by_id(capitao.get("jogador_id"))
+                if p_doc:
+                    return {
+                        "nome": p_doc.get("nome_real") or p_doc.get("nome") or capitao.get("nick"),
+                        "nick": p_doc.get("nick") or capitao.get("nick"),
+                        "matricula": p_doc.get("matricula") or "N/A",
+                        "curso": p_doc.get("curso") or "N/A",
+                        "ingresso_finc": p_doc.get("ingresso_finc") or "N/A",
+                    }
+                return {
+                    "nome": capitao.get("nick"),
+                    "nick": capitao.get("nick"),
+                    "matricula": "N/A",
+                    "curso": "N/A",
+                    "ingresso_finc": "N/A",
+                }
+            return {"nome": team.get("nome"), "nick": team.get("nome"), "matricula": "N/A", "curso": "N/A", "ingresso_finc": "N/A"}
+
+        capitao_a = get_team_captain_info(team_a)
+        capitao_b = get_team_captain_info(team_b)
+
+        # Referee info
+        arbitro_nome = "Não designado"
+        if match.get("arbitro_id"):
+            db = self.match_repo.collection.database
+            arb = db["arbitros"].find_one({"_id": match["arbitro_id"]})
+            if arb:
+                arbitro_nome = arb.get("nome")
+            else:
+                usr = db["usuarios"].find_one({"_id": match["arbitro_id"]})
+                if usr:
+                    arbitro_nome = usr.get("nome") or usr.get("login")
+
+        # Winner Name
+        vencedor_nome = "A definir"
+        if match.get("vencedor_id"):
+            if str(match["vencedor_id"]) == str(match["time_a"]["time_id"]):
+                vencedor_nome = match["time_a"]["nome"]
+            elif match.get("time_b", {}).get("time_id") and str(match["vencedor_id"]) == str(match["time_b"]["time_id"]):
+                vencedor_nome = match["time_b"]["nome"]
+
+        # Date & Local format
+        data_dt = match.get("data_partida")
+        data_str = data_dt.strftime("%d/%m/%Y às %H:%M") if isinstance(data_dt, (datetime, date)) else "A definir"
+        local_servidor = match.get("mapa") or "Servidor Oficial FINC 2026 (Espaço E-Sport Challengers)"
+
+        # Games / Rounds breakdown
+        jogos_sumula = []
+        if match.get("jogos_serie"):
+            for j in match["jogos_serie"]:
+                v_nome = match["time_a"]["nome"] if str(j.get("vencedor_id")) == str(match["time_a"]["time_id"]) else match["time_b"]["nome"]
+                obs = f"Mapa: {j.get('mapa')}" if j.get("mapa") else ""
+                if j.get("campeoes_a") or j.get("campeoes_b"):
+                    obs += f" | Draft A: {', '.join(j.get('campeoes_a', []))} | Draft B: {', '.join(j.get('campeoes_b', []))}"
+                jogos_sumula.append({
+                    "numero": j.get("jogo_numero"),
+                    "observacao": obs or "Partida oficial regulamentar",
+                    "placar_a": j.get("score_a", "-"),
+                    "placar_b": j.get("score_b", "-"),
+                    "vencedor": v_nome,
+                })
+        elif match.get("rounds"):
+            jogos_sumula.append({
+                "numero": 1,
+                "observacao": f"Disputa de {len(match['rounds'])} rounds",
+                "placar_a": match["time_a"].get("placar", 0),
+                "placar_b": match["time_b"].get("placar", 0),
+                "vencedor": vencedor_nome,
+            })
+        else:
+            jogos_sumula.append({
+                "numero": 1,
+                "observacao": "Jogo único da série" if match.get("formato_serie") == "MD1" else "Jogo 1",
+                "placar_a": match["time_a"].get("placar", 0),
+                "placar_b": match["time_b"].get("placar", 0),
+                "vencedor": vencedor_nome if match.get("status") == "finalizada" else "Em andamento/Agendada",
+            })
+
+        # W.O. info
+        wo_info = None
+        if match.get("checkin", {}).get("wo_aplicado"):
+            wo_info = match["checkin"].get("mensagem_wo") or "Vitória decretada por W.O. conforme item 10 do Regulamento FINC 2026."
+
+        # Assinaturas
+        assinaturas = match.get("sumula_assinaturas", {})
+        sig_arbitro = assinaturas.get("arbitro", {"assinado": False, "nome": arbitro_nome, "assinado_em": None, "hash": None})
+        sig_cap_a = assinaturas.get("capitao_a", {"assinado": False, "nome": capitao_a["nome"], "matricula": capitao_a["matricula"], "assinado_em": None, "hash": None})
+        sig_cap_b = assinaturas.get("capitao_b", {"assinado": False, "nome": capitao_b["nome"], "matricula": capitao_b["matricula"], "assinado_em": None, "hash": None})
+
+        return {
+            "match": match,
+            "campeonato": camp,
+            "identificacao": {
+                "modalidade": camp.get("jogo", "e-Sports"),
+                "fase": match.get("fase", "Fase Eliminatória"),
+                "formato_serie": match.get("formato_serie", "MD1"),
+                "data_horario_local": f"{data_str} · {local_servidor}",
+                "arbitro": arbitro_nome,
+                "lado_a": f"{match['time_a']['nome']} (Capitão: {capitao_a['nome']} - Matrícula: {capitao_a['matricula']})",
+                "lado_b": f"{match['time_b']['nome']} (Capitão: {capitao_b['nome']} - Matrícula: {capitao_b['matricula']})",
+                "capitao_a": capitao_a,
+                "capitao_b": capitao_b,
+            },
+            "resultados": {
+                "jogos": jogos_sumula,
+                "placar_serie_a": match.get("placar_serie_a", match["time_a"].get("placar", 0)),
+                "placar_serie_b": match.get("placar_serie_b", match["time_b"].get("placar", 0)),
+                "vencedor_serie": vencedor_nome,
+                "wo_info": wo_info,
+            },
+            "ocorrencias": match.get("sumula_ocorrencias", []),
+            "assinaturas": {
+                "arbitro": sig_arbitro,
+                "capitao_a": sig_cap_a,
+                "capitao_b": sig_cap_b,
+            }
+        }
+
+    def add_sumula_ocorrencia(self, current_user: dict[str, Any], match_id: ObjectId, texto: str, tipo: str = "Ocorrência", artigo: str = "Art. 12") -> tuple[str | None, dict[str, Any] | None]:
+        match = self.match_repo.find_by_id(match_id)
+        if not match:
+            return "Partida nao encontrada.", None
+
+        if not can_access_admin_scope(current_user, match.get("admin_id")) and current_user.get("role") != ROLE_REFEREE:
+            return "Acesso nao autorizado para registrar ocorrencias nesta sumula.", None
+
+        if not texto or not texto.strip():
+            return "O texto da ocorrencia ou advertencia e obrigatorio.", None
+
+        nova_ocorrencia = {
+            "id": str(uuid4())[:8],
+            "texto": texto.strip(),
+            "tipo": tipo.strip(),
+            "artigo": artigo.strip(),
+            "registrado_por": current_user.get("nome") or current_user.get("login"),
+            "registrado_em": utc_now_naive().strftime("%d/%m/%Y %H:%M:%S"),
+        }
+
+        self.match_repo.collection.update_one(
+            {"_id": match_id},
+            {"$push": {"sumula_ocorrencias": nova_ocorrencia}}
+        )
+        updated = self.match_repo.find_by_id(match_id)
+        return None, updated
+
+    def assinar_sumula_oficial(self, current_user: dict[str, Any], match_id: ObjectId, papel: str, nome_assinante: str, matricula: str | None = None) -> tuple[str | None, dict[str, Any] | None]:
+        match = self.match_repo.find_by_id(match_id)
+        if not match:
+            return "Partida nao encontrada.", None
+
+        if papel not in ("arbitro", "capitao_a", "capitao_b"):
+            return "Papel de assinatura invalido.", None
+
+        if not nome_assinante or not nome_assinante.strip():
+            return "Nome do assinante e obrigatorio.", None
+
+        now_dt = utc_now_naive()
+        now_str = now_dt.strftime("%d/%m/%Y %H:%M:%S")
+        raw_hash_seed = f"{match_id}:{papel}:{nome_assinante}:{matricula or ''}:{now_dt.isoformat()}"
+        hash_val = hashlib.sha256(raw_hash_seed.encode("utf-8")).hexdigest()[:16].upper()
+
+        sig_data = {
+            "assinado": True,
+            "nome": nome_assinante.strip(),
+            "matricula": (matricula or "").strip(),
+            "assinado_em": now_str,
+            "hash": f"FINC-SIG-{hash_val}",
+            "user_id": current_user.get("_id"),
+        }
+
+        self.match_repo.collection.update_one(
+            {"_id": match_id},
+            {"$set": {f"sumula_assinaturas.{papel}": sig_data}}
+        )
+        updated = self.match_repo.find_by_id(match_id)
+        return None, updated
 
 
 

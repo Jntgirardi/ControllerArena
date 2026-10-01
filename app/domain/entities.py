@@ -17,6 +17,12 @@ class Jogador:
     nome_real: str
     jogo_principal: str
     contato: str = ""
+    email: str = ""
+    data_nascimento: str = ""
+    instituicao: str = ""
+    curso: str = ""
+    matricula: str = ""
+    numero_ingresso_finc: str = ""
     estatisticas: dict[str, Any] = field(default_factory=dict)
 
 
@@ -44,6 +50,11 @@ class Partida:
     fase: str
     status: str
     arbitro_id: str | None = None
+    formato_serie: str = "MD1"
+    placar_serie_a: int = 0
+    placar_serie_b: int = 0
+    fearless_draft: bool = False
+    jogos_serie: list[dict[str, Any]] = field(default_factory=list)
 
 
 @dataclass

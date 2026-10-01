@@ -20,7 +20,7 @@
         <span class="badge bg-secondary ms-1" style="font-size:.7rem">{{ time.tag }}</span>
       </span>
     </span>
-    <span class="badge {{ 'badge-cs2' if time.jogo == 'CS2' else 'badge-valorant' }}">
+    <span class="badge {{ get_game_badge_bg(time.jogo) }} text-white">
       {{ time.jogo }}
     </span>
   </div>

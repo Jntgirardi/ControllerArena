@@ -385,13 +385,30 @@ def map_championship_to_public(camp_doc, services):
                 if "nick" not in item:
                     item["nick"] = item.get("jogador_id") # Fallback
 
+        METHOD_LABELS = {
+            "elimination": "Eliminação",
+            "objective_bomb": "Bomba Detonada",
+            "detonation": "Detonação da Spike",
+            "objective_defuse": "Bomba Desarmada",
+            "defuse": "Desarme da Spike",
+            "objective_time": "Tempo Esgotado",
+            "time": "Tempo Esgotado",
+            "nexus_destroyed": "Destruição do Nexus",
+            "surrender": "Rendição",
+            "king_tower": "Torre do Rei Destruída",
+            "crowns_lead": "Mais Coroas",
+            "sudden_death": "Morte Súbita",
+            "lowest_hp": "Menor Vida de Torre",
+            "wo": "W.O.",
+        }
         mapped_rounds = []
         for idx, r in enumerate(m.get("rounds", [])):
             vencedor_str = 'time_a' if str(r.get("vencedor_id")) == str(m["time_a"]["time_id"]) else 'time_b'
+            raw_metodo = r.get("metodo", "Kills")
             mapped_rounds.append({
                 "numero": r.get("round", idx + 1),
                 "vencedor": vencedor_str,
-                "metodo_vitoria": r.get("metodo", "Kills")
+                "metodo_vitoria": METHOD_LABELS.get(raw_metodo, raw_metodo)
             })
 
         partidas.append({
@@ -403,6 +420,13 @@ def map_championship_to_public(camp_doc, services):
             "hora": hora,
             "score_a": score_a,
             "score_b": score_b,
+            "formato_serie": m.get("formato_serie", "MD1"),
+            "placar_serie_a": m.get("placar_serie_a", score_a),
+            "placar_serie_b": m.get("placar_serie_b", score_b),
+            "fearless_draft": m.get("fearless_draft", False),
+            "campeoes_banidos_fearless": m.get("campeoes_banidos_fearless", []),
+            "jogos_serie": m.get("jogos_serie", []),
+            "checkin": m.get("checkin", {}),
             "time_a": {
                 "nome": m["time_a"]["nome"],
                 "tag": time_a_doc.get("tag", "TBD") if time_a_doc else "TBD",
@@ -534,6 +558,97 @@ def register_routes(app, services):
             abort(404)
 
         return render_template("sumula_partida.html", campeonato=campeonato, partida=partida)
+
+    @app.route("/partidas/<partida_id>/sumula-oficial", endpoint="sumula_oficial")
+    def sumula_oficial(partida_id):
+        oid = to_oid(partida_id)
+        if not oid:
+            flash("ID de partida inválido.", "danger")
+            return redirect(url_for("index"))
+
+        sumula_data = services["matches"].get_sumula_oficial(oid)
+        if not sumula_data:
+            flash("Súmula não encontrada para esta partida.", "danger")
+            return redirect(url_for("index"))
+
+        current_user = build_current_user() if "user_id" in session else None
+        return render_template("sumula_oficial_anexo_iv.html", sumula=sumula_data, current_user=current_user)
+
+    @app.route("/partidas/<partida_id>/sumula-oficial/ocorrencia", methods=["POST"], endpoint="adicionar_ocorrencia_sumula")
+    @login_required
+    def adicionar_ocorrencia_sumula(partida_id):
+        current_user = build_current_user()
+        oid = to_oid(partida_id)
+        if not oid:
+            flash("ID de partida inválido.", "danger")
+            return redirect(url_for("dashboard"))
+
+        texto = request.form.get("texto", "").strip()
+        tipo = request.form.get("tipo", "Ocorrência").strip()
+        artigo = request.form.get("artigo", "Art. 12").strip()
+
+        error, _ = services["matches"].add_sumula_ocorrencia(current_user, oid, texto, tipo, artigo)
+        if error:
+            flash(error, "danger")
+        else:
+            flash("Ocorrência/advertência registrada na Súmula Oficial!", "success")
+        return redirect(url_for("sumula_oficial", partida_id=partida_id))
+
+    @app.route("/partidas/<partida_id>/sumula-oficial/assinar", methods=["POST"], endpoint="assinar_sumula_oficial")
+    @login_required
+    def assinar_sumula_oficial(partida_id):
+        current_user = build_current_user()
+        oid = to_oid(partida_id)
+        if not oid:
+            flash("ID de partida inválido.", "danger")
+            return redirect(url_for("dashboard"))
+
+        papel = request.form.get("papel", "").strip()
+        nome_assinante = request.form.get("nome_assinante", "").strip() or current_user.get("nome") or current_user.get("login")
+        matricula = request.form.get("matricula", "").strip()
+
+        error, _ = services["matches"].assinar_sumula_oficial(current_user, oid, papel, nome_assinante, matricula)
+        if error:
+            flash(error, "danger")
+        else:
+            flash("Assinatura eletrônica registrada na Súmula Oficial com sucesso!", "success")
+        return redirect(url_for("sumula_oficial", partida_id=partida_id))
+
+    @app.route("/partidas/<partida_id>/sumula-oficial/pdf", endpoint="sumula_oficial_pdf")
+    def sumula_oficial_pdf(partida_id):
+        oid = to_oid(partida_id)
+        if not oid:
+            flash("ID de partida inválido.", "danger")
+            return redirect(url_for("index"))
+
+        sumula_data = services["matches"].get_sumula_oficial(oid)
+        if not sumula_data:
+            flash("Súmula não encontrada.", "danger")
+            return redirect(url_for("index"))
+
+        ident = sumula_data["identificacao"]
+        res = sumula_data["resultados"]
+        rows = []
+        for jg in res["jogos"]:
+            rows.append({
+                "Partida": str(jg["numero"]),
+                "Observacao": str(jg["observacao"])[:40],
+                "Placar A": str(jg["placar_a"]),
+                "Placar B": str(jg["placar_b"]),
+                "Vencedor": str(jg["vencedor"])[:20],
+            })
+        report = {
+            "title": f"SUMULA OFICIAL ANEXO IV - {ident['modalidade']}",
+            "period": f"{ident['fase']} ({ident['formato_serie']})",
+            "columns": ["Partida", "Observacao", "Placar A", "Placar B", "Vencedor"],
+            "rows": rows,
+        }
+        pdf_bytes = build_pdf_bytes(report)
+        return Response(
+            pdf_bytes,
+            mimetype="application/pdf",
+            headers={"Content-Disposition": f"inline; filename=Sumula_Oficial_Anexo_IV_{partida_id}.pdf"}
+        )
 
     @app.route("/login", methods=["GET", "POST"], endpoint="login")
     def login():
@@ -1061,6 +1176,24 @@ def register_routes(app, services):
             flash("Partidas e chaves geradas automaticamente com sucesso!", "success")
         return redirect(url_for("ver_campeonato", camp_id=camp_id))
 
+    @app.route("/campeonatos/<camp_id>/avancar-fase", methods=["POST"], endpoint="avancar_fase_campeonato")
+    @login_required
+    @roles_required(ROLE_ADMIN)
+    def avancar_fase_campeonato(camp_id):
+        current_user = build_current_user()
+        oid = to_oid(camp_id)
+        if not oid:
+            flash("ID invalido.", "danger")
+            return redirect(url_for("listar_campeonatos"))
+            
+        errors = services["championships"].generate_next_phase_matches(current_user, oid)
+        if errors:
+            for error in errors:
+                flash(error, "danger")
+        else:
+            flash("Confrontos da próxima fase gerados com sucesso!", "success")
+        return redirect(url_for("ver_campeonato", camp_id=camp_id))
+
     @app.route("/campeonatos/<camp_id>/partidas/nova", methods=["POST"], endpoint="nova_partida")
     @login_required
     @roles_required(ROLE_ADMIN)
@@ -1095,6 +1228,67 @@ def register_routes(app, services):
         flash(error or "Resultado registrado com sucesso!", "warning" if error else "success")
         redirect_id = str(camp_id) if camp_id else None
         return redirect(url_for("ver_campeonato", camp_id=redirect_id) if redirect_id else url_for("listar_campeonatos"))
+
+    @app.route("/partidas/<partida_id>/checkin/solicitar", methods=["POST"], endpoint="solicitar_checkin_partida")
+    @login_required
+    @roles_required(ROLE_ADMIN)
+    def solicitar_checkin_partida(partida_id):
+        current_user = build_current_user()
+        oid = to_oid(partida_id)
+        if not oid:
+            flash("ID invalido.", "danger")
+            return redirect(url_for("listar_campeonatos"))
+        antecedencia = request.form.get("antecedencia_minutos", "10")
+        error, camp_id = services["matches"].solicitar_checkin(current_user, oid, antecedencia)
+        flash(error or "Check-in solicitado com sucesso! Tolerância oficial de 10 minutos (FINC 2026).", "warning" if error else "success")
+        redirect_id = str(camp_id) if camp_id else None
+        return redirect(url_for("ver_campeonato", camp_id=redirect_id) if redirect_id else url_for("listar_campeonatos"))
+
+    @app.route("/partidas/<partida_id>/checkin/confirmar", methods=["POST"], endpoint="confirmar_checkin_partida")
+    @login_required
+    def confirmar_checkin_partida(partida_id):
+        current_user = build_current_user()
+        oid = to_oid(partida_id)
+        if not oid:
+            flash("ID invalido.", "danger")
+            return redirect(url_for("dashboard"))
+        team_id = to_oid(request.form.get("time_id", ""))
+        if not team_id:
+            flash("Time invalido.", "danger")
+            return redirect(url_for("dashboard"))
+        error, camp_id = services["matches"].confirmar_presenca(current_user, oid, team_id)
+        flash(error or "Presença confirmada com sucesso!", "warning" if error else "success")
+        redirect_id = str(camp_id) if camp_id else None
+        return redirect(url_for("ver_campeonato", camp_id=redirect_id) if redirect_id else url_for("dashboard"))
+
+    @app.route("/partidas/<partida_id>/checkin/verificar", methods=["POST"], endpoint="verificar_checkin_partida")
+    @login_required
+    @roles_required(ROLE_ADMIN)
+    def verificar_checkin_partida(partida_id):
+        current_user = build_current_user()
+        oid = to_oid(partida_id)
+        if not oid:
+            flash("ID invalido.", "danger")
+            return redirect(url_for("listar_campeonatos"))
+        error, camp_id = services["matches"].verificar_limite_checkin(current_user, oid)
+        flash(error or "Verificação de check-in executada com sucesso.", "warning" if error else "success")
+        redirect_id = str(camp_id) if camp_id else None
+        return redirect(url_for("ver_campeonato", camp_id=redirect_id) if redirect_id else url_for("listar_campeonatos"))
+
+    @app.route("/partidas/<partida_id>/aplicar-wo", methods=["POST"], endpoint="aplicar_wo_partida")
+    @login_required
+    def aplicar_wo_partida(partida_id):
+        current_user = build_current_user()
+        oid = to_oid(partida_id)
+        if not oid:
+            flash("ID invalido.", "danger")
+            return redirect(url_for("dashboard"))
+        vencedor_id = to_oid(request.form.get("vencedor_id", ""))
+        motivo = request.form.get("motivo", "").strip()
+        error, camp_id = services["matches"].aplicar_wo(current_user, oid, vencedor_id, motivo)
+        flash(error or "Vitória por W.O. aplicada com sucesso!", "warning" if error else "success")
+        redirect_id = str(camp_id) if camp_id else None
+        return redirect(url_for("ver_campeonato", camp_id=redirect_id) if redirect_id else url_for("dashboard"))
 
     @app.route("/partidas/<partida_id>/rounds", methods=["GET"], endpoint="rounds_control")
     @login_required
@@ -1142,9 +1336,10 @@ def register_routes(app, services):
                 })
 
         camp_doc = services["championships"].championship_repo.find_by_id(match["campeonato_id"])
-        campeonato_nome = camp_doc.get("nome", "Masters CS2") if camp_doc else "Masters CS2"
+        campeonato_nome = camp_doc.get("nome", "Arena E-sports") if camp_doc else "Arena E-sports"
+        jogo = camp_doc.get("jogo", "Valorant") if camp_doc else "Valorant"
 
-        return render_template("partidas/rounds.html", partida=match, players_a=players_a, players_b=players_b, campeonato_nome=campeonato_nome)
+        return render_template("partidas/rounds.html", partida=match, players_a=players_a, players_b=players_b, campeonato_nome=campeonato_nome, jogo=jogo)
 
     @app.route("/partidas/<partida_id>/rounds/vencer", methods=["POST"], endpoint="rounds_vencer")
     @login_required
@@ -1224,11 +1419,68 @@ def register_routes(app, services):
         if not match:
             return {"success": False, "error": "Partida nao encontrada."}, 404
 
-        score_a = str(match["time_a"]["placar"])
-        score_b = str(match["time_b"]["placar"])
-
         kda_a = request.json.get("kda_a") if request.is_json else None
         kda_b = request.json.get("kda_b") if request.is_json else None
+        mapa = request.json.get("mapa", "").strip() if request.is_json else ""
+
+        formato_serie = match.get("formato_serie", "MD1")
+
+        if formato_serie in ("MD3", "MD5"):
+            score_a = int(match["time_a"].get("placar", 0) or 0)
+            score_b = int(match["time_b"].get("placar", 0) or 0)
+
+            if request.is_json and "score_a" in request.json and "score_b" in request.json:
+                try:
+                    score_a = int(request.json["score_a"])
+                    score_b = int(request.json["score_b"])
+                except Exception:
+                    pass
+
+            if score_a == score_b:
+                return {"success": False, "error": "O jogo da série não pode terminar em empate."}, 400
+
+            vencedor_id = match["time_a"]["time_id"] if score_a > score_b else match["time_b"]["time_id"]
+
+            error, updated_match = services["matches"].record_series_game(
+                current_user,
+                oid,
+                vencedor_id,
+                score_a=score_a,
+                score_b=score_b,
+                mapa=mapa or match.get("mapa", ""),
+                kda_a=kda_a,
+                kda_b=kda_b,
+            )
+            if error:
+                return {"success": False, "error": error}, 400
+
+            camp_id = match.get("campeonato_id")
+            num_jogos = len(updated_match.get("jogos_serie", []))
+            placar_a = updated_match.get("placar_serie_a", 0)
+            placar_b = updated_match.get("placar_serie_b", 0)
+
+            if updated_match.get("status") == "finalizada":
+                vencedor_nome = match["time_a"]["nome"] if updated_match.get("vencedor_id") == match["time_a"]["time_id"] else match["time_b"]["nome"]
+                flash(f"Série {formato_serie} finalizada com sucesso! Vitória de {vencedor_nome} por {placar_a}x{placar_b}.", "success")
+                return {
+                    "success": True,
+                    "series_finished": True,
+                    "redirect_url": url_for("ver_campeonato", camp_id=str(camp_id)) if camp_id else "/dashboard"
+                }
+            else:
+                next_g = num_jogos + 1
+                decisivo_txt = " (Desempate)" if next_g == 3 and formato_serie == "MD3" else ""
+                flash(f"Jogo {num_jogos} concluído! Placar da Série {formato_serie}: {match['time_a']['nome']} {placar_a} x {placar_b} {match['time_b']['nome']}. Pronto para o Jogo {next_g}{decisivo_txt}!", "success")
+                return {
+                    "success": True,
+                    "series_finished": False,
+                    "next_game": next_g,
+                    "placar_serie": f"{placar_a} x {placar_b}",
+                    "redirect_url": url_for("rounds_control", partida_id=partida_id)
+                }
+
+        score_a = str(match["time_a"]["placar"])
+        score_b = str(match["time_b"]["placar"])
 
         error, camp_id = services["matches"].register_result(current_user, oid, score_a, score_b, kda_a, kda_b)
         if error:
@@ -1237,8 +1489,112 @@ def register_routes(app, services):
         flash("Partida finalizada com sucesso!", "success")
         return {
             "success": True,
+            "series_finished": True,
             "redirect_url": url_for("ver_campeonato", camp_id=str(camp_id)) if camp_id else "/dashboard"
         }
+
+    @app.route("/partidas/<partida_id>/serie/jogo", methods=["POST"], endpoint="registrar_jogo_serie")
+    @login_required
+    def registrar_jogo_serie(partida_id):
+        current_user = build_current_user()
+        oid = to_oid(partida_id)
+        if not oid:
+            if request.is_json:
+                return {"success": False, "error": "ID invalido."}, 400
+            flash("ID invalido.", "danger")
+            return redirect(url_for("dashboard"))
+
+        if request.is_json:
+            data = request.json or {}
+            vencedor_id_str = data.get("vencedor_id")
+            score_a = data.get("score_a", 0)
+            score_b = data.get("score_b", 0)
+            mapa = data.get("mapa", "")
+            campeoes_a = data.get("campeoes_a") or []
+            campeoes_b = data.get("campeoes_b") or []
+            kda_a = data.get("kda_a")
+            kda_b = data.get("kda_b")
+        else:
+            vencedor_id_str = request.form.get("vencedor_id")
+            score_a = request.form.get("score_a", 0)
+            score_b = request.form.get("score_b", 0)
+            mapa = request.form.get("mapa", "")
+            raw_c_a = request.form.get("campeoes_a", "")
+            raw_c_b = request.form.get("campeoes_b", "")
+            campeoes_a = [c.strip() for c in raw_c_a.split(",") if c.strip()] if raw_c_a else []
+            campeoes_b = [c.strip() for c in raw_c_b.split(",") if c.strip()] if raw_c_b else []
+            kda_a = None
+            kda_b = None
+
+        vencedor_id = to_oid(vencedor_id_str)
+        if not vencedor_id:
+            if request.is_json:
+                return {"success": False, "error": "Selecione o time vencedor."}, 400
+            flash("Selecione o time vencedor.", "danger")
+            return redirect(url_for("rounds_control", partida_id=partida_id))
+
+        error, updated_match = services["matches"].record_series_game(
+            current_user,
+            oid,
+            vencedor_id,
+            score_a=score_a,
+            score_b=score_b,
+            mapa=mapa,
+            campeoes_a=campeoes_a,
+            campeoes_b=campeoes_b,
+            kda_a=kda_a,
+            kda_b=kda_b,
+        )
+
+        if error:
+            if request.is_json:
+                return {"success": False, "error": error}, 400
+            flash(error, "danger")
+            return redirect(url_for("rounds_control", partida_id=partida_id))
+
+        if request.is_json:
+            return {
+                "success": True,
+                "placar_serie_a": updated_match.get("placar_serie_a", 0),
+                "placar_serie_b": updated_match.get("placar_serie_b", 0),
+                "status": updated_match.get("status"),
+                "campeoes_banidos": updated_match.get("campeoes_banidos_fearless", []),
+                "jogos_serie": updated_match.get("jogos_serie", []),
+            }
+
+        flash("Jogo da série registrado com sucesso!", "success")
+        return redirect(url_for("rounds_control", partida_id=partida_id))
+
+    @app.route("/partidas/<partida_id>/serie/desfazer", methods=["POST"], endpoint="desfazer_jogo_serie")
+    @login_required
+    def desfazer_jogo_serie(partida_id):
+        current_user = build_current_user()
+        oid = to_oid(partida_id)
+        if not oid:
+            if request.is_json:
+                return {"success": False, "error": "ID invalido."}, 400
+            flash("ID invalido.", "danger")
+            return redirect(url_for("dashboard"))
+
+        error, updated_match = services["matches"].undo_series_game(current_user, oid)
+        if error:
+            if request.is_json:
+                return {"success": False, "error": error}, 400
+            flash(error, "danger")
+            return redirect(url_for("rounds_control", partida_id=partida_id))
+
+        if request.is_json:
+            return {
+                "success": True,
+                "placar_serie_a": updated_match.get("placar_serie_a", 0),
+                "placar_serie_b": updated_match.get("placar_serie_b", 0),
+                "status": updated_match.get("status"),
+                "campeoes_banidos": updated_match.get("campeoes_banidos_fearless", []),
+                "jogos_serie": updated_match.get("jogos_serie", []),
+            }
+
+        flash("Último jogo da série foi desfeito.", "info")
+        return redirect(url_for("rounds_control", partida_id=partida_id))
 
 
 

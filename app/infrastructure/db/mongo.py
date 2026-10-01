@@ -119,100 +119,81 @@ class MongoDatabase:
             
         hoje = utc_now()
         
-        # For each admin, populate 8 teams (4 CS2, 4 Valorant) and 4 running championships (2 CS2, 2 Valorant)
-        for adm_id, suffix_name, suffix_login in admin_configs:
-            cs2_team_ids = []
-            val_team_ids = []
-            
-            # 8 Teams
-            for t_idx in range(1, 9):
-                is_cs2 = (t_idx <= 4)
-                jogo = "CS2" if is_cs2 else "Valorant"
-                tag = f"{suffix_login[:2].upper()}{t_idx}"
-                team_name = f"Time {t_idx} ({suffix_name})"
-                
+        # 14 Equipes de Valorant com exatamente 5 jogadores cada (conforme solicitado pelo usuário)
+        # Campeonatos e partidas iniciam zerados (vazios)
+        valorant_teams_data = [
+            ("LOUD FINC", "LOU"),
+            ("FURIA Esports", "FUR"),
+            ("Sentinels FINC", "SEN"),
+            ("FNATIC Academy", "FNC"),
+            ("Paper Rex Academic", "PRX"),
+            ("KRÜ Esports", "KRU"),
+            ("Leviatán Academy", "LEV"),
+            ("Team Liquid FINC", "TLQ"),
+            ("Cloud9 Academic", "C9A"),
+            ("NRG Esports", "NRG"),
+            ("DRX FINC", "DRX"),
+            ("Gen.G Academic", "GEN"),
+            ("Team Vitality", "VIT"),
+            ("Karmine Corp FINC", "KC"),
+        ]
+
+        cursos_finc = [
+            "Engenharia de Software",
+            "Ciência da Computação",
+            "Sistemas de Informação",
+            "Engenharia da Computação",
+            "Análise e Desenv. de Sistemas",
+        ]
+        agentes_val = ["Jett", "Omen", "Sova", "Killjoy", "Cypher"]
+        ranks_val = ["Radiant", "Imortal 3", "Imortal 2", "Ascendente 3", "Ascendente 2", "Diamante 3"]
+
+        for adm_id in all_admins:
+            for t_idx, (t_nome, t_tag) in enumerate(valorant_teams_data, start=1):
                 team_id = db.times.insert_one(
                     {
-                        "nome": team_name,
-                        "tag": tag,
-                        "jogo": jogo,
+                        "nome": t_nome,
+                        "tag": t_tag,
+                        "jogo": "Valorant",
                         "admin_id": adm_id,
                         "jogadores": [],
                         "criado_em": utc_now(),
                     }
                 ).inserted_id
-                
-                if is_cs2:
-                    cs2_team_ids.append(team_id)
-                else:
-                    val_team_ids.append(team_id)
-                    
-                # 5 Players per Team
+
                 team_players = []
                 for p_idx in range(1, 6):
-                    p_nick = f"Pl{p_idx}T{t_idx}{suffix_login.upper()}"
-                    p_name = f"Jogador {p_idx} Time {t_idx} ({suffix_name})"
-                    p_login = f"p{p_idx}t{t_idx}{suffix_login}"
-                    
+                    funcao = "Capitão" if p_idx == 1 else "Jogador"
+                    p_nick = f"{t_tag}_{'Cap' if p_idx == 1 else 'P' + str(p_idx)}"
+                    p_name = f"Atleta {p_idx} ({t_nome})"
+                    p_login = f"val_t{t_idx}_p{p_idx}_{str(adm_id)[-4:]}"
+                    curso = cursos_finc[(t_idx + p_idx) % len(cursos_finc)]
+                    agente = agentes_val[(p_idx - 1) % len(agentes_val)]
+                    rank = ranks_val[(t_idx + p_idx) % len(ranks_val)]
+
                     player_doc = {
                         "nick": p_nick,
                         "nome": p_name,
                         "nome_real": p_name,
                         "login": p_login,
-                        "contato": f"{p_login}@arena.com",
-                        "jogo_principal": jogo,
+                        "contato": f"{p_login}@finc.edu.br",
+                        "jogo_principal": "Valorant",
                         "admin_id": adm_id,
                         "time_id": team_id,
                         "campeonato_id": None,
+                        "matricula": f"2024{t_idx:02d}{p_idx:02d}",
+                        "curso": curso,
+                        "ingresso_finc": "2024.1",
+                        "data_nascimento": "2003-04-15",
+                        "rank_ato": rank,
+                        "agente_principal": agente,
                         "estatisticas": {"partidas_jogadas": 0, "vitorias": 0, "derrotas": 0, "kd_ratio": 1.0},
                         "criado_em": utc_now(),
                     }
-                    if is_cs2:
-                        player_doc["premier_rating"] = 12000 + (t_idx * 800) + (p_idx * 150)
-                    else:
-                        player_doc["rank_ato"] = "Diamond 3"
-                        
                     p_id = db.jogadores.insert_one(player_doc).inserted_id
-                    team_players.append({"jogador_id": p_id, "nick": p_nick, "funcao": "Capitão" if p_idx == 1 else "Jogador"})
-                    
+                    team_players.append({"jogador_id": p_id, "nick": p_nick, "funcao": funcao})
 
                 db.times.update_one({"_id": team_id}, {"$set": {"jogadores": team_players}})
-        
-            # 4 Running Championships (2 CS2, 2 Valorant)
-            # CS2 Championships
-            for c_idx in range(1, 3):
-                db.campeonatos.insert_one(
-                    {
-                        "nome": f"Copa CS2 Act {c_idx} ({suffix_name})",
-                        "jogo": "CS2",
-                        "formato": "mata-mata",
-                        "max_times": 8,
-                        "premiacao": {"1_lugar": f"R$ {c_idx * 1000},00", "2_lugar": "R$ 400,00", "3_lugar": "R$ 100,00"},
-                        "datas": {"inicio": hoje + timedelta(days=1), "fim": hoje + timedelta(days=15)},
-                        "status": "INSCRICAO",
-                        "admin_id": adm_id,
-                        "times_inscritos": cs2_team_ids,
-                        "criado_por": adm_id,
-                        "criado_em": hoje - timedelta(days=4),
-                    }
-                )
-            # Valorant Championships
-            for c_idx in range(1, 3):
-                db.campeonatos.insert_one(
-                    {
-                        "nome": f"Série Val Act {c_idx} ({suffix_name})",
-                        "jogo": "Valorant",
-                        "formato": "grupos",
-                        "max_times": 8,
-                        "premiacao": {"1_lugar": f"R$ {c_idx * 900},00", "2_lugar": "R$ 300,00", "3_lugar": "R$ 50,00"},
-                        "datas": {"inicio": hoje + timedelta(days=2), "fim": hoje + timedelta(days=20)},
-                        "status": "INSCRICAO",
-                        "admin_id": adm_id,
-                        "times_inscritos": val_team_ids,
-                        "criado_por": adm_id,
-                        "criado_em": hoje - timedelta(days=3),
-                    }
-                )
                 
         # Create mock audit logs and events for the demo admin
         db.eventos.insert_one(
