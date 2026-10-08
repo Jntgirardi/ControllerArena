@@ -464,6 +464,67 @@
       showPageLoader();
     });
   })();
+
+  /* Sliding Bottom Navbar Indicator */
+  (function initNavIndicator() {
+    function updateIndicator(targetEl, animate = true) {
+      const container = document.getElementById('nav-links-container');
+      const indicator = document.getElementById('nav-indicator');
+      if (!container || !indicator) return;
+
+      const activeEl = targetEl || container.querySelector('.nav-item-active');
+      if (!activeEl) {
+        indicator.style.opacity = '0';
+        return;
+      }
+
+      if (!animate) {
+        indicator.style.transition = 'none';
+      } else {
+        indicator.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+      }
+
+      const containerRect = container.getBoundingClientRect();
+      const targetRect = activeEl.getBoundingClientRect();
+
+      const left = targetRect.left - containerRect.left;
+      const top = targetRect.top - containerRect.top;
+      const width = targetRect.width;
+      const height = targetRect.height;
+
+      indicator.style.transform = `translate3d(${left}px, ${top}px, 0)`;
+      indicator.style.width = `${width}px`;
+      indicator.style.height = `${height}px`;
+      indicator.style.opacity = '1';
+
+      if (!animate) {
+        // Force reflow and re-enable transition
+        indicator.offsetHeight;
+        indicator.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      updateIndicator(null, false);
+
+      const navLinks = document.querySelectorAll('.nav-link-item');
+      navLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+          // Desliza o indicador para o item clicado de forma fluida
+          updateIndicator(this, true);
+        });
+      });
+    });
+
+    window.addEventListener('resize', () => {
+      updateIndicator(null, false);
+    });
+
+    // Re-check after font/icons render
+    window.addEventListener('load', () => {
+      updateIndicator(null, false);
+    });
+  })();
 </script>
 {% block scripts %}{% endblock %}
 
@@ -474,31 +535,34 @@
     <div class="hidden md:flex items-center">
       <img src="{{ url_for('static', filename='images/logo_icon.png') }}" class="h-10 w-auto object-contain" alt="Controller Arena Logo">
     </div>
-    <!-- Nav Links -->
-    <div class="flex items-center gap-1 md:gap-1.5">
-      <a title="Dashboard" class="w-11 h-11 md:w-12 md:h-12 rounded-full {% if request.endpoint == 'dashboard' %}text-primary bg-surface-container/60{% else %}text-on-surface-variant hover:bg-surface-container-low{% endif %} text-decoration-none transition-all duration-150 flex items-center justify-center" href="{{ url_for('dashboard') }}">
+    <!-- Nav Links with Sliding Indicator Pill -->
+    <div id="nav-links-container" class="relative flex items-center gap-1 md:gap-1.5">
+      <!-- Sliding Active Indicator Pill -->
+      <div id="nav-indicator" class="absolute top-0 left-0 rounded-full bg-surface-container/80 transition-all duration-300 ease-out pointer-events-none -z-0 opacity-0" style="will-change: transform, width, height;"></div>
+
+      <a title="Dashboard" class="relative z-10 w-11 h-11 md:w-12 md:h-12 rounded-full nav-link-item {% if request.endpoint == 'dashboard' %}nav-item-active text-primary{% else %}text-on-surface-variant hover:text-primary{% endif %} text-decoration-none transition-colors duration-150 flex items-center justify-center" href="{{ url_for('dashboard') }}">
         <span class="material-symbols-outlined text-[22px] md:text-[24px]">dashboard</span>
       </a>
       
       {% if session.role == 'ADMIN' %}
-      <a title="Jogadores" class="w-11 h-11 md:w-12 md:h-12 rounded-full {% if request.endpoint in ('listar_jogadores','novo_jogador','ver_jogador','editar_jogador') %}text-primary bg-surface-container/60{% else %}text-on-surface-variant hover:bg-surface-container-low{% endif %} text-decoration-none transition-all duration-150 flex items-center justify-center" href="{{ url_for('listar_jogadores') }}">
+      <a title="Jogadores" class="relative z-10 w-11 h-11 md:w-12 md:h-12 rounded-full nav-link-item {% if request.endpoint in ('listar_jogadores','novo_jogador','ver_jogador','editar_jogador') %}nav-item-active text-primary{% else %}text-on-surface-variant hover:text-primary{% endif %} text-decoration-none transition-colors duration-150 flex items-center justify-center" href="{{ url_for('listar_jogadores') }}">
         <span class="material-symbols-outlined text-[22px] md:text-[24px]">group</span>
       </a>
-      <a title="Times" class="w-11 h-11 md:w-12 md:h-12 rounded-full {% if request.endpoint in ('listar_times','novo_time','editar_time') %}text-primary bg-surface-container/60{% else %}text-on-surface-variant hover:bg-surface-container-low{% endif %} text-decoration-none transition-all duration-150 flex items-center justify-center" href="{{ url_for('listar_times') }}">
+      <a title="Times" class="relative z-10 w-11 h-11 md:w-12 md:h-12 rounded-full nav-link-item {% if request.endpoint in ('listar_times','novo_time','editar_time') %}nav-item-active text-primary{% else %}text-on-surface-variant hover:text-primary{% endif %} text-decoration-none transition-colors duration-150 flex items-center justify-center" href="{{ url_for('listar_times') }}">
         <span class="material-symbols-outlined text-[22px] md:text-[24px]">shield</span>
       </a>
-      <a title="Árbitros" class="w-11 h-11 md:w-12 md:h-12 rounded-full {% if request.endpoint in ('listar_arbitros','novo_arbitro','editar_arbitro') %}text-primary bg-surface-container/60{% else %}text-on-surface-variant hover:bg-surface-container-low{% endif %} text-decoration-none transition-all duration-150 flex items-center justify-center" href="{{ url_for('listar_arbitros') }}">
+      <a title="Árbitros" class="relative z-10 w-11 h-11 md:w-12 md:h-12 rounded-full nav-link-item {% if request.endpoint in ('listar_arbitros','novo_arbitro','editar_arbitro') %}nav-item-active text-primary{% else %}text-on-surface-variant hover:text-primary{% endif %} text-decoration-none transition-colors duration-150 flex items-center justify-center" href="{{ url_for('listar_arbitros') }}">
         <span class="material-symbols-outlined text-[22px] md:text-[24px]">gavel</span>
       </a>
       {% endif %}
       
       {% if session.role in ('SUPER_ADMIN', 'ADMIN') %}
-      <a title="Campeonatos" class="w-11 h-11 md:w-12 md:h-12 rounded-full {% if request.endpoint and 'campeonato' in request.endpoint %}text-primary bg-surface-container/60{% else %}text-on-surface-variant hover:bg-surface-container-low{% endif %} text-decoration-none transition-all duration-150 flex items-center justify-center" href="{{ url_for('listar_campeonatos') }}">
+      <a title="Campeonatos" class="relative z-10 w-11 h-11 md:w-12 md:h-12 rounded-full nav-link-item {% if request.endpoint and 'campeonato' in request.endpoint %}nav-item-active text-primary{% else %}text-on-surface-variant hover:text-primary{% endif %} text-decoration-none transition-colors duration-150 flex items-center justify-center" href="{{ url_for('listar_campeonatos') }}">
         <span class="material-symbols-outlined text-[22px] md:text-[24px]">emoji_events</span>
       </a>
       {% endif %}
       
-      <a title="Ranking" class="w-11 h-11 md:w-12 md:h-12 rounded-full {% if request.endpoint == 'ranking' %}text-primary bg-surface-container/60{% else %}text-on-surface-variant hover:bg-surface-container-low{% endif %} text-decoration-none transition-all duration-150 flex items-center justify-center" href="{{ url_for('ranking') }}">
+      <a title="Ranking" class="relative z-10 w-11 h-11 md:w-12 md:h-12 rounded-full nav-link-item {% if request.endpoint == 'ranking' %}nav-item-active text-primary{% else %}text-on-surface-variant hover:text-primary{% endif %} text-decoration-none transition-colors duration-150 flex items-center justify-center" href="{{ url_for('ranking') }}">
         <span class="material-symbols-outlined text-[22px] md:text-[24px]">leaderboard</span>
       </a>
     </div>
