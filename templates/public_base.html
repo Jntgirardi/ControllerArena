@@ -32,6 +32,20 @@
 </head>
 <body class="bg-background text-on-background font-body-md antialiased min-h-screen flex flex-col pb-32 overflow-x-hidden">
 
+  <!-- Loading Transition Overlay (Stitch Design System) -->
+  <div id="page-loader" class="fixed inset-0 z-[99999] bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300 ease-in-out" aria-hidden="true">
+    <div class="flex flex-col items-center gap-4 p-6 rounded-2xl bg-white/90 shadow-xl border border-neutral-200/80">
+      <div class="relative flex items-center justify-center">
+        <img src="{{ url_for('static', filename='images/logo_icon.png') }}" class="h-12 w-auto animate-pulse" alt="Controller Arena">
+        <div class="absolute -inset-3 border-2 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+      </div>
+      <div class="flex flex-col items-center gap-1">
+        <span class="text-xs font-mono font-bold tracking-wider text-neutral-800 uppercase">Controller Arena</span>
+        <span class="text-[11px] font-medium text-neutral-500">Carregando...</span>
+      </div>
+    </div>
+  </div>
+
   <!-- Floating Bottom Navigation Bar (Stitch Design System) -->
   <nav class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-surface-white shadow-lg rounded-full border border-border-subtle px-4 md:px-8 py-2.5 md:py-3 flex items-center justify-between w-[calc(100%-2rem)] max-w-3xl transition-all">
     <div class="flex items-center justify-between w-full gap-3 md:gap-8">
@@ -43,11 +57,14 @@
         </a>
       </div>
       
-      <!-- Nav Links -->
-      <div class="hidden md:flex items-center justify-center flex-grow gap-8">
-        <a href="{{ url_for('index') }}#campeonatos" class="font-semibold text-sm md:text-base text-on-surface-variant hover:text-primary transition-colors text-decoration-none whitespace-nowrap flex-shrink-0">Campeonatos</a>
-        <a href="{{ url_for('index') }}#ao-vivo" class="font-semibold text-sm md:text-base text-on-surface-variant hover:text-primary transition-colors text-decoration-none whitespace-nowrap flex-shrink-0">Ao Vivo</a>
-        <a href="{{ url_for('ranking') }}" class="font-semibold text-sm md:text-base text-on-surface-variant hover:text-primary transition-colors text-decoration-none whitespace-nowrap flex-shrink-0">Rankings</a>
+      <!-- Nav Links with Sliding Indicator Pill/Circle -->
+      <div id="public-nav-links-container" class="relative hidden md:flex items-center justify-center flex-grow gap-2 md:gap-4 p-1">
+        <!-- Sliding Indicator -->
+        <div id="public-nav-indicator" class="absolute top-0 left-0 rounded-full bg-primary/15 border border-primary/20 pointer-events-none -z-0 opacity-0" style="will-change: transform, width, height; transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), width 0.35s ease, height 0.35s ease, opacity 0.2s ease;"></div>
+
+        <a data-public-nav-id="campeonatos" href="{{ url_for('index') }}#campeonatos" class="public-nav-link relative z-10 px-4 py-2 rounded-full font-semibold text-sm md:text-base text-on-surface-variant hover:text-primary transition-colors text-decoration-none whitespace-nowrap flex-shrink-0">Campeonatos</a>
+        <a data-public-nav-id="ao-vivo" href="{{ url_for('index') }}#ao-vivo" class="public-nav-link relative z-10 px-4 py-2 rounded-full font-semibold text-sm md:text-base text-on-surface-variant hover:text-primary transition-colors text-decoration-none whitespace-nowrap flex-shrink-0">Ao Vivo</a>
+        <a data-public-nav-id="rankings" href="{{ url_for('ranking') }}" class="public-nav-link relative z-10 px-4 py-2 rounded-full font-semibold text-sm md:text-base text-on-surface-variant hover:text-primary transition-colors text-decoration-none whitespace-nowrap flex-shrink-0">Rankings</a>
       </div>
       
       <!-- User Profile / CTA -->
@@ -80,6 +97,130 @@
       <span class="text-headline-md font-headline-md text-on-surface">Controller Arena</span>
     </div>
   </footer>
+
+  <script>
+    /* Public Page Transition Loader */
+    (function initPublicLoader() {
+      const loader = document.getElementById('page-loader');
+      if (!loader) return;
+
+      window.showPageLoader = function() {
+        loader.classList.remove('opacity-0', 'pointer-events-none');
+      };
+      window.hidePageLoader = function() {
+        loader.classList.add('opacity-0', 'pointer-events-none');
+      };
+      window.addEventListener('pageshow', () => hidePageLoader());
+
+      document.addEventListener('click', (e) => {
+        const link = e.target.closest('a');
+        if (!link) return;
+        const href = link.getAttribute('href');
+        const target = link.getAttribute('target');
+        const download = link.getAttribute('download');
+
+        if (!href || href.startsWith('#') || href.startsWith('javascript:') || href.startsWith('tel:') || href.startsWith('mailto:')) return;
+        if (target === '_blank' || download !== null) return;
+        if (link.dataset.bsToggle || link.hasAttribute('data-no-loader')) return;
+
+        showPageLoader();
+      });
+    })();
+
+    /* Sliding Indicator for Public Navbar (WhatsApp / App Style) */
+    (function initPublicNavIndicator() {
+      const container = document.getElementById('public-nav-links-container');
+      const indicator = document.getElementById('public-nav-indicator');
+      if (!container || !indicator) return;
+
+      function getCoords(targetEl) {
+        const cRect = container.getBoundingClientRect();
+        const tRect = targetEl.getBoundingClientRect();
+        return {
+          left: tRect.left - cRect.left,
+          top: tRect.top - cRect.top,
+          width: tRect.width,
+          height: tRect.height
+        };
+      }
+
+      function applyCoords(coords, animate = true) {
+        if (!animate) {
+          indicator.style.transition = 'none';
+        } else {
+          indicator.style.transition = 'transform 0.38s cubic-bezier(0.34, 1.56, 0.64, 1), width 0.35s ease, height 0.35s ease, opacity 0.2s ease';
+        }
+        indicator.style.transform = `translate3d(${coords.left}px, ${coords.top}px, 0)`;
+        indicator.style.width = `${coords.width}px`;
+        indicator.style.height = `${coords.height}px`;
+        indicator.style.opacity = '1';
+
+        if (!animate) {
+          indicator.offsetHeight; // Reflow
+          indicator.style.transition = 'transform 0.38s cubic-bezier(0.34, 1.56, 0.64, 1), width 0.35s ease, height 0.35s ease, opacity 0.2s ease';
+        }
+      }
+
+      const links = container.querySelectorAll('.public-nav-link');
+
+      function detectActiveLink() {
+        const hash = window.location.hash;
+        const path = window.location.pathname;
+
+        if (hash === '#ao-vivo') {
+          return container.querySelector('[data-public-nav-id="ao-vivo"]');
+        } else if (hash === '#campeonatos') {
+          return container.querySelector('[data-public-nav-id="campeonatos"]');
+        } else if (path.includes('/ranking')) {
+          return container.querySelector('[data-public-nav-id="rankings"]');
+        } else if (path === '/' || path === '') {
+          return container.querySelector('[data-public-nav-id="campeonatos"]');
+        }
+        return null;
+      }
+
+      function setActiveLink(linkEl, animate = true) {
+        if (!linkEl) {
+          indicator.style.opacity = '0';
+          return;
+        }
+        links.forEach(l => {
+          l.classList.remove('public-nav-active', 'text-primary', 'font-bold');
+          l.classList.add('text-on-surface-variant');
+        });
+        linkEl.classList.add('public-nav-active', 'text-primary', 'font-bold');
+        linkEl.classList.remove('text-on-surface-variant');
+
+        applyCoords(getCoords(linkEl), animate);
+      }
+
+      window.addEventListener('DOMContentLoaded', () => {
+        const active = detectActiveLink();
+        if (active) setActiveLink(active, false);
+
+        links.forEach(link => {
+          link.addEventListener('click', function(e) {
+            setActiveLink(this, true);
+          });
+        });
+      });
+
+      window.addEventListener('hashchange', () => {
+        const active = detectActiveLink();
+        if (active) setActiveLink(active, true);
+      });
+
+      window.addEventListener('resize', () => {
+        const current = container.querySelector('.public-nav-active') || detectActiveLink();
+        if (current) applyCoords(getCoords(current), false);
+      });
+
+      window.addEventListener('load', () => {
+        const current = container.querySelector('.public-nav-active') || detectActiveLink();
+        if (current) applyCoords(getCoords(current), false);
+      });
+    })();
+  </script>
 
   {% block scripts %}{% endblock %}
 </body>
