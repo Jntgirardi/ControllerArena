@@ -341,7 +341,7 @@
                   {% if session.role in ('ADMIN', 'SUPER_ADMIN', 'REFEREE') %}
                   <div class="flex items-center gap-2 flex-wrap print:hidden">
                     <button type="button" onclick="openSignatureModal('arbitro', '{{ sumula.identificacao.arbitro }}', '', 'Árbitro Oficial')" class="px-3 py-1.5 bg-primary hover:bg-primary-container text-on-primary font-bold text-[11px] rounded shadow-sm flex items-center gap-1 transition">
-                      <span class="material-symbols-outlined text-xs">draw</span> Assinar no Tablet (Dedo / Caneta)
+                      <span class="material-symbols-outlined text-xs">draw</span> Assinar
                     </button>
                     <form method="post" action="{{ url_for('assinar_sumula_oficial', partida_id=sumula.match._id) }}" class="m-0">
                       <input type="hidden" name="papel" value="arbitro">
@@ -387,7 +387,7 @@
                   {% if session.role in ('ADMIN', 'SUPER_ADMIN', 'REFEREE') or session.user_id %}
                   <div class="flex items-center gap-2 flex-wrap print:hidden">
                     <button type="button" onclick="openSignatureModal('capitao_a', '{{ sumula.identificacao.capitao_a.nome }}', '{{ sumula.identificacao.capitao_a.matricula }}', 'Capitão Time A ({{ sumula.match.time_a.nome }})')" class="px-3 py-1.5 bg-primary hover:bg-primary-container text-on-primary font-bold text-[11px] rounded shadow-sm flex items-center gap-1 transition">
-                      <span class="material-symbols-outlined text-xs">draw</span> Assinar no Tablet (Dedo / Caneta)
+                      <span class="material-symbols-outlined text-xs">draw</span> Assinar
                     </button>
                     <form method="post" action="{{ url_for('assinar_sumula_oficial', partida_id=sumula.match._id) }}" class="m-0">
                       <input type="hidden" name="papel" value="capitao_a">
@@ -434,7 +434,7 @@
                   {% if session.role in ('ADMIN', 'SUPER_ADMIN', 'REFEREE') or session.user_id %}
                   <div class="flex items-center gap-2 flex-wrap print:hidden">
                     <button type="button" onclick="openSignatureModal('capitao_b', '{{ sumula.identificacao.capitao_b.nome }}', '{{ sumula.identificacao.capitao_b.matricula }}', 'Capitão Time B ({{ sumula.match.time_b.nome }})')" class="px-3 py-1.5 bg-primary hover:bg-primary-container text-on-primary font-bold text-[11px] rounded shadow-sm flex items-center gap-1 transition">
-                      <span class="material-symbols-outlined text-xs">draw</span> Assinar no Tablet (Dedo / Caneta)
+                      <span class="material-symbols-outlined text-xs">draw</span> Assinar
                     </button>
                     <form method="post" action="{{ url_for('assinar_sumula_oficial', partida_id=sumula.match._id) }}" class="m-0">
                       <input type="hidden" name="papel" value="capitao_b">
