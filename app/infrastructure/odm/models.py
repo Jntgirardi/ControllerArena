@@ -156,6 +156,7 @@ class MatchDocument(me.Document):
     jogos_serie = me.ListField(me.DictField(), default=list)
     fearless_draft = me.BooleanField(default=False)
     campeoes_banidos_fearless = me.ListField(me.StringField(), default=list)
+    sumula_assinaturas = me.DictField(default=dict)
     iniciada_em = me.DateTimeField()
 
 
