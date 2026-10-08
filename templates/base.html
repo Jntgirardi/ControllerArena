@@ -410,7 +410,8 @@
 
 {% if session.user_id %}
 <!-- Floating Bottom Navigation Bar (Stitch Design System) -->
-<nav class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] bg-surface-white rounded-full shadow-lg border border-border-subtle pl-3 md:pl-4 pr-2 py-1.5 md:py-2 flex items-center gap-2 md:gap-3 transition-all">
+<div class="fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] w-max max-w-[calc(100vw-2rem)] overflow-x-auto no-scrollbar">
+  <div class="bg-surface-white rounded-full shadow-lg border border-border-subtle pl-3 md:pl-4 pr-2 py-1.5 md:py-2 flex items-center gap-2 md:gap-3">
     <!-- Brand -->
     <div class="hidden md:flex items-center pl-2">
       <img src="{{ url_for('static', filename='images/logo_icon.png') }}" class="h-10 w-auto object-contain" alt="Controller Arena Logo">
@@ -457,7 +458,8 @@
         </button>
       </div>
     </div>
-</nav>
+  </div>
+</div>
 
 <!-- Profile Dropdown (rendered outside the transformed navbar container to prevent overflow clipping!) -->
 <div id="profile-dropdown" class="fixed w-48 rounded-lg border border-default-border bg-white p-1 shadow-lg opacity-0 pointer-events-none transition-all duration-150 ease-in-out z-[200]">
