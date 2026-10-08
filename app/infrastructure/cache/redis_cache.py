@@ -30,7 +30,7 @@ class RedisCache:
         """Store a JSON-serialized value with a TTL."""
         try:
             serialized = json.dumps(value, default=str)
-            self.client.setex(key, ttl if ttl is not None else self.ttl, serialized)
+            self.client.set(key, serialized, ex=ttl if ttl is not None else self.ttl)
             return True
         except RedisError as exc:
             logger.warning("Redis.set failed for '%s': %s", key, exc)
