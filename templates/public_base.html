@@ -58,13 +58,15 @@
       </div>
       
       <!-- Nav Links with Sliding Indicator Pill/Circle -->
-      <div id="public-nav-links-container" class="relative hidden md:flex items-center justify-center flex-grow gap-2 md:gap-4 p-1">
-        <!-- Sliding Indicator -->
-        <div id="public-nav-indicator" class="absolute top-0 left-0 rounded-full bg-primary/15 border border-primary/20 pointer-events-none -z-0 opacity-0" style="will-change: transform, width, height; transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), width 0.35s ease, height 0.35s ease, opacity 0.2s ease;"></div>
+      <div class="hidden md:flex items-center justify-center flex-grow">
+        <div id="public-nav-links-container" class="relative inline-flex items-center gap-2 md:gap-4 p-1">
+          <!-- Sliding Indicator -->
+          <div id="public-nav-indicator" class="absolute top-0 left-0 rounded-full bg-primary/15 border border-primary/20 pointer-events-none -z-0 opacity-0" style="will-change: transform, width, height; transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), width 0.35s ease, height 0.35s ease, opacity 0.2s ease;"></div>
 
-        <a data-public-nav-id="campeonatos" href="{{ url_for('index') }}#campeonatos" class="public-nav-link relative z-10 px-4 py-2 rounded-full font-semibold text-sm md:text-base text-on-surface-variant hover:text-primary transition-colors text-decoration-none whitespace-nowrap flex-shrink-0">Campeonatos</a>
-        <a data-public-nav-id="ao-vivo" href="{{ url_for('index') }}#ao-vivo" class="public-nav-link relative z-10 px-4 py-2 rounded-full font-semibold text-sm md:text-base text-on-surface-variant hover:text-primary transition-colors text-decoration-none whitespace-nowrap flex-shrink-0">Ao Vivo</a>
-        <a data-public-nav-id="rankings" href="{{ url_for('ranking') }}" class="public-nav-link relative z-10 px-4 py-2 rounded-full font-semibold text-sm md:text-base text-on-surface-variant hover:text-primary transition-colors text-decoration-none whitespace-nowrap flex-shrink-0">Rankings</a>
+          <a data-public-nav-id="campeonatos" href="{{ url_for('index') }}#campeonatos" class="public-nav-link relative z-10 px-4 py-2 rounded-full font-semibold text-sm md:text-base text-on-surface-variant hover:text-primary transition-colors text-decoration-none whitespace-nowrap flex-shrink-0">Campeonatos</a>
+          <a data-public-nav-id="ao-vivo" href="{{ url_for('index') }}#ao-vivo" class="public-nav-link relative z-10 px-4 py-2 rounded-full font-semibold text-sm md:text-base text-on-surface-variant hover:text-primary transition-colors text-decoration-none whitespace-nowrap flex-shrink-0">Ao Vivo</a>
+          <a data-public-nav-id="rankings" href="{{ url_for('ranking') }}" class="public-nav-link relative z-10 px-4 py-2 rounded-full font-semibold text-sm md:text-base text-on-surface-variant hover:text-primary transition-colors text-decoration-none whitespace-nowrap flex-shrink-0">Rankings</a>
+        </div>
       </div>
       
       <!-- User Profile / CTA -->
@@ -140,18 +142,15 @@
           return;
         }
 
-        const cRect = container.getBoundingClientRect();
-        const tRect = targetEl.getBoundingClientRect();
-
-        const left = tRect.left - cRect.left;
-        const top = tRect.top - cRect.top;
-        const width = tRect.width;
-        const height = tRect.height;
+        const left = targetEl.offsetLeft;
+        const top = targetEl.offsetTop;
+        const width = targetEl.offsetWidth;
+        const height = targetEl.offsetHeight;
 
         if (!animate) {
           indicator.style.transition = 'none';
         } else {
-          indicator.style.transition = 'transform 0.32s cubic-bezier(0.34, 1.56, 0.64, 1), width 0.3s ease, height 0.3s ease, opacity 0.2s ease';
+          indicator.style.transition = 'transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), width 0.35s ease, height 0.35s ease, opacity 0.2s ease';
         }
 
         indicator.style.transform = `translate3d(${left}px, ${top}px, 0)`;
@@ -161,7 +160,7 @@
 
         if (!animate) {
           indicator.offsetHeight; // Force reflow
-          indicator.style.transition = 'transform 0.32s cubic-bezier(0.34, 1.56, 0.64, 1), width 0.3s ease, height 0.3s ease, opacity 0.2s ease';
+          indicator.style.transition = 'transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), width 0.35s ease, height 0.35s ease, opacity 0.2s ease';
         }
       }
 
