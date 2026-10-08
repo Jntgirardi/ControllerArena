@@ -140,10 +140,13 @@
           return;
         }
 
-        const left = targetEl.offsetLeft;
-        const top = targetEl.offsetTop;
-        const width = targetEl.offsetWidth;
-        const height = targetEl.offsetHeight;
+        const cRect = container.getBoundingClientRect();
+        const tRect = targetEl.getBoundingClientRect();
+
+        const left = tRect.left - cRect.left;
+        const top = tRect.top - cRect.top;
+        const width = tRect.width;
+        const height = tRect.height;
 
         if (!animate) {
           indicator.style.transition = 'none';
