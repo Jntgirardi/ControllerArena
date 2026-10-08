@@ -308,6 +308,19 @@
 </head>
 <body class="bg-neutral-100 text-default-font min-h-screen flex flex-col overflow-x-hidden {% if session.user_id %}pb-36{% endif %}">
 
+<!-- Loading Transition Overlay (Stitch Design System) -->
+<div id="page-loader" class="fixed inset-0 z-[99999] bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300 ease-in-out" aria-hidden="true">
+  <div class="flex flex-col items-center gap-4 p-6 rounded-2xl bg-white/90 shadow-xl border border-neutral-200/80">
+    <div class="relative flex items-center justify-center">
+      <img src="{{ url_for('static', filename='images/logo_icon.png') }}" class="h-12 w-auto animate-pulse" alt="Controller Arena">
+      <div class="absolute -inset-3 border-2 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+    </div>
+    <div class="flex flex-col items-center gap-1">
+      <span class="text-xs font-mono font-bold tracking-wider text-neutral-800 uppercase">Controller Arena</span>
+      <span class="text-[11px] font-medium text-neutral-500">Carregando...</span>
+    </div>
+  </div>
+</div>
 
 <main class="flex-grow w-full">
   <div class="fixed top-4 right-4 left-4 sm:left-auto z-[9999] flex flex-col gap-3 sm:max-w-sm pointer-events-none">
@@ -408,6 +421,49 @@
       }, 5000);
     });
   });
+
+  /* Page Transition Loader Handler */
+  (function initPageLoader() {
+    const loader = document.getElementById('page-loader');
+    if (!loader) return;
+
+    window.showPageLoader = function() {
+      loader.classList.remove('opacity-0', 'pointer-events-none');
+    };
+
+    window.hidePageLoader = function() {
+      loader.classList.add('opacity-0', 'pointer-events-none');
+    };
+
+    // Hide loader if page is loaded from bfcache (back/forward navigation)
+    window.addEventListener('pageshow', (event) => {
+      hidePageLoader();
+    });
+
+    // Intercept clicks on links that navigate away
+    document.addEventListener('click', (e) => {
+      const link = e.target.closest('a');
+      if (!link) return;
+      const href = link.getAttribute('href');
+      const target = link.getAttribute('target');
+      const download = link.getAttribute('download');
+
+      // Ignore anchor links, javascript:, new tab targets, downloads, or external modals
+      if (!href || href.startsWith('#') || href.startsWith('javascript:') || href.startsWith('tel:') || href.startsWith('mailto:')) return;
+      if (target === '_blank' || download !== null) return;
+      if (link.dataset.bsToggle || link.hasAttribute('data-no-loader')) return;
+
+      // Show loader
+      showPageLoader();
+    });
+
+    // Intercept form submissions
+    document.addEventListener('submit', (e) => {
+      const form = e.target;
+      if (form.getAttribute('target') === '_blank' || form.hasAttribute('data-no-loader')) return;
+      showPageLoader();
+    });
+  })();
 </script>
 {% block scripts %}{% endblock %}
 
