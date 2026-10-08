@@ -95,6 +95,110 @@
       </div>
     </section>
 
+    <!-- ESCALAÇÃO OFICIAL DE JOGADORES DAS EQUIPES -->
+    {% if sumula.escalacao and (sumula.escalacao.time_a or sumula.escalacao.time_b) %}
+    <section class="flex flex-col gap-2.5">
+      <div class="flex justify-between items-center border-b border-border-subtle pb-1.5">
+        <h2 class="font-['Chakra_Petch'] text-sm font-bold text-on-surface uppercase tracking-wider flex items-center gap-2">
+          <span class="text-primary font-mono">IV.1.1.</span> Escalação Oficial dos Jogadores
+        </h2>
+        <span class="text-[10px] text-text-muted font-mono font-bold">Comprovação de Elegibilidade Acadêmica</span>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Jogadores Time A -->
+        <div class="border border-border-subtle rounded-lg overflow-hidden bg-surface-white">
+          <div class="bg-surface-container-low px-3 py-2 border-b border-border-subtle flex items-center justify-between">
+            <span class="font-bold text-xs text-primary flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-sm">shield</span> {{ sumula.match.time_a.nome }}
+            </span>
+            <span class="text-[10px] font-mono font-bold text-text-muted">{{ sumula.escalacao.time_a|length }} jogador(es)</span>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead>
+                <tr class="bg-neutral-50/50 border-b border-border-subtle text-text-muted text-[10px] font-bold">
+                  <th class="py-1.5 px-3">Jogador / Nick</th>
+                  <th class="py-1.5 px-2">Matrícula</th>
+                  <th class="py-1.5 px-2">Curso</th>
+                  <th class="py-1.5 px-2 text-right">Função</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for jog in sumula.escalacao.time_a %}
+                <tr class="border-b border-neutral-100 last:border-0 hover:bg-neutral-50/40">
+                  <td class="py-2 px-3">
+                    <div class="font-bold text-on-surface text-[11px]">{{ jog.nick }}</div>
+                    <div class="text-[10px] text-text-muted">{{ jog.nome }}</div>
+                  </td>
+                  <td class="py-2 px-2 font-mono text-[11px] text-text-muted">{{ jog.matricula }}</td>
+                  <td class="py-2 px-2 text-[10px] text-text-muted truncate max-w-[100px]">{{ jog.curso }}</td>
+                  <td class="py-2 px-2 text-right">
+                    {% if jog.funcao == 'Capitão' %}
+                    <span class="inline-block px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 text-[9px] font-extrabold uppercase">Capitão</span>
+                    {% else %}
+                    <span class="text-[10px] text-text-muted font-medium">{{ jog.funcao }}</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% else %}
+                <tr>
+                  <td colspan="4" class="py-3 text-center text-text-muted italic text-[11px]">Nenhum jogador listado.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Jogadores Time B -->
+        <div class="border border-border-subtle rounded-lg overflow-hidden bg-surface-white">
+          <div class="bg-surface-container-low px-3 py-2 border-b border-border-subtle flex items-center justify-between">
+            <span class="font-bold text-xs text-on-surface flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-sm">shield</span> {{ sumula.match.time_b.nome }}
+            </span>
+            <span class="text-[10px] font-mono font-bold text-text-muted">{{ sumula.escalacao.time_b|length }} jogador(es)</span>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead>
+                <tr class="bg-neutral-50/50 border-b border-border-subtle text-text-muted text-[10px] font-bold">
+                  <th class="py-1.5 px-3">Jogador / Nick</th>
+                  <th class="py-1.5 px-2">Matrícula</th>
+                  <th class="py-1.5 px-2">Curso</th>
+                  <th class="py-1.5 px-2 text-right">Função</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for jog in sumula.escalacao.time_b %}
+                <tr class="border-b border-neutral-100 last:border-0 hover:bg-neutral-50/40">
+                  <td class="py-2 px-3">
+                    <div class="font-bold text-on-surface text-[11px]">{{ jog.nick }}</div>
+                    <div class="text-[10px] text-text-muted">{{ jog.nome }}</div>
+                  </td>
+                  <td class="py-2 px-2 font-mono text-[11px] text-text-muted">{{ jog.matricula }}</td>
+                  <td class="py-2 px-2 text-[10px] text-text-muted truncate max-w-[100px]">{{ jog.curso }}</td>
+                  <td class="py-2 px-2 text-right">
+                    {% if jog.funcao == 'Capitão' %}
+                    <span class="inline-block px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 text-[9px] font-extrabold uppercase">Capitão</span>
+                    {% else %}
+                    <span class="text-[10px] text-text-muted font-medium">{{ jog.funcao }}</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% else %}
+                <tr>
+                  <td colspan="4" class="py-3 text-center text-text-muted italic text-[11px]">Nenhum jogador listado.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+    {% endif %}
+
     <!-- IV.2. RESULTADOS -->
     <section class="flex flex-col gap-2.5">
       <h2 class="font-['Chakra_Petch'] text-sm font-bold text-on-surface uppercase tracking-wider flex items-center gap-2 border-b border-border-subtle pb-1.5">

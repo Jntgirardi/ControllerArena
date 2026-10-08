@@ -2062,6 +2062,24 @@ class MatchService:
         if match.get("checkin", {}).get("wo_aplicado"):
             wo_info = match["checkin"].get("mensagem_wo") or "Vitória decretada por W.O. conforme item 10 do Regulamento FINC 2026."
 
+        def get_team_roster(team):
+            if not team:
+                return []
+            roster = []
+            for item in team.get("jogadores", []):
+                p_doc = self.player_repo.find_by_id(item.get("jogador_id")) if item.get("jogador_id") else None
+                roster.append({
+                    "nick": item.get("nick") or (p_doc.get("nick") if p_doc else "Jogador"),
+                    "nome": (p_doc.get("nome_real") or p_doc.get("nome")) if p_doc else item.get("nick", "Jogador"),
+                    "matricula": p_doc.get("matricula", "N/A") if p_doc else "N/A",
+                    "curso": p_doc.get("curso", "N/A") if p_doc else "N/A",
+                    "funcao": item.get("funcao", "Titular"),
+                })
+            return roster
+
+        escalacao_a = get_team_roster(team_a)
+        escalacao_b = get_team_roster(team_b)
+
         # Assinaturas
         assinaturas = match.get("sumula_assinaturas", {})
         sig_arbitro = assinaturas.get("arbitro", {"assinado": False, "nome": arbitro_nome, "assinado_em": None, "hash": None, "desenho": None})
@@ -2081,6 +2099,10 @@ class MatchService:
                 "lado_b": f"{match['time_b']['nome']} (Capitão: {capitao_b['nome']} - Matrícula: {capitao_b['matricula']})",
                 "capitao_a": capitao_a,
                 "capitao_b": capitao_b,
+            },
+            "escalacao": {
+                "time_a": escalacao_a,
+                "time_b": escalacao_b,
             },
             "resultados": {
                 "jogos": jogos_sumula,
