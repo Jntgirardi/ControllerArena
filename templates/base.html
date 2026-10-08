@@ -12,6 +12,9 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&family=Chakra+Petch:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
+    html {
+      scrollbar-gutter: stable;
+    }
     body {
       font-family: 'Inter', sans-serif;
     }
@@ -410,9 +413,9 @@
 
 {% if session.user_id %}
 <!-- Floating Bottom Navigation Bar (Stitch Design System) -->
-<nav class="fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] bg-surface-white rounded-full shadow-lg border border-border-subtle pl-3 md:pl-4 pr-2 py-1.5 md:py-2 flex items-center gap-2 md:gap-3">
+<nav class="fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] bg-surface-white rounded-full shadow-lg border border-border-subtle px-3 md:px-4 py-1.5 md:py-2 flex items-center gap-2 md:gap-3">
     <!-- Brand -->
-    <div class="hidden md:flex items-center pl-2">
+    <div class="hidden md:flex items-center">
       <img src="{{ url_for('static', filename='images/logo_icon.png') }}" class="h-10 w-auto object-contain" alt="Controller Arena Logo">
     </div>
     <!-- Nav Links -->
