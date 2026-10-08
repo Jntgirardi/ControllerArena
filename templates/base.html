@@ -470,13 +470,11 @@
     const STORAGE_KEY = 'ca_nav_active_rect';
 
     function getCoords(container, targetEl) {
-      const cRect = container.getBoundingClientRect();
-      const tRect = targetEl.getBoundingClientRect();
       return {
-        left: tRect.left - cRect.left,
-        top: tRect.top - cRect.top,
-        width: tRect.width,
-        height: tRect.height
+        left: targetEl.offsetLeft,
+        top: targetEl.offsetTop,
+        width: targetEl.offsetWidth,
+        height: targetEl.offsetHeight
       };
     }
 
