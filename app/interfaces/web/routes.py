@@ -439,7 +439,8 @@ def map_championship_to_public(camp_doc, services):
             },
             "kda_a": kda_a,
             "kda_b": kda_b,
-            "rounds": mapped_rounds
+            "rounds": mapped_rounds,
+            "sumula_assinaturas": m.get("sumula_assinaturas", {})
         })
 
     # Period formatting
@@ -606,12 +607,15 @@ def register_routes(app, services):
         papel = request.form.get("papel", "").strip()
         nome_assinante = request.form.get("nome_assinante", "").strip() or current_user.get("nome") or current_user.get("login")
         matricula = request.form.get("matricula", "").strip()
+        assinatura_desenho = request.form.get("assinatura_desenho", "").strip()
 
-        error, _ = services["matches"].assinar_sumula_oficial(current_user, oid, papel, nome_assinante, matricula)
+        error, _ = services["matches"].assinar_sumula_oficial(
+            current_user, oid, papel, nome_assinante, matricula, assinatura_desenho=assinatura_desenho
+        )
         if error:
             flash(error, "danger")
         else:
-            flash("Assinatura eletrônica registrada na Súmula Oficial com sucesso!", "success")
+            flash("Assinatura manuscrita registrada na Súmula Oficial com sucesso!", "success")
         return redirect(url_for("sumula_oficial", partida_id=partida_id))
 
     @app.route("/partidas/<partida_id>/sumula-oficial/pdf", endpoint="sumula_oficial_pdf")

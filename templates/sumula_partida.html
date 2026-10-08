@@ -298,5 +298,121 @@
     </div>
   </section>
 
+  <!-- Assinaturas de Comprovação dos Capitães (Final de Partida) -->
+  {% set sigs = partida.sumula_assinaturas or {} %}
+  <section class="bg-surface-white rounded-xl border border-border-subtle overflow-hidden shadow-sm">
+    <div class="p-card-padding flex flex-col gap-4 py-5 px-6">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-border-subtle pb-3 gap-2">
+        <div>
+          <h3 class="text-base font-heading font-bold text-on-surface flex items-center gap-2">
+            <span class="material-symbols-outlined text-primary text-xl">verified</span> Comprovação de Participação (Assinaturas dos Capitães)
+          </h3>
+          <p class="text-xs text-text-muted">Assinaturas colhidas presencialmente em tablet ao término da partida para validação de ambas as equipes.</p>
+        </div>
+        <a href="{{ url_for('sumula_oficial', partida_id=partida.id) }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-surface-container-low hover:bg-surface-container text-primary font-bold text-xs rounded border border-border-subtle transition text-decoration-none">
+          <span class="material-symbols-outlined text-sm">edit_document</span> Acessar Painel de Assinatura
+        </a>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Capitão Time A -->
+        {% set sig_a = sigs.get('capitao_a', {}) %}
+        <div class="p-4 rounded-xl border {% if sig_a.get('assinado') %}border-emerald-200 bg-emerald-50/20{% else %}border-border-subtle bg-surface-container-low/50{% endif %} flex flex-col gap-3">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="flex h-7 w-7 rounded-full items-center justify-center bg-primary/10 text-primary font-bold text-xs">
+                <span class="material-symbols-outlined text-sm">shield</span>
+              </span>
+              <div>
+                <span class="text-xs font-bold text-on-surface block">{{ partida.time_a.nome }}</span>
+                <span class="text-[11px] text-text-muted">Capitão: {{ sig_a.get('nome') or 'Capitão da Equipe A' }}</span>
+              </div>
+            </div>
+            {% if sig_a.get('assinado') %}
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">
+              <span class="material-symbols-outlined text-xs">check_circle</span> Assinado
+            </span>
+            {% else %}
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-neutral-200 text-neutral-600 text-[10px] font-semibold">
+              <span class="material-symbols-outlined text-xs">pending</span> Pendente
+            </span>
+            {% endif %}
+          </div>
+
+          <!-- Assinatura Gráfica -->
+          <div class="h-24 bg-white border border-border-subtle rounded-lg flex items-center justify-center p-2 overflow-hidden shadow-inner">
+            {% if sig_a.get('assinado') and sig_a.get('desenho') %}
+              <img src="{{ sig_a.desenho }}" alt="Assinatura Capitão {{ partida.time_a.nome }}" class="h-full w-full object-contain filter contrast-125">
+            {% elif sig_a.get('assinado') %}
+              <div class="flex flex-col items-center justify-center text-emerald-700 text-xs">
+                <span class="font-bold">Assinado Digitalmente</span>
+                <span class="font-mono text-[10px] text-text-muted">{{ sig_a.get('assinado_em') }}</span>
+              </div>
+            {% else %}
+              <span class="text-xs text-neutral-400 italic flex items-center gap-1">
+                <span class="material-symbols-outlined text-sm">draw</span> Aguardando assinatura no tablet
+              </span>
+            {% endif %}
+          </div>
+
+          {% if sig_a.get('assinado') %}
+          <div class="flex items-center justify-between text-[10px] font-mono text-text-muted pt-1 border-t border-border-subtle/40">
+            <span>{{ sig_a.get('assinado_em') }}</span>
+            <span class="text-emerald-800 bg-emerald-100/60 px-1.5 py-0.2 rounded font-semibold">{{ sig_a.get('hash') }}</span>
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Capitão Time B -->
+        {% set sig_b = sigs.get('capitao_b', {}) %}
+        <div class="p-4 rounded-xl border {% if sig_b.get('assinado') %}border-emerald-200 bg-emerald-50/20{% else %}border-border-subtle bg-surface-container-low/50{% endif %} flex flex-col gap-3">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="flex h-7 w-7 rounded-full items-center justify-center bg-primary/10 text-primary font-bold text-xs">
+                <span class="material-symbols-outlined text-sm">shield</span>
+              </span>
+              <div>
+                <span class="text-xs font-bold text-on-surface block">{{ partida.time_b.nome }}</span>
+                <span class="text-[11px] text-text-muted">Capitão: {{ sig_b.get('nome') or 'Capitão da Equipe B' }}</span>
+              </div>
+            </div>
+            {% if sig_b.get('assinado') %}
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">
+              <span class="material-symbols-outlined text-xs">check_circle</span> Assinado
+            </span>
+            {% else %}
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-neutral-200 text-neutral-600 text-[10px] font-semibold">
+              <span class="material-symbols-outlined text-xs">pending</span> Pendente
+            </span>
+            {% endif %}
+          </div>
+
+          <!-- Assinatura Gráfica -->
+          <div class="h-24 bg-white border border-border-subtle rounded-lg flex items-center justify-center p-2 overflow-hidden shadow-inner">
+            {% if sig_b.get('assinado') and sig_b.get('desenho') %}
+              <img src="{{ sig_b.desenho }}" alt="Assinatura Capitão {{ partida.time_b.nome }}" class="h-full w-full object-contain filter contrast-125">
+            {% elif sig_b.get('assinado') %}
+              <div class="flex flex-col items-center justify-center text-emerald-700 text-xs">
+                <span class="font-bold">Assinado Digitalmente</span>
+                <span class="font-mono text-[10px] text-text-muted">{{ sig_b.get('assinado_em') }}</span>
+              </div>
+            {% else %}
+              <span class="text-xs text-neutral-400 italic flex items-center gap-1">
+                <span class="material-symbols-outlined text-sm">draw</span> Aguardando assinatura no tablet
+              </span>
+            {% endif %}
+          </div>
+
+          {% if sig_b.get('assinado') %}
+          <div class="flex items-center justify-between text-[10px] font-mono text-text-muted pt-1 border-t border-border-subtle/40">
+            <span>{{ sig_b.get('assinado_em') }}</span>
+            <span class="text-emerald-800 bg-emerald-100/60 px-1.5 py-0.2 rounded font-semibold">{{ sig_b.get('hash') }}</span>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </section>
+
 </main>
 {% endblock %}

@@ -2062,11 +2062,29 @@ class MatchService:
         if match.get("checkin", {}).get("wo_aplicado"):
             wo_info = match["checkin"].get("mensagem_wo") or "Vitória decretada por W.O. conforme item 10 do Regulamento FINC 2026."
 
+        def get_team_roster(team):
+            if not team:
+                return []
+            roster = []
+            for item in team.get("jogadores", []):
+                p_doc = self.player_repo.find_by_id(item.get("jogador_id")) if item.get("jogador_id") else None
+                roster.append({
+                    "nick": item.get("nick") or (p_doc.get("nick") if p_doc else "Jogador"),
+                    "nome": (p_doc.get("nome_real") or p_doc.get("nome")) if p_doc else item.get("nick", "Jogador"),
+                    "matricula": p_doc.get("matricula", "N/A") if p_doc else "N/A",
+                    "curso": p_doc.get("curso", "N/A") if p_doc else "N/A",
+                    "funcao": item.get("funcao", "Titular"),
+                })
+            return roster
+
+        escalacao_a = get_team_roster(team_a)
+        escalacao_b = get_team_roster(team_b)
+
         # Assinaturas
         assinaturas = match.get("sumula_assinaturas", {})
-        sig_arbitro = assinaturas.get("arbitro", {"assinado": False, "nome": arbitro_nome, "assinado_em": None, "hash": None})
-        sig_cap_a = assinaturas.get("capitao_a", {"assinado": False, "nome": capitao_a["nome"], "matricula": capitao_a["matricula"], "assinado_em": None, "hash": None})
-        sig_cap_b = assinaturas.get("capitao_b", {"assinado": False, "nome": capitao_b["nome"], "matricula": capitao_b["matricula"], "assinado_em": None, "hash": None})
+        sig_arbitro = assinaturas.get("arbitro", {"assinado": False, "nome": arbitro_nome, "assinado_em": None, "hash": None, "desenho": None})
+        sig_cap_a = assinaturas.get("capitao_a", {"assinado": False, "nome": capitao_a["nome"], "matricula": capitao_a["matricula"], "assinado_em": None, "hash": None, "desenho": None})
+        sig_cap_b = assinaturas.get("capitao_b", {"assinado": False, "nome": capitao_b["nome"], "matricula": capitao_b["matricula"], "assinado_em": None, "hash": None, "desenho": None})
 
         return {
             "match": match,
@@ -2081,6 +2099,10 @@ class MatchService:
                 "lado_b": f"{match['time_b']['nome']} (Capitão: {capitao_b['nome']} - Matrícula: {capitao_b['matricula']})",
                 "capitao_a": capitao_a,
                 "capitao_b": capitao_b,
+            },
+            "escalacao": {
+                "time_a": escalacao_a,
+                "time_b": escalacao_b,
             },
             "resultados": {
                 "jogos": jogos_sumula,
@@ -2124,7 +2146,7 @@ class MatchService:
         updated = self.match_repo.find_by_id(match_id)
         return None, updated
 
-    def assinar_sumula_oficial(self, current_user: dict[str, Any], match_id: ObjectId, papel: str, nome_assinante: str, matricula: str | None = None) -> tuple[str | None, dict[str, Any] | None]:
+    def assinar_sumula_oficial(self, current_user: dict[str, Any], match_id: ObjectId, papel: str, nome_assinante: str, matricula: str | None = None, assinatura_desenho: str | None = None) -> tuple[str | None, dict[str, Any] | None]:
         match = self.match_repo.find_by_id(match_id)
         if not match:
             return "Partida nao encontrada.", None
@@ -2137,7 +2159,8 @@ class MatchService:
 
         now_dt = utc_now_naive()
         now_str = now_dt.strftime("%d/%m/%Y %H:%M:%S")
-        raw_hash_seed = f"{match_id}:{papel}:{nome_assinante}:{matricula or ''}:{now_dt.isoformat()}"
+        desenho_clean = (assinatura_desenho or "").strip()
+        raw_hash_seed = f"{match_id}:{papel}:{nome_assinante}:{matricula or ''}:{now_dt.isoformat()}:{desenho_clean[:32]}"
         hash_val = hashlib.sha256(raw_hash_seed.encode("utf-8")).hexdigest()[:16].upper()
 
         sig_data = {
@@ -2147,6 +2170,7 @@ class MatchService:
             "assinado_em": now_str,
             "hash": f"FINC-SIG-{hash_val}",
             "user_id": current_user.get("_id"),
+            "desenho": desenho_clean if (desenho_clean.startswith("data:image/") or len(desenho_clean) > 20) else None,
         }
 
         self.match_repo.collection.update_one(

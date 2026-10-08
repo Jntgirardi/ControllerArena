@@ -55,6 +55,7 @@ class Partida:
     placar_serie_b: int = 0
     fearless_draft: bool = False
     jogos_serie: list[dict[str, Any]] = field(default_factory=list)
+    sumula_assinaturas: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
