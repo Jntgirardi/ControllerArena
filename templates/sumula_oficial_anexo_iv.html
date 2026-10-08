@@ -341,7 +341,7 @@
                   {% if session.role in ('ADMIN', 'SUPER_ADMIN', 'REFEREE') %}
                   <div class="flex items-center gap-2 flex-wrap print:hidden">
                     <button type="button" onclick="openSignatureModal('arbitro', '{{ sumula.identificacao.arbitro }}', '', 'Árbitro Oficial')" class="px-3 py-1.5 bg-primary hover:bg-primary-container text-on-primary font-bold text-[11px] rounded shadow-sm flex items-center gap-1 transition">
-                      <span class="material-symbols-outlined text-xs">draw</span> Assinar com Caneta / Dedo
+                      <span class="material-symbols-outlined text-xs">draw</span> Assinar no Tablet (Dedo / Caneta)
                     </button>
                     <form method="post" action="{{ url_for('assinar_sumula_oficial', partida_id=sumula.match._id) }}" class="m-0">
                       <input type="hidden" name="papel" value="arbitro">
