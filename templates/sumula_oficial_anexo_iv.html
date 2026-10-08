@@ -559,6 +559,11 @@
       const dpr = window.devicePixelRatio || 1;
       sigCanvas.width = rect.width * dpr;
       sigCanvas.height = rect.height * dpr;
+      if (sigCtx.resetTransform) {
+        sigCtx.resetTransform();
+      } else {
+        sigCtx.setTransform(1, 0, 0, 1, 0, 0);
+      }
       sigCtx.scale(dpr, dpr);
       sigCtx.lineWidth = 2.5;
       sigCtx.lineCap = 'round';
@@ -624,7 +629,17 @@
   function clearSignatureCanvas() {
     if (!sigCanvas || !sigCtx) return;
     const dpr = window.devicePixelRatio || 1;
-    sigCtx.clearRect(0, 0, sigCanvas.width / dpr, sigCanvas.height / dpr);
+    if (sigCtx.resetTransform) {
+      sigCtx.resetTransform();
+    } else {
+      sigCtx.setTransform(1, 0, 0, 1, 0, 0);
+    }
+    sigCtx.clearRect(0, 0, sigCanvas.width, sigCanvas.height);
+    sigCtx.scale(dpr, dpr);
+    sigCtx.lineWidth = 2.5;
+    sigCtx.lineCap = 'round';
+    sigCtx.lineJoin = 'round';
+    sigCtx.strokeStyle = '#111827';
     hasStrokes = false;
     const placeholder = document.getElementById('canvasPlaceholder');
     if (placeholder) placeholder.classList.remove('hidden');
