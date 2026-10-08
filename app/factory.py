@@ -108,9 +108,14 @@ def get_game_image_url(game_name: str | None) -> str:
     return "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=600&auto=format&fit=crop"
 
 
-def create_app():
+def create_app(config=None):
     app = Flask(__name__, template_folder="../templates")
     app.config.from_object(Config)
+    if config:
+        if isinstance(config, dict):
+            app.config.update(config)
+        else:
+            app.config.from_object(config)
     app.jinja_env.globals["enumerate"] = enumerate
     app.jinja_env.globals["get_game_badge_class"] = get_game_badge_class
     app.jinja_env.globals["get_game_badge_bg"] = get_game_badge_bg
