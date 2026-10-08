@@ -759,7 +759,7 @@ def test_sumula_oficial_anexo_iv_flow(monkeypatch):
     assert len(updated_oc.get("sumula_ocorrencias", [])) == 1
     assert updated_oc["sumula_ocorrencias"][0]["artigo"] == "Item 7.8"
 
-    # 3. Test assinar_sumula_oficial (Árbitro e Capitães)
+    # 3. Test assinar_sumula_oficial (Árbitro e Capitães com assinatura desenhada em tablet)
     err_sig_arb, updated_arb = services["matches"].assinar_sumula_oficial(
         current_user_admin, match_id, papel="arbitro", nome_assinante="Árbitro Oficial FINC"
     )
@@ -767,12 +767,15 @@ def test_sumula_oficial_anexo_iv_flow(monkeypatch):
     assert updated_arb["sumula_assinaturas"]["arbitro"]["assinado"] is True
     assert updated_arb["sumula_assinaturas"]["arbitro"]["hash"].startswith("FINC-SIG-")
 
+    sample_drawing_b64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
     err_sig_cap, updated_cap = services["matches"].assinar_sumula_oficial(
-        current_user_admin, match_id, papel="capitao_a", nome_assinante="Carlos Silva", matricula="20231001"
+        current_user_admin, match_id, papel="capitao_a", nome_assinante="Carlos Silva", matricula="20231001",
+        assinatura_desenho=sample_drawing_b64
     )
     assert err_sig_cap is None
     assert updated_cap["sumula_assinaturas"]["capitao_a"]["assinado"] is True
     assert updated_cap["sumula_assinaturas"]["capitao_a"]["matricula"] == "20231001"
+    assert updated_cap["sumula_assinaturas"]["capitao_a"]["desenho"] == sample_drawing_b64
 
     # 4. Test Web Routes for Súmula Oficial
     client = flask_app.test_client()
@@ -783,6 +786,9 @@ def test_sumula_oficial_anexo_iv_flow(monkeypatch):
     assert "Modelo de Súmula Oficial" in html
     assert "Equipe Alpha" in html
     assert "FINC-SIG-" in html
+    assert sample_drawing_b64 in html
+    assert "signatureModal" in html
+    assert "signatureCanvas" in html
 
     # Test PDF download endpoint
     resp_pdf = client.get(f"/partidas/{match_id}/sumula-oficial/pdf")

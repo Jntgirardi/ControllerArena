@@ -219,22 +219,34 @@
               <td class="py-3 px-3 font-semibold text-on-surface">{{ arb.nome or sumula.identificacao.arbitro }}</td>
               <td class="py-3 px-3">
                 {% if arb.assinado %}
-                <div class="flex items-center gap-2 flex-wrap">
-                  <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold">
-                    <span class="material-symbols-outlined text-xs">verified</span> ASSINADO DIGITALMENTE
-                  </span>
-                  <span class="text-[10px] font-mono text-text-muted">{{ arb.assinado_em }}</span>
-                  <span class="text-[9px] font-mono text-emerald-800 bg-emerald-100/60 px-1.5 py-0.5 rounded">{{ arb.hash }}</span>
+                <div class="flex flex-col gap-1.5">
+                  {% if arb.desenho %}
+                  <div class="bg-white border border-border-subtle rounded p-1 inline-block w-48 shadow-sm">
+                    <img src="{{ arb.desenho }}" alt="Assinatura do Árbitro" class="h-14 w-full object-contain filter contrast-125">
+                  </div>
+                  {% endif %}
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold">
+                      <span class="material-symbols-outlined text-xs">verified</span> ASSINADO DIGITALMENTE
+                    </span>
+                    <span class="text-[10px] font-mono text-text-muted">{{ arb.assinado_em }}</span>
+                    <span class="text-[9px] font-mono text-emerald-800 bg-emerald-100/60 px-1.5 py-0.5 rounded">{{ arb.hash }}</span>
+                  </div>
                 </div>
                 {% else %}
                   {% if session.role in ('ADMIN', 'SUPER_ADMIN', 'REFEREE') %}
-                  <form method="post" action="{{ url_for('assinar_sumula_oficial', partida_id=sumula.match._id) }}" class="m-0 print:hidden">
-                    <input type="hidden" name="papel" value="arbitro">
-                    <input type="hidden" name="nome_assinante" value="{{ sumula.identificacao.arbitro }}">
-                    <button type="submit" class="px-3 py-1 bg-primary hover:bg-primary-container text-on-primary font-bold text-[10px] rounded transition">
-                      Assinar como Árbitro
+                  <div class="flex items-center gap-2 flex-wrap print:hidden">
+                    <button type="button" onclick="openSignatureModal('arbitro', '{{ sumula.identificacao.arbitro }}', '', 'Árbitro Oficial')" class="px-3 py-1.5 bg-primary hover:bg-primary-container text-on-primary font-bold text-[11px] rounded shadow-sm flex items-center gap-1 transition">
+                      <span class="material-symbols-outlined text-xs">draw</span> Assinar com Caneta / Dedo
                     </button>
-                  </form>
+                    <form method="post" action="{{ url_for('assinar_sumula_oficial', partida_id=sumula.match._id) }}" class="m-0">
+                      <input type="hidden" name="papel" value="arbitro">
+                      <input type="hidden" name="nome_assinante" value="{{ sumula.identificacao.arbitro }}">
+                      <button type="submit" title="Assinar rapidamente com confirmação eletrônica" class="px-2.5 py-1.5 bg-surface-container-low hover:bg-surface-container text-text-muted text-[10px] font-semibold border border-border-subtle rounded transition">
+                        Sem desenho
+                      </button>
+                    </form>
+                  </div>
                   <span class="hidden print:inline text-text-muted italic">___________________________ (Assinatura física)</span>
                   {% else %}
                   <span class="text-text-muted italic">Pendente de assinatura</span>
@@ -253,23 +265,35 @@
               </td>
               <td class="py-3 px-3">
                 {% if ca.assinado %}
-                <div class="flex items-center gap-2 flex-wrap">
-                  <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold">
-                    <span class="material-symbols-outlined text-xs">verified</span> ASSINADO DIGITALMENTE
-                  </span>
-                  <span class="text-[10px] font-mono text-text-muted">{{ ca.assinado_em }}</span>
-                  <span class="text-[9px] font-mono text-emerald-800 bg-emerald-100/60 px-1.5 py-0.5 rounded">{{ ca.hash }}</span>
+                <div class="flex flex-col gap-1.5">
+                  {% if ca.desenho %}
+                  <div class="bg-white border border-border-subtle rounded p-1 inline-block w-48 shadow-sm">
+                    <img src="{{ ca.desenho }}" alt="Assinatura Capitão A" class="h-14 w-full object-contain filter contrast-125">
+                  </div>
+                  {% endif %}
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold">
+                      <span class="material-symbols-outlined text-xs">verified</span> ASSINADO DIGITALMENTE
+                    </span>
+                    <span class="text-[10px] font-mono text-text-muted">{{ ca.assinado_em }}</span>
+                    <span class="text-[9px] font-mono text-emerald-800 bg-emerald-100/60 px-1.5 py-0.5 rounded">{{ ca.hash }}</span>
+                  </div>
                 </div>
                 {% else %}
-                  {% if session.role in ('ADMIN', 'SUPER_ADMIN') or session.user_id %}
-                  <form method="post" action="{{ url_for('assinar_sumula_oficial', partida_id=sumula.match._id) }}" class="flex items-center gap-2 m-0 print:hidden">
-                    <input type="hidden" name="papel" value="capitao_a">
-                    <input type="hidden" name="nome_assinante" value="{{ sumula.identificacao.capitao_a.nome }}">
-                    <input type="hidden" name="matricula" value="{{ sumula.identificacao.capitao_a.matricula }}">
-                    <button type="submit" class="px-3 py-1 bg-surface-container-high hover:bg-surface-container text-on-surface font-bold text-[10px] border border-border-subtle rounded transition">
-                      Confirmar Ciência (Capitão A)
+                  {% if session.role in ('ADMIN', 'SUPER_ADMIN', 'REFEREE') or session.user_id %}
+                  <div class="flex items-center gap-2 flex-wrap print:hidden">
+                    <button type="button" onclick="openSignatureModal('capitao_a', '{{ sumula.identificacao.capitao_a.nome }}', '{{ sumula.identificacao.capitao_a.matricula }}', 'Capitão Time A ({{ sumula.match.time_a.nome }})')" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-[11px] rounded shadow-sm flex items-center gap-1 transition">
+                      <span class="material-symbols-outlined text-xs">draw</span> Assinar no Tablet (Dedo / Caneta)
                     </button>
-                  </form>
+                    <form method="post" action="{{ url_for('assinar_sumula_oficial', partida_id=sumula.match._id) }}" class="m-0">
+                      <input type="hidden" name="papel" value="capitao_a">
+                      <input type="hidden" name="nome_assinante" value="{{ sumula.identificacao.capitao_a.nome }}">
+                      <input type="hidden" name="matricula" value="{{ sumula.identificacao.capitao_a.matricula }}">
+                      <button type="submit" title="Confirmar ciência apenas com texto" class="px-2.5 py-1.5 bg-surface-container-low hover:bg-surface-container text-text-muted text-[10px] font-semibold border border-border-subtle rounded transition">
+                        Sem desenho
+                      </button>
+                    </form>
+                  </div>
                   <span class="hidden print:inline text-text-muted italic">___________________________ (Assinatura física)</span>
                   {% else %}
                   <span class="text-text-muted italic">Pendente de assinatura</span>
@@ -288,23 +312,35 @@
               </td>
               <td class="py-3 px-3">
                 {% if cb.assinado %}
-                <div class="flex items-center gap-2 flex-wrap">
-                  <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold">
-                    <span class="material-symbols-outlined text-xs">verified</span> ASSINADO DIGITALMENTE
-                  </span>
-                  <span class="text-[10px] font-mono text-text-muted">{{ cb.assinado_em }}</span>
-                  <span class="text-[9px] font-mono text-emerald-800 bg-emerald-100/60 px-1.5 py-0.5 rounded">{{ cb.hash }}</span>
+                <div class="flex flex-col gap-1.5">
+                  {% if cb.desenho %}
+                  <div class="bg-white border border-border-subtle rounded p-1 inline-block w-48 shadow-sm">
+                    <img src="{{ cb.desenho }}" alt="Assinatura Capitão B" class="h-14 w-full object-contain filter contrast-125">
+                  </div>
+                  {% endif %}
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold">
+                      <span class="material-symbols-outlined text-xs">verified</span> ASSINADO DIGITALMENTE
+                    </span>
+                    <span class="text-[10px] font-mono text-text-muted">{{ cb.assinado_em }}</span>
+                    <span class="text-[9px] font-mono text-emerald-800 bg-emerald-100/60 px-1.5 py-0.5 rounded">{{ cb.hash }}</span>
+                  </div>
                 </div>
                 {% else %}
-                  {% if session.role in ('ADMIN', 'SUPER_ADMIN') or session.user_id %}
-                  <form method="post" action="{{ url_for('assinar_sumula_oficial', partida_id=sumula.match._id) }}" class="flex items-center gap-2 m-0 print:hidden">
-                    <input type="hidden" name="papel" value="capitao_b">
-                    <input type="hidden" name="nome_assinante" value="{{ sumula.identificacao.capitao_b.nome }}">
-                    <input type="hidden" name="matricula" value="{{ sumula.identificacao.capitao_b.matricula }}">
-                    <button type="submit" class="px-3 py-1 bg-surface-container-high hover:bg-surface-container text-on-surface font-bold text-[10px] border border-border-subtle rounded transition">
-                      Confirmar Ciência (Capitão B)
+                  {% if session.role in ('ADMIN', 'SUPER_ADMIN', 'REFEREE') or session.user_id %}
+                  <div class="flex items-center gap-2 flex-wrap print:hidden">
+                    <button type="button" onclick="openSignatureModal('capitao_b', '{{ sumula.identificacao.capitao_b.nome }}', '{{ sumula.identificacao.capitao_b.matricula }}', 'Capitão Time B ({{ sumula.match.time_b.nome }})')" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-[11px] rounded shadow-sm flex items-center gap-1 transition">
+                      <span class="material-symbols-outlined text-xs">draw</span> Assinar no Tablet (Dedo / Caneta)
                     </button>
-                  </form>
+                    <form method="post" action="{{ url_for('assinar_sumula_oficial', partida_id=sumula.match._id) }}" class="m-0">
+                      <input type="hidden" name="papel" value="capitao_b">
+                      <input type="hidden" name="nome_assinante" value="{{ sumula.identificacao.capitao_b.nome }}">
+                      <input type="hidden" name="matricula" value="{{ sumula.identificacao.capitao_b.matricula }}">
+                      <button type="submit" title="Confirmar ciência apenas com texto" class="px-2.5 py-1.5 bg-surface-container-low hover:bg-surface-container text-text-muted text-[10px] font-semibold border border-border-subtle rounded transition">
+                        Sem desenho
+                      </button>
+                    </form>
+                  </div>
                   <span class="hidden print:inline text-text-muted italic">___________________________ (Assinatura física)</span>
                   {% else %}
                   <span class="text-text-muted italic">Pendente de assinatura</span>
@@ -326,4 +362,218 @@
 
   </div>
 </main>
+
+<!-- Touch / Stylus Tablet Signature Modal -->
+<div id="signatureModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex items-center justify-center p-3 sm:p-4 print:hidden" role="dialog" aria-modal="true" aria-labelledby="modalRoleTitle">
+  <div class="bg-surface-white border border-border-subtle rounded-2xl shadow-2xl max-w-xl w-full flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+    <!-- Modal Header -->
+    <div class="px-5 py-4 bg-surface-container-low border-b border-border-subtle flex items-center justify-between">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+          <span class="material-symbols-outlined text-lg">draw</span>
+        </div>
+        <div>
+          <h3 id="modalRoleTitle" class="font-['Chakra_Petch'] text-sm font-bold text-on-surface leading-tight">Assinatura no Tablet</h3>
+          <p id="modalRoleSub" class="text-[11px] text-text-muted">Use a caneta stylus ou o dedo para assinar no espaço abaixo</p>
+        </div>
+      </div>
+      <button type="button" onclick="closeSignatureModal()" class="w-8 h-8 rounded-full hover:bg-neutral-200 text-neutral-500 hover:text-neutral-800 flex items-center justify-center transition">
+        <span class="material-symbols-outlined text-lg">close</span>
+      </button>
+    </div>
+
+    <!-- Signer Details Preview -->
+    <div class="px-5 py-2.5 bg-neutral-50 border-b border-border-subtle flex items-center justify-between text-xs">
+      <div>
+        <span class="text-text-muted text-[10px] uppercase font-bold block">Assinante:</span>
+        <span id="modalSignerName" class="font-bold text-on-surface"></span>
+      </div>
+      <div id="modalSignerMatriculaBox" class="text-right">
+        <span class="text-text-muted text-[10px] uppercase font-bold block">Matrícula:</span>
+        <span id="modalSignerMatricula" class="font-mono text-on-surface font-semibold"></span>
+      </div>
+    </div>
+
+    <!-- Canvas Signature Pad Area -->
+    <div class="p-5 flex flex-col gap-3">
+      <div class="relative bg-white border-2 border-dashed border-neutral-300 rounded-xl overflow-hidden touch-none select-none" style="height: 220px;">
+        <canvas id="signatureCanvas" class="w-full h-full cursor-crosshair block"></canvas>
+        <div id="canvasPlaceholder" class="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-neutral-300 text-xs font-semibold gap-1">
+          <span class="material-symbols-outlined text-3xl">gesture</span>
+          <span>Desenhe a assinatura aqui (toque ou caneta)</span>
+        </div>
+        <!-- Guideline baseline for realistic signatures -->
+        <div class="pointer-events-none absolute bottom-8 left-8 right-8 border-b border-neutral-200 border-dashed"></div>
+      </div>
+
+      <div class="flex items-center justify-between text-xs text-text-muted">
+        <span class="flex items-center gap-1 text-[11px]">
+          <span class="material-symbols-outlined text-xs text-emerald-600">touch_app</span>
+          Sensível ao toque e caneta stylus de tablet
+        </span>
+        <button type="button" onclick="clearSignatureCanvas()" class="px-3 py-1 hover:bg-neutral-100 text-red-600 font-semibold rounded transition flex items-center gap-1 text-[11px]">
+          <span class="material-symbols-outlined text-xs">delete</span> Limpar traço
+        </button>
+      </div>
+    </div>
+
+    <!-- Form Submit -->
+    <form id="signatureForm" method="post" action="{{ url_for('assinar_sumula_oficial', partida_id=sumula.match._id) }}" class="m-0 border-t border-border-subtle p-4 bg-surface-container-low flex justify-end items-center gap-2">
+      <input type="hidden" name="papel" id="formPapel">
+      <input type="hidden" name="nome_assinante" id="formNomeAssinante">
+      <input type="hidden" name="matricula" id="formMatricula">
+      <input type="hidden" name="assinatura_desenho" id="formAssinaturaDesenho">
+      
+      <button type="button" onclick="closeSignatureModal()" class="px-4 py-2 bg-surface-white hover:bg-neutral-100 text-on-surface font-semibold text-xs border border-border-subtle rounded-lg transition">
+        Cancelar
+      </button>
+      <button type="submit" id="btnSalvarAssinatura" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg shadow transition flex items-center gap-1.5">
+        <span class="material-symbols-outlined text-sm">check_circle</span> Confirmar e Gravar Assinatura
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  let sigCanvas = null;
+  let sigCtx = null;
+  let isDrawing = false;
+  let hasStrokes = false;
+  let lastX = 0;
+  let lastY = 0;
+
+  function initSignatureCanvas() {
+    sigCanvas = document.getElementById('signatureCanvas');
+    if (!sigCanvas) return;
+    sigCtx = sigCanvas.getContext('2d', { willReadFrequently: true });
+
+    // Handle high DPI tablets (Retina/iPad/Android)
+    function resizeCanvas() {
+      const rect = sigCanvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      sigCanvas.width = rect.width * dpr;
+      sigCanvas.height = rect.height * dpr;
+      sigCtx.scale(dpr, dpr);
+      sigCtx.lineWidth = 2.5;
+      sigCtx.lineCap = 'round';
+      sigCtx.lineJoin = 'round';
+      sigCtx.strokeStyle = '#111827'; // Dark smooth ink
+    }
+    resizeCanvas();
+    window.addEventListener('resize', () => {
+      if (!isDrawing && !hasStrokes) resizeCanvas();
+    });
+
+    // Pointer events (handles mouse, touch and stylus/pen uniformly)
+    function getPos(e) {
+      const rect = sigCanvas.getBoundingClientRect();
+      return {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top
+      };
+    }
+
+    sigCanvas.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      sigCanvas.setPointerCapture(e.pointerId);
+      isDrawing = true;
+      hasStrokes = true;
+      const placeholder = document.getElementById('canvasPlaceholder');
+      if (placeholder) placeholder.classList.add('hidden');
+      
+      const pos = getPos(e);
+      lastX = pos.x;
+      lastY = pos.y;
+      sigCtx.beginPath();
+      sigCtx.arc(lastX, lastY, 1.25, 0, Math.PI * 2);
+      sigCtx.fillStyle = '#111827';
+      sigCtx.fill();
+      sigCtx.beginPath();
+      sigCtx.moveTo(lastX, lastY);
+    });
+
+    sigCanvas.addEventListener('pointermove', (e) => {
+      if (!isDrawing) return;
+      e.preventDefault();
+      const pos = getPos(e);
+      sigCtx.beginPath();
+      sigCtx.moveTo(lastX, lastY);
+      sigCtx.lineTo(pos.x, pos.y);
+      sigCtx.stroke();
+      lastX = pos.x;
+      lastY = pos.y;
+    });
+
+    function stopDrawing(e) {
+      if (isDrawing) {
+        isDrawing = false;
+        try { sigCanvas.releasePointerCapture(e.pointerId); } catch(err){}
+      }
+    }
+
+    sigCanvas.addEventListener('pointerup', stopDrawing);
+    sigCanvas.addEventListener('pointercancel', stopDrawing);
+  }
+
+  function clearSignatureCanvas() {
+    if (!sigCanvas || !sigCtx) return;
+    const dpr = window.devicePixelRatio || 1;
+    sigCtx.clearRect(0, 0, sigCanvas.width / dpr, sigCanvas.height / dpr);
+    hasStrokes = false;
+    const placeholder = document.getElementById('canvasPlaceholder');
+    if (placeholder) placeholder.classList.remove('hidden');
+  }
+
+  function openSignatureModal(papel, nome, matricula, roleLabel) {
+    const modal = document.getElementById('signatureModal');
+    if (!modal) return;
+    
+    document.getElementById('formPapel').value = papel;
+    document.getElementById('formNomeAssinante').value = nome || '';
+    document.getElementById('formMatricula').value = matricula || '';
+    document.getElementById('modalRoleTitle').textContent = `Assinatura: ${roleLabel}`;
+    document.getElementById('modalSignerName').textContent = nome || 'Representante';
+    
+    const matBox = document.getElementById('modalSignerMatriculaBox');
+    if (matricula) {
+      matBox.classList.remove('hidden');
+      document.getElementById('modalSignerMatricula').textContent = matricula;
+    } else {
+      matBox.classList.add('hidden');
+    }
+
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+
+    // Delay slightly to ensure rendered dimensions before init/resize
+    setTimeout(() => {
+      initSignatureCanvas();
+      clearSignatureCanvas();
+    }, 50);
+  }
+
+  function closeSignatureModal() {
+    const modal = document.getElementById('signatureModal');
+    if (modal) modal.classList.add('hidden');
+    document.body.style.overflow = '';
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById('signatureForm');
+    if (form) {
+      form.addEventListener('submit', (e) => {
+        if (!hasStrokes) {
+          e.preventDefault();
+          alert('Por favor, faça o desenho da sua assinatura no espaço indicado antes de confirmar.');
+          return;
+        }
+        // Export high quality PNG base64
+        const dataUrl = sigCanvas.toDataURL('image/png');
+        document.getElementById('formAssinaturaDesenho').value = dataUrl;
+      });
+    }
+  });
+</script>
 {% endblock %}
